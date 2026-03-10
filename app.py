@@ -69,13 +69,6 @@ def login_required(f):
             return redirect(url_for('login_web'))
         return f(*args, **kwargs)
     return decorated_function
-# RESET TEMPORÁRIO - REMOVER APÓS USAR
-from data.db import get_connection as _gc
-_db = _gc()
-_db.execute("DELETE FROM users")
-_db.commit()
-_db.close()
-print("⚠️ USUARIOS RESETADOS!")
 
 def admin_required(f):
     @wraps(f)
