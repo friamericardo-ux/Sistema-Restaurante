@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Caixa — Comanda Digital{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/caixa.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- HEADER -->
+<header class="caixa-header">
+  <div class="caixa-logo">🍔 Comanda<span>Digital</span></div>
+  <div class="caixa-header-right">
+    <span class="caixa-user">💰 <strong>Módulo de Caixa</strong></span>
+    <a href="/dashboard" class="btn-voltar">← Painel</a>
+  </div>
+</header>
+
+<!-- CORPO -->
+<div class="caixa-body">
+
+  <!-- Saudação -->
+  <div class="caixa-saudacao">
+    <h2>💰 Caixa do Dia</h2>
+    <p>Resumo financeiro atualizado em tempo real. Atualiza a cada 15 segundos.</p>
+  </div>
+
+  <!-- Cards de resumo -->
+  <div class="caixa-cards">
+    <div class="caixa-card">
+      <div class="caixa-card-label">🛵 Delivery</div>
+      <div class="caixa-card-valor green" id="val-delivery"><span class="skeleton"></span></div>
+      <div class="caixa-card-sub"><span id="qtd-delivery">0</span> pedidos entregues</div>
+    </div>
+    <div class="caixa-card">
+      <div class="caixa-card-label">🍽️ Mesas</div>
+      <div class="caixa-card-valor blue" id="val-mesas"><span class="skeleton"></span></div>
+      <div class="caixa-card-sub"><span id="qtd-mesas">0</span> mesas fechadas</div>
+    </div>
+    <div class="caixa-card destaque">
+      <div class="caixa-card-label">💰 Total Geral</div>
+      <div class="caixa-card-valor accent" id="val-total"><span class="skeleton"></span></div>
+      <div class="caixa-card-sub">delivery + mesas</div>
+    </div>
+  </div>
+
+  <!-- Status do caixa -->
+  <div id="caixa-status" class="caixa-status" style="display:none">
+    <span id="caixa-status-texto"></span>
+  </div>
+
+  <!-- Gráfico por hora -->
+  <div class="section-title">📊 Faturamento por hora</div>
+  <div class="caixa-grafico-container">
+    <div class="caixa-grafico" id="grafico-horas"></div>
+  </div>
+
+  <!-- Movimentações -->
+  <div class="section-title">📋 Movimentações do dia</div>
+  <div class="caixa-tabela-container">
+    <table class="caixa-tabela">
+      <thead>
+        <tr>
+          <th>Hora</th>
+          <th>Tipo</th>
+          <th>Descrição</th>
+          <th>Valor</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-movimentacoes">
+        <tr><td colspan="4" class="sem-dados">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Botão fechar caixa -->
+  <div class="caixa-fechar-area">
+    <button class="btn-fechar-caixa" id="btn-fechar" onclick="confirmarFechamento()">
+      🔒 Fechar Caixa do Dia
+    </button>
+  </div>
+
+</div>
+
+<!-- Modal de confirmação -->
+<div id="modal-fechar" class="modal-overlay" style="display:none">
+  <div class="modal-box-caixa">
+    <div class="modal-titulo">🔒 Fechar Caixa</div>
+    <div class="modal-texto">
+      Tem certeza que deseja fechar o caixa do dia?<br>
+      Esta ação não pode ser desfeita.
+    </div>
+    <div class="modal-resumo" id="modal-resumo"></div>
+    <div class="modal-botoes">
+      <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-confirmar" onclick="executarFechamento()">✅ Confirmar Fechamento</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/caixa.js') }}"></script>
+{% endblock %}

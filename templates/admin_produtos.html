@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Admin &mdash; Produtos{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="header">
+  <h1>&#128722; Admin &mdash; Produtos</h1>
+  <nav class="nav-links">
+    <a href="/dashboard">🏠 Painel</a>
+    <a href="/admin/produtos" class="active">Produtos</a>
+    <a href="/admin/adicionais">Adicionais</a>
+    <a href="/mesas">Mesas</a>
+    <a href="/delivery">Delivery</a>
+    <a href="/admin/usuarios">👥 Usuários</a>
+    <a href="/admin/alterar-senha">🔑 Alterar Senha</a>
+    <a href="/logout">Sair</a>
+  </nav>
+</div>
+
+<div class="container">
+
+  <!-- FORMULÁRIO ADICIONAR -->
+  <div class="form-box">
+    <h2>&#10133; Adicionar Produto</h2>
+    <form action="/admin/produtos/adicionar" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nome do produto</label>
+          <input type="text" name="nome" placeholder="Ex: X-Bacon" required>
+        </div>
+        <div class="form-group" style="max-width:130px;">
+          <label>Pre&ccedil;o (R$)</label>
+          <input type="number" name="preco" placeholder="15.90" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <select name="categoria" required>
+            <option value="" disabled selected>Selecione...</option>
+            <option value="Lanches">Lanches</option>
+            <option value="Promoção">Promoção</option>
+            <option value="Combos">Combos</option>
+            <option value="Bebidas">Bebidas</option>
+            <option value="Sobremesa">Sobremesa</option>
+            <option value="Adicionais">Adicionais</option>
+            <option value="Pizza">Pizza</option>
+            <option value="Marmitas">Marmitas</option>
+            <option value="Salgados">Salgados</option>
+            <option value="Açaí">Açaí</option>
+            <option value="Porções">Porções</option>
+            <option value="Sushi">Sushi</option>
+            <option value="Saladas">Saladas</option>
+            <option value="Bolos">Bolos</option>
+            <option value="Pães">Pães</option>
+          </select>
+        </div>
+        <div class="form-group emoji-picker-group" style="max-width:150px;">
+          <label>Emoji <span class="label-opt">(opcional)</span></label>
+          <input type="hidden" name="emoji" id="emoji-val" value="">
+          <button type="button" class="emoji-trigger" id="emoji-trigger" onclick="toggleEmojiPicker()">
+            <span id="emoji-display">🍽️</span>
+            <span id="emoji-label">Escolher</span>
+          </button>
+          <div class="emoji-panel" id="emoji-panel">
+            <button type="button" class="emoji-clear" onclick="clearEmoji()">✕ Nenhum (sem emoji)</button>
+            <div class="emoji-grid">
+              <!-- Lanches / Salgados -->
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍔')">🍔</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍟')">🍟</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🌭')">🌭</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🥪')">🥪</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🌮')">🌮</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🌯')">🌯</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🥙')">🥙</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍕')">🍕</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍖')">🍖</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍗')">🍗</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🥩')">🥩</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍳')">🍳</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🧇')">🧇</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🥞')">🥞</button>
+              <!-- Refeições -->
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍜')">🍜</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍝')">🍝</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍛')">🍛</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍲')">🍲</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🥗')">🥗</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍱')">🍱</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍣')">🍣</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍤')">🍤</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🦐')">🦐</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🥚')">🥚</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🧆')">🧆</button>
+              <!-- Bebidas -->
+              <button type="button" class="emoji-option" onclick="selectEmoji('🥤')">🥤</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🧃')">🧃</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🧋')">🧋</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('☕')">☕</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍵')">🍵</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🥛')">🥛</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍺')">🍺</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍻')">🍻</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍹')">🍹</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🥂')">🥂</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🧊')">🧊</button>
+              <!-- Sobremesas -->
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍦')">🍦</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍧')">🍧</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍨')">🍨</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍰')">🍰</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🎂')">🎂</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🧁')">🧁</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍩')">🍩</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍪')">🍪</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍫')">🍫</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍬')">🍬</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍭')">🍭</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍮')">🍮</button>
+              <!-- Outros -->
+              <button type="button" class="emoji-option" onclick="selectEmoji('🍽️')">🍽️</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('⭐')">⭐</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🔥')">🔥</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('💥')">💥</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🎁')">🎁</button>
+              <button type="button" class="emoji-option" onclick="selectEmoji('🛵')">🛵</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:10px;">
+        <div class="form-group">
+          <label>Descri&ccedil;&atilde;o (opcional)</label>
+          <textarea name="descricao" placeholder="Ingredientes ou informa&ccedil;&otilde;es extras..." rows="2"></textarea>
+        </div>
+        <div class="form-group" style="max-width:200px;">
+          <label>Foto</label>
+          <input type="file" name="foto" accept="image/*">
+        </div>
+        <button type="submit" class="btn-add" style="align-self:flex-end;">+ Adicionar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- LISTA DE PRODUTOS -->
+  <div class="section-label">&#128230; Produtos cadastrados</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Foto</th>
+        <th>&#127381;</th>
+        <th>Nome</th>
+        <th>Pre&ccedil;o</th>
+        <th>Categoria</th>
+        <th>Descri&ccedil;&atilde;o</th>
+        <th>A&ccedil;&atilde;o</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in produtos %}
+      <tr>
+        <td>
+          {% if p[6] and p[6] != '' %}
+          <img src="/static/img/produtos/{{ p[6] }}" class="thumb" alt="Foto de {{ p[1] }}"
+               onerror="this.onerror=null;this.src='https://via.placeholder.com/46?text=?'">
+          {% else %}
+          <span class="no-image">Sem foto</span>
+          {% endif %}
+        </td>
+        <td><span class="prod-emoji">{{ p[4] }}</span></td>
+        <td><strong>{{ p[1] }}</strong></td>
+        <td class="prod-preco">R$ {{ "%.2f"|format(p[2]) }}</td>
+        <td><span class="prod-categoria">{{ p[3] }}</span></td>
+        <td class="prod-descricao">{{ p[7] if p[7] else '—' }}</td>
+        <td>
+          <a href="/admin/produtos/desativar/{{ p[0] }}"
+             onclick="return confirm('Remover {{ p[1] }}?')">
+            <button class="btn-del">Remover</button>
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleEmojiPicker() {
+  const panel   = document.getElementById('emoji-panel');
+  const trigger = document.getElementById('emoji-trigger');
+  const isOpen  = panel.classList.contains('open');
+  document.querySelectorAll('.emoji-panel.open').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.emoji-trigger.open').forEach(t => t.classList.remove('open'));
+  if (!isOpen) {
+    panel.classList.add('open');
+    trigger.classList.add('open');
+  }
+}
+
+function selectEmoji(emoji) {
+  document.getElementById('emoji-val').value           = emoji;
+  document.getElementById('emoji-display').textContent = emoji;
+  document.getElementById('emoji-label').textContent   = '';
+  document.querySelectorAll('.emoji-option').forEach(btn =>
+    btn.classList.toggle('selected', btn.textContent.trim() === emoji)
+  );
+  closeEmojiPicker();
+}
+
+function clearEmoji() {
+  document.getElementById('emoji-val').value           = '';
+  document.getElementById('emoji-display').textContent = '🍽️';
+  document.getElementById('emoji-label').textContent   = 'Escolher';
+  document.querySelectorAll('.emoji-option').forEach(btn => btn.classList.remove('selected'));
+  closeEmojiPicker();
+}
+
+function closeEmojiPicker() {
+  document.getElementById('emoji-panel').classList.remove('open');
+  document.getElementById('emoji-trigger').classList.remove('open');
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.emoji-picker-group')) closeEmojiPicker();
+});
+</script>
+{% endblock %}

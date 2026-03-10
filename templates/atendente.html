@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Comanda — Painel Atendente{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/atendente.css') }}">
+{% endblock %}
+
+{% block content %}
+<header>
+  <h1>&#127828; COMANDA &mdash; Painel Atendente</h1>
+  <a href="/dashboard" style="color:#888;font-size:13px;text-decoration:none;margin-left:16px;">← Painel</a>
+</header>
+
+<button class="btn-nova-mesa" onclick="abrirModalNovaMesa()">+ Nova Mesa</button>
+
+<div id="lista-mesas" style="margin-top:20px;"></div>
+
+<!-- MODAL DE ITENS -->
+<div class="modal-overlay" id="modalItens">
+  <div class="modal">
+    <h2 id="modal-titulo">MESA X</h2>
+
+    <p style="color:#aaa;margin-bottom:8px;">Card&aacute;pio r&aacute;pido:</p>
+    <div class="cardapio-grid" id="cardapio-grid"></div>
+
+    <p style="color:#aaa;margin:10px 0 4px;">Ou adicione manualmente:</p>
+    <input type="text"   id="item-nome"  placeholder="Nome do item (ex: X-Burguer)">
+    <input type="number" id="item-preco" placeholder="Pre&ccedil;o (ex: 18.50)" step="0.01" min="0">
+    <input type="number" id="item-qtd"   placeholder="Quantidade" value="1" min="1">
+    <button class="btn-add" onclick="adicionarItem()">&#10133; Adicionar Item</button>
+
+    <div class="lista-itens" id="lista-itens-modal"></div>
+    <div class="total-mesa"  id="total-modal"></div>
+
+    <br>
+    <button class="btn-fechar-modal" onclick="fecharModal()">&#10006; Fechar</button>
+    <button class="btn-fechar-mesa"  onclick="fecharMesa()">&#128274; Encerrar Mesa</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/atendente.js') }}"></script>
+{% endblock %}

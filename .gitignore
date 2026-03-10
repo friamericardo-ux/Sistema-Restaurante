@@ -1,0 +1,7 @@
+.env
+__pycache__/
+data/database.db
+.vscode/pro-deployer.json
+.venv/
+*.pyc
+security.log

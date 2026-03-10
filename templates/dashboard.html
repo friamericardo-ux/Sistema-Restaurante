@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+{% block title %}Painel Admin — Comanda Digital{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Layout geral ── */
+.dash-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.dash-logo {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.dash-logo span { color: var(--accent); }
+
+.dash-user {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.dash-user strong { color: var(--text); }
+
+.btn-logout {
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  text-decoration: none;
+}
+.btn-logout:hover { color: var(--red); border-color: var(--red); }
+
+/* ── Nav de módulos ── */
+.dash-nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.dash-nav::-webkit-scrollbar { display: none; }
+
+.dash-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 13px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s;
+}
+.dash-nav-item:hover  { color: var(--text); }
+.dash-nav-item.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Conteúdo ── */
+.dash-body {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 28px 60px;
+}
+
+.dash-saudacao {
+  margin-bottom: 28px;
+}
+.dash-saudacao h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+.dash-saudacao p { color: var(--muted); font-size: 14px; }
+
+/* ── Cards de status ── */
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 36px;
+}
+
+.status-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.status-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+.status-card-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.status-card-value {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text);
+}
+.status-card-value.accent  { color: var(--accent); }
+.status-card-value.green   { color: var(--green); }
+.status-card-value.amber   { color: var(--amber); }
+.status-card-value.blue    { color: var(--blue); }
+
+.status-card-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── Atalhos de módulos ── */
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.modulos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.modulo-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-decoration: none;
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  cursor: pointer;
+}
+.modulo-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(255,107,43,0.12);
+}
+
+.modulo-icon { font-size: 32px; line-height: 1; }
+
+.modulo-nome {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.modulo-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+.modulo-badge {
+  display: inline-block;
+  background: rgba(255,107,43,0.15);
+  color: var(--accent);
+  border: 1px solid rgba(255,107,43,0.3);
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 10px;
+  margin-top: 4px;
+  width: fit-content;
+}
+
+/* ── Loading skeleton ── */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+  display: inline-block;
+  width: 60px;
+  height: 36px;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+@media (max-width: 600px) {
+  .dash-body { padding: 20px 16px 48px; }
+  .dash-header { padding: 14px 16px; }
+  .dash-nav { padding: 0 16px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- HEADER -->
+<div class="dash-header">
+  <div class="dash-logo">🍔 Comanda<span>Digital</span></div>
+  <div class="dash-user">
+    <span>Olá, <strong>{{ username }}</strong></span>
+    <a href="/logout" class="btn-logout">Sair</a>
+  </div>
+</div>
+
+<!-- NAV DE MÓDULOS -->
+<nav class="dash-nav">
+  <a href="/dashboard"       class="dash-nav-item active">🏠 Painel</a>
+  <a href="/mesas"           class="dash-nav-item">🍽️ Mesas</a>
+  <a href="/delivery"        class="dash-nav-item">🛵 Delivery</a>
+  <a href="/cardapio"        class="dash-nav-item" target="_blank">📋 Cardápio</a>
+  {% if session.get('role') == 'admin' %}
+  <a href="/caixa"           class="dash-nav-item">💰 Caixa</a>
+  <a href="/admin/produtos"  class="dash-nav-item">🛒 Produtos</a>
+  <a href="/admin/adicionais"class="dash-nav-item">➕ Adicionais</a>
+  <a href="/admin/usuarios"  class="dash-nav-item">👥 Usuários</a>
+  <a href="/admin/alterar-senha" class="dash-nav-item">🔑 Senha</a>
+  {% endif %}
+</nav>
+
+<!-- CORPO -->
+<div class="dash-body">
+
+  <!-- Saudação -->
+  <div class="dash-saudacao">
+    <h2>Painel de Controle</h2>
+    <p>Acompanhe tudo em tempo real. Atualiza automaticamente a cada 30 segundos.</p>
+  </div>
+
+  <!-- Cards de status -->
+  <div class="section-title">📊 Status atual</div>
+  <div class="status-grid">
+
+    <div class="status-card">
+      <div class="status-card-label">Mesas abertas</div>
+      <div class="status-card-value accent" id="val-mesas"><span class="skeleton"></span></div>
+      <div class="status-card-sub">em andamento agora</div>
+    </div>
+
+    <div class="status-card">
+      <div class="status-card-label">🔔 Pedidos novos</div>
+      <div class="status-card-value amber" id="val-novos"><span class="skeleton"></span></div>
+      <div class="status-card-sub">aguardando aceite</div>
+    </div>
+
+    <div class="status-card">
+      <div class="status-card-label">🍳 Em preparo</div>
+      <div class="status-card-value blue" id="val-preparo"><span class="skeleton"></span></div>
+      <div class="status-card-sub">sendo preparados</div>
+    </div>
+
+    <div class="status-card">
+      <div class="status-card-label">🛵 Saiu para entrega</div>
+      <div class="status-card-value green" id="val-entrega"><span class="skeleton"></span></div>
+      <div class="status-card-sub">a caminho do cliente</div>
+    </div>
+
+    <div class="status-card">
+      <div class="status-card-label">📦 Pedidos hoje</div>
+      <div class="status-card-value" id="val-hoje"><span class="skeleton"></span></div>
+      <div class="status-card-sub">pedidos recebidos</div>
+    </div>
+
+    <div class="status-card">
+      <div class="status-card-label">💰 Faturamento hoje</div>
+      <div class="status-card-value green" id="val-fat"><span class="skeleton"></span></div>
+      <div class="status-card-sub">em pedidos delivery</div>
+    </div>
+
+  </div>
+
+  <!-- Atalhos de módulos -->
+  <div class="section-title">🚀 Acesso rápido</div>
+  <div class="modulos-grid">
+
+    <a href="/mesas" class="modulo-card">
+      <div class="modulo-icon">🍽️</div>
+      <div class="modulo-nome">Mesas</div>
+      <div class="modulo-desc">Gerencie as mesas do salão, adicione itens e encerre comandas.</div>
+    </a>
+
+    <a href="/delivery" class="modulo-card">
+      <div class="modulo-icon">🛵</div>
+      <div class="modulo-nome">Painel Delivery</div>
+      <div class="modulo-desc">Acompanhe os pedidos delivery por status em tempo real.</div>
+      <span class="modulo-badge" id="badge-delivery">carregando...</span>
+    </a>
+
+    <a href="/cardapio" target="_blank" class="modulo-card">
+      <div class="modulo-icon">📋</div>
+      <div class="modulo-nome">Cardápio</div>
+      <div class="modulo-desc">Visualize o cardápio como o cliente vê. Abre em nova aba.</div>
+    </a>
+
+    {% if session.get('role') == 'admin' %}
+    <a href="/caixa" class="modulo-card">
+      <div class="modulo-icon">💰</div>
+      <div class="modulo-nome">Caixa</div>
+      <div class="modulo-desc">Resumo financeiro do dia, movimentações e fechamento de caixa.</div>
+    </a>
+
+    <a href="/admin/produtos" class="modulo-card">
+      <div class="modulo-icon">🛒</div>
+      <div class="modulo-nome">Produtos</div>
+      <div class="modulo-desc">Cadastre, edite e remova produtos do cardápio.</div>
+    </a>
+
+    <a href="/admin/adicionais" class="modulo-card">
+      <div class="modulo-icon">➕</div>
+      <div class="modulo-nome">Adicionais</div>
+      <div class="modulo-desc">Configure os extras disponíveis para os produtos.</div>
+    </a>
+
+    <a href="/admin/usuarios" class="modulo-card">
+      <div class="modulo-icon">👥</div>
+      <div class="modulo-nome">Usuários</div>
+      <div class="modulo-desc">Crie e gerencie os acessos ao sistema.</div>
+    </a>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function atualizarResumo() {
+  try {
+    const res  = await fetch('/api/dashboard/resumo');
+    const data = await res.json();
+    if (!data.sucesso) return;
+
+    document.getElementById('val-mesas').textContent   = data.mesas_abertas;
+    document.getElementById('val-novos').textContent   = data.pedidos_novos;
+    document.getElementById('val-preparo').textContent = data.pedidos_preparo;
+    document.getElementById('val-entrega').textContent = data.pedidos_entrega;
+    document.getElementById('val-hoje').textContent    = data.pedidos_hoje;
+    document.getElementById('val-fat').textContent     = 'R$ ' + data.faturamento_hoje.toFixed(2).replace('.', ',');
+
+    const pendentes = data.pedidos_novos + data.pedidos_preparo + data.pedidos_entrega;
+    const badge = document.getElementById('badge-delivery');
+    if (pendentes > 0) {
+      badge.textContent = `🔴 ${pendentes} pedido${pendentes > 1 ? 's' : ''} ativo${pendentes > 1 ? 's' : ''}`;
+    } else {
+      badge.textContent = '✅ Sem pedidos pendentes';
+      badge.style.background = 'rgba(34,197,94,0.12)';
+      badge.style.borderColor = 'rgba(34,197,94,0.3)';
+      badge.style.color = 'var(--green)';
+    }
+  } catch (e) {
+    console.error('Erro ao atualizar resumo:', e);
+  }
+}
+
+atualizarResumo();
+setInterval(atualizarResumo, 30000);
+</script>
+{% endblock %}

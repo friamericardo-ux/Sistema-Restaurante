@@ -1,0 +1,366 @@
+/* ============================================================
+   ADMIN — Estilos compartilhados (admin_produtos + admin_adicionais)
+   Tema: escuro com accent laranja #ff6b2b / dourado #f0a500
+============================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: #0f0f0f;
+    color: #f0f0f0;
+    min-height: 100vh;
+}
+
+/* ── CABEÇALHO ── */
+.header {
+    background: #1a1a1a;
+    border-bottom: 1px solid #2e2e2e;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.header h1 {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.nav-links {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.nav-links a {
+    color: #888;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+}
+
+.nav-links a:hover  { color: #f0f0f0; }
+.nav-links a.active { color: #ff6b2b; font-weight: 600; }
+
+/* ── CONTAINER ── */
+.container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 24px;
+}
+
+/* ── FORM BOX ── */
+.form-box {
+    background: #1a1a1a;
+    border: 1px solid #2e2e2e;
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 32px;
+}
+
+.form-box h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 18px;
+}
+
+.form-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.form-group { flex: 1; min-width: 120px; }
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    background: #242424;
+    border: 1px solid #2e2e2e;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #f0f0f0;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { border-color: #ff6b2b; }
+
+/* ── BOTÕES ── */
+.btn-add {
+    padding: 10px 20px;
+    background: #ff6b2b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, transform 0.15s;
+}
+
+.btn-add:hover { background: #e55a20; transform: translateY(-1px); }
+
+.btn-del {
+    background: transparent;
+    border: 1px solid #2e2e2e;
+    color: #888;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.btn-del:hover,
+.btn-remover:hover {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
+}
+
+.btn-remover {
+    background: transparent;
+    border: 1px solid #2e2e2e;
+    color: #888;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+/* ── SECTION LABEL ── */
+.section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 14px;
+}
+
+/* ── TABELA DE PRODUTOS ── */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #1a1a1a;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #2e2e2e;
+}
+
+th, td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #2e2e2e;
+    text-align: left;
+    font-size: 14px;
+}
+
+th {
+    background: #242424;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #888;
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #1e1e1e; }
+
+.thumb {
+    width: 46px;
+    height: 46px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #ff6b2b;
+    display: block;
+}
+
+.no-image {
+    color: #555;
+    font-style: italic;
+    font-size: 12px;
+}
+
+.prod-emoji {
+    font-size: 22px;
+}
+
+.prod-categoria {
+    background: #242424;
+    border: 1px solid #2e2e2e;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 12px;
+    color: #aaa;
+    display: inline-block;
+}
+
+.prod-preco {
+    color: #ff6b2b;
+    font-weight: 700;
+}
+
+.prod-descricao {
+    color: #888;
+    font-size: 12px;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── LISTA DE ADICIONAIS ── */
+.adicional-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.adicional-item {
+    background: #1a1a1a;
+    border: 1px solid #2e2e2e;
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.adicional-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.adicional-nome  { font-size: 15px; font-weight: 600; }
+
+.adicional-preco {
+    font-size: 14px;
+    color: #ff6b2b;
+    font-weight: 700;
+}
+
+/* ── ESTADO VAZIO ── */
+.empty {
+    color: #888;
+    font-size: 14px;
+    text-align: center;
+    padding: 32px;
+    border: 1px dashed #2e2e2e;
+    border-radius: 10px;
+}
+
+/* ── EMOJI PICKER ── */
+.label-opt {
+    color: #555;
+    font-weight: 400;
+    font-size: 10px;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.emoji-picker-group { position: relative; }
+
+.emoji-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #242424;
+    border: 1px solid #2e2e2e;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #f0f0f0;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    text-align: left;
+    font-family: inherit;
+}
+
+.emoji-trigger:hover,
+.emoji-trigger.open { border-color: #ff6b2b; }
+
+.emoji-trigger #emoji-display { font-size: 20px; line-height: 1; }
+.emoji-trigger #emoji-label   { color: #888; font-size: 13px; }
+
+.emoji-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: #1e1e1e;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    padding: 12px;
+    z-index: 300;
+    width: 252px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+
+.emoji-panel.open { display: block; }
+
+.emoji-clear {
+    display: block;
+    width: 100%;
+    padding: 6px 10px;
+    margin-bottom: 10px;
+    background: transparent;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    color: #888;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s;
+    text-align: left;
+}
+
+.emoji-clear:hover { background: #2a2a2a; color: #f0f0f0; }
+
+.emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.emoji-option {
+    font-size: 22px;
+    padding: 5px 3px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    text-align: center;
+    line-height: 1;
+}
+
+.emoji-option:hover  { background: #2e2e2e; border-color: #3a3a3a; }
+.emoji-option.selected { background: rgba(255,107,43,0.2); border-color: #ff6b2b; }

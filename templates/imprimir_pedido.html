@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comanda #{{ pedido_id }}</title>
+  <style>
+    /* ── Reset & Base ── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+      color: #000;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .comanda {
+      background: #fff;
+      width: 80mm;
+      padding: 8mm 4mm;
+      border: 1px dashed #ccc;
+    }
+
+    .text-center { text-align: center; }
+
+    .estabelecimento {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .separador {
+      border: none;
+      border-top: 1px dashed #000;
+      margin: 6px 0;
+    }
+
+    .info-linha {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+
+    .info-linha span:first-child { font-weight: bold; }
+
+    .cliente-info {
+      margin: 4px 0;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .cliente-info strong { display: block; }
+
+    /* ── Tabela de itens ── */
+    .itens-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 4px 0;
+    }
+
+    .itens-table th {
+      font-size: 11px;
+      text-align: left;
+      border-bottom: 1px solid #000;
+      padding: 2px 0;
+    }
+
+    .itens-table th:last-child { text-align: right; }
+
+    .itens-table td {
+      font-size: 12px;
+      padding: 3px 0;
+      vertical-align: top;
+    }
+
+    .itens-table td:last-child { text-align: right; white-space: nowrap; }
+
+    .item-extras {
+      font-size: 10px;
+      color: #555;
+      padding-left: 4px;
+    }
+
+    .item-obs {
+      font-size: 10px;
+      color: #555;
+      font-style: italic;
+      padding-left: 4px;
+    }
+
+    /* ── Totais ── */
+    .totais {
+      margin: 4px 0;
+    }
+
+    .totais .linha {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+
+    .totais .total-final {
+      font-size: 15px;
+      font-weight: bold;
+      border-top: 1px dashed #000;
+      padding-top: 4px;
+      margin-top: 4px;
+    }
+
+    .rodape {
+      font-size: 10px;
+      text-align: center;
+      margin-top: 8px;
+      color: #555;
+    }
+
+    /* ── Botão Imprimir ── */
+    .btn-imprimir {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      padding: 10px;
+      background: #ff6b2b;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-imprimir:hover { background: #e55a20; }
+
+    /* ── Impressão (@media print) ── */
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+        margin: 0;
+      }
+
+      .comanda {
+        border: none;
+        padding: 0;
+        width: 80mm;
+        margin: 0;
+      }
+
+      .btn-imprimir { display: none !important; }
+
+      @page {
+        size: 80mm auto;
+        margin: 2mm;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="comanda">
+
+  <!-- Cabeçalho -->
+  <div class="text-center">
+    <div class="estabelecimento">🍔 Comanda Digital</div>
+    <div style="font-size:11px;color:#555;">Comanda Online</div>
+  </div>
+
+  <hr class="separador">
+
+  <!-- Tipo + ID -->
+  <div class="info-linha">
+    <span>PEDIDO</span>
+    <span>#{{ pedido_id }}</span>
+  </div>
+  <div class="info-linha">
+    <span>DATA/HORA</span>
+    <span>{{ criado_em }}</span>
+  </div>
+  <div class="info-linha">
+    <span>STATUS</span>
+    <span>{{ status|upper }}</span>
+  </div>
+
+  <hr class="separador">
+
+  <!-- Dados do cliente -->
+  <div class="cliente-info">
+    <strong>🛵 DELIVERY</strong>
+    {% if cliente_nome %}👤 {{ cliente_nome }}{% endif %}
+    {% if cliente_telefone %}<br>📞 {{ cliente_telefone }}{% endif %}
+    {% if cliente_endereco %}<br>📍 {{ cliente_endereco }}{% endif %}
+  </div>
+
+  <hr class="separador">
+
+  <!-- Itens -->
+  <table class="itens-table">
+    <thead>
+      <tr>
+        <th>Qtd</th>
+        <th>Item</th>
+        <th>Valor</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in itens %}
+      <tr>
+        <td>{{ item.quantidade }}x</td>
+        <td>
+          {{ item.nome }}
+          {% if item.adicionais and item.adicionais|length > 0 %}
+            <div class="item-extras">
+              ➕ {{ item.adicionais|map(attribute='nome')|join(', ') }}
+            </div>
+          {% endif %}
+          {% if item.observacao %}
+            <div class="item-obs">📝 {{ item.observacao }}</div>
+          {% endif %}
+        </td>
+        <td>R$ {{ "%.2f"|format(item.preco * item.quantidade) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <hr class="separador">
+
+  <!-- Totais -->
+  <div class="totais">
+    {% set subtotal = [] %}
+    {% for item in itens %}
+      {% if subtotal.append(item.preco * item.quantidade) %}{% endif %}
+    {% endfor %}
+    <div class="linha">
+      <span>Subtotal</span>
+      <span>R$ {{ "%.2f"|format(subtotal|sum) }}</span>
+    </div>
+    <div class="linha">
+      <span>🛵 Entrega</span>
+      <span>R$ {{ "%.2f"|format(taxa_entrega) }}</span>
+    </div>
+    <div class="linha total-final">
+      <span>TOTAL</span>
+      <span>R$ {{ "%.2f"|format(total) }}</span>
+    </div>
+  </div>
+
+  <hr class="separador">
+
+  <!-- Rodapé -->
+  <div class="rodape">
+    Obrigado pela preferência!<br>
+    🍔 Comanda Digital
+  </div>
+
+  <!-- Botão Imprimir -->
+  <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir Comanda</button>
+
+</div>
+
+</body>
+</html>

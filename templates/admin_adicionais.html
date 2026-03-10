@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Admin &mdash; Adicionais{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="header">
+  <h1>&#9881;&#65039; Admin &mdash; Adicionais</h1>
+  <nav class="nav-links">
+    <a href="/dashboard">🏠 Painel</a>
+    <a href="/admin/produtos">Produtos</a>
+    <a href="/admin/adicionais" class="active">Adicionais</a>
+    <a href="/mesas">Mesas</a>
+    <a href="/delivery">Delivery</a>
+    <a href="/admin/usuarios">👥 Usuários</a>
+    <a href="/admin/alterar-senha">🔑 Alterar Senha</a>
+    <a href="/logout">Sair</a>
+  </nav>
+</div>
+
+<div class="container">
+
+  <div class="form-box">
+    <h2>&#10133; Novo Adicional</h2>
+    <form method="POST" action="/admin/adicionais/adicionar">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nome do adicional</label>
+          <input type="text" name="nome" placeholder="Ex: Bacon, Queijo extra..." required>
+        </div>
+        <div class="form-group" style="max-width:140px;">
+          <label>Pre&ccedil;o (R$)</label>
+          <input type="number" name="preco" step="0.01" min="0" placeholder="3.00" required>
+        </div>
+        <div class="form-group">
+          <label>Produto vinculado</label>
+          <select name="produto_id">
+            <option value="">Todos os produtos</option>
+            {% for p in produtos %}
+            <option value="{{ p[0] }}">{{ p[1] }} ({{ p[3] }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn-add">Adicionar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="section-label">&#128203; Adicionais cadastrados</div>
+
+  <div class="adicional-list">
+    {% if adicionais %}
+      {% for a in adicionais %}
+      <div class="adicional-item">
+        <div class="adicional-info">
+          <span class="adicional-nome">{{ a[1] }}</span>
+          <span class="adicional-preco">+R$ {{ "%.2f"|format(a[2]) }}</span>
+          {% if a[3] %}
+            <span class="adicional-produto" style="color:var(--muted);font-size:12px;margin-left:8px;">
+              (Produto ID: {{ a[3] }})
+            </span>
+          {% else %}
+            <span class="adicional-produto" style="color:var(--accent);font-size:12px;margin-left:8px;">
+              (Todos os produtos)
+            </span>
+          {% endif %}
+        </div>
+        <a href="/admin/adicionais/desativar/{{ a[0] }}" class="btn-remover"
+           onclick="return confirm('Remover {{ a[1] }}?')">Remover</a>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">Nenhum adicional cadastrado ainda.</div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

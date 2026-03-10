@@ -1,0 +1,172 @@
+"""
+Escreve o novo cardapio_cliente.html refatorado:
+- Remove CSS inline (agora em static/css/cardapio.css)
+- Remove JS inline (agora em static/js/cardapio.js)
+- Aplica herança de templates Jinja2 (base.html)
+- Adiciona suporte a descricao, adicionais e observacao com classes CSS
+"""
+import os, sys
+
+ROOT = os.path.join(os.path.dirname(__file__), '..')
+TARGET = os.path.join(ROOT, 'templates', 'cardapio_cliente.html')
+
+NEW_CONTENT = """\
+{% extends "base.html" %}
+
+{% block title %}Cardápio — Comanda Digital{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cardapio.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<!-- Número do WhatsApp passado ao JS sem expor no código-fonte -->
+<span id="numero-whatsapp" data-numero="5567993487509" hidden></span>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">🍔 Comanda<span>Digital</span></div>
+  <button class="carrinho-badge" onclick="scrollToCart()" aria-label="Ver carrinho">
+    🛒 Carrinho
+    <span id="badge-count">0</span>
+  </button>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">🛵 Delivery Online</div>
+  <h1>Peça agora,<br>receba <em>rápido</em></h1>
+  <p>Escolha os itens e finalize pelo WhatsApp em segundos.</p>
+</div>
+
+<!-- CONTEÚDO PRINCIPAL -->
+<div class="main">
+
+  <!-- CARDÁPIO -->
+  <div class="left-col">
+    <div class="section-label">📋 Cardápio</div>
+    <div class="cardapio-grid" id="cardapio">
+      <div class="empty-state">Carregando cardápio...</div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR: CARRINHO + FORMULÁRIO + SUCESSO -->
+  <div class="sidebar" id="sidebar">
+
+    <!-- Carrinho -->
+    <div class="cart-box">
+      <div class="cart-header">🛒 Seu Pedido</div>
+      <div class="cart-items" id="cart-items">
+        <div class="cart-empty">Nenhum item adicionado</div>
+      </div>
+      <div class="cart-footer" id="cart-footer" style="display:none">
+        <div class="cart-linha">
+          <span>Subtotal</span>
+          <span id="subtotal-val">R$ 0,00</span>
+        </div>
+        <div class="cart-linha">
+          <span>🛵 Entrega</span>
+          <span>R$ 5,00</span>
+        </div>
+        <div class="cart-total-linha">
+          <span>Total</span>
+          <span id="total-val">R$ 0,00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulário de dados do cliente -->
+    <div class="form-box" id="form-box">
+      <div class="form-title">📝 Seus Dados</div>
+      <div class="form-group">
+        <label for="nome">Nome completo *</label>
+        <input type="text" id="nome" placeholder="Seu nome" autocomplete="name" maxlength="100">
+      </div>
+      <div class="form-group">
+        <label for="telefone">Telefone / WhatsApp *</label>
+        <input type="tel" id="telefone" placeholder="(11) 99999-9999" autocomplete="tel" maxlength="20">
+      </div>
+      <div class="form-group">
+        <label for="endereco">Endereço *</label>
+        <textarea id="endereco" rows="3" placeholder="Rua, número, bairro, complemento..."
+                  autocomplete="street-address" maxlength="300"></textarea>
+      </div>
+      <button class="btn-finalizar" id="btn-finalizar" onclick="finalizarPedido()">
+        ✅ Finalizar Pedido
+      </button>
+    </div>
+
+    <!-- Tela de sucesso -->
+    <div class="sucesso-box" id="sucesso-box">
+      <div class="sucesso-icon">🎉</div>
+      <div class="sucesso-titulo">Pedido Criado!</div>
+      <div class="sucesso-sub">Clique abaixo para confirmar pelo WhatsApp</div>
+      <a href="#" class="btn-whatsapp" id="btn-whatsapp" target="_blank" rel="noopener noreferrer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+        Confirmar pelo WhatsApp
+      </a>
+      <button class="btn-novo" onclick="novoPedido()">+ Fazer novo pedido</button>
+    </div>
+
+  </div><!-- /sidebar -->
+</div><!-- /main -->
+
+<!-- Toast de notificações -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- MODAL: Adicionais + Observação -->
+<div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-nome">
+  <div class="modal-box">
+
+    <!-- Cabeçalho do modal -->
+    <div class="modal-header">
+      <div>
+        <div class="modal-produto-nome" id="modal-nome"></div>
+        <div class="modal-produto-preco" id="modal-preco-base"></div>
+        <div class="modal-descricao" id="modal-descricao" style="display:none"></div>
+      </div>
+      <button class="modal-fechar" onclick="fecharModal()" aria-label="Fechar modal">✕</button>
+    </div>
+
+    <!-- Adicionais -->
+    <div id="modal-adicionais-section" style="display:none">
+      <div class="modal-section-label">➕ Adicionais</div>
+      <div class="modal-adicionais-lista" id="modal-adicionais-lista"></div>
+    </div>
+
+    <!-- Observação -->
+    <div class="modal-obs-label">
+      📝 Observação
+      <span style="color:var(--muted);font-weight:400;font-size:11px;text-transform:none;letter-spacing:0">(opcional)</span>
+    </div>
+    <textarea class="modal-obs-textarea" id="modal-obs" rows="3"
+              placeholder="Ex: sem cebola, bem passado, maionese à parte..."></textarea>
+
+    <!-- Rodapé: total + confirmar -->
+    <div class="modal-footer">
+      <div class="modal-total-label">
+        Total: <span class="modal-total-valor" id="modal-total">R$ 0,00</span>
+      </div>
+      <button class="btn-confirmar-modal" onclick="confirmarAdicional()">
+        Adicionar ao Pedido
+      </button>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/cardapio.js') }}"></script>
+{% endblock %}
+"""
+
+with open(TARGET, 'w', encoding='utf-8') as f:
+    f.write(NEW_CONTENT)
+
+print(f"✅ {TARGET} reescrito com sucesso!")
+print(f"   Linhas: {NEW_CONTENT.count(chr(10))}")

@@ -1,0 +1,228 @@
+/* ============================================================
+   ATENDENTE — Painel interno de mesas
+   Tema: azul escuro + dourado (#f5a623)
+============================================================ */
+
+body {
+    font-family: sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    padding: 20px;
+}
+
+header {
+    background: #16213e;
+    padding: 10px;
+    border-bottom: 2px solid #f5a623;
+    margin-bottom: 20px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+/* ── BOTÃO NOVA MESA ── */
+.btn-nova-mesa {
+    padding: 15px 25px;
+    background: #f5a623;
+    color: #1a1a2e;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn-nova-mesa:hover {
+    background: #e0951f;
+}
+
+/* ── CARDS DE MESAS ── */
+.mesa-card {
+    border: 2px solid #f5a623;
+    background: #0f3460;
+    padding: 15px;
+    margin: 10px;
+    border-radius: 10px;
+    display: inline-block;
+    min-width: 130px;
+    text-align: center;
+    cursor: pointer;
+    vertical-align: top;
+    transition: background 0.2s;
+}
+
+.mesa-card:hover {
+    background: #1a4a80;
+}
+
+/* ── MODAL OVERLAY ── */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-overlay.ativo {
+    display: flex;
+}
+
+/* ── MODAL CONTEÚDO ── */
+.modal {
+    background: #16213e;
+    border: 2px solid #f5a623;
+    border-radius: 12px;
+    padding: 25px;
+    width: 420px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal h2 {
+    color: #f5a623;
+    margin-top: 0;
+}
+
+.modal input,
+.modal select {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0;
+    border-radius: 6px;
+    border: 1px solid #f5a623;
+    background: #1a1a2e;
+    color: #eee;
+    box-sizing: border-box;
+    font-size: 1rem;
+}
+
+/* ── BOTÕES DO MODAL ── */
+.btn-add {
+    background: #4caf50;
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%;
+    margin-top: 8px;
+    font-size: 1rem;
+}
+
+.btn-add:hover {
+    background: #3d8b40;
+}
+
+.btn-fechar-modal {
+    background: #555;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.btn-fechar-modal:hover {
+    background: #444;
+}
+
+.btn-fechar-mesa {
+    background: #c0392b;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-left: 10px;
+}
+
+.btn-fechar-mesa:hover {
+    background: #a93226;
+}
+
+/* ── LISTA DE ITENS ── */
+.lista-itens {
+    margin-top: 15px;
+}
+
+.item-linha {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0f3460;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 5px 0;
+}
+
+.item-nome {
+    flex: 1;
+}
+
+.item-preco {
+    color: #4caf50;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.btn-remover {
+    background: #c0392b;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+.total-mesa {
+    color: #4caf50;
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin-top: 15px;
+    text-align: right;
+}
+
+/* ── CARDÁPIO RÁPIDO ── */
+.cardapio-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.btn-cardapio {
+    background: #0f3460;
+    border: 1px solid #f5a623;
+    color: #eee;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.btn-cardapio:hover {
+    background: #1a4a80;
+}
+
+.btn-cardapio span {
+    color: #4caf50;
+    font-weight: bold;
+    display: block;
+    font-size: 0.85rem;
+}

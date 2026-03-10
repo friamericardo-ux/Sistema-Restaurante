@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Usuários — Comanda Digital{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="header">
+  <h1>👥 Gerenciar Usuários</h1>
+  <nav class="nav-links">
+    <a href="/dashboard">🏠 Painel</a>
+    <a href="/admin/produtos">Produtos</a>
+    <a href="/mesas">Mesas</a>
+    <a href="/delivery">Delivery</a>
+    <a href="/admin/usuarios" class="active">👥 Usuários</a>
+    <a href="/admin/alterar-senha">🔑 Alterar Senha</a>
+    <a href="/logout">Sair</a>
+  </nav>
+</div>
+
+<div class="container">
+
+  <!-- FORMULÁRIO CRIAR USUÁRIO -->
+  <div class="form-box">
+    <h2>➕ Criar Novo Usuário</h2>
+
+    {% if erro %}
+    <div style="background:#3a1a1a;border:1px solid #ef4444;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:14px;">
+      ⚠️ {{ erro }}
+    </div>
+    {% endif %}
+
+    {% if sucesso %}
+    <div style="background:#1a3a1a;border:1px solid #22c55e;color:#4ade80;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:14px;">
+      ✅ {{ sucesso }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/admin/usuarios" autocomplete="off">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nome de usuário</label>
+          <input type="text" name="username" placeholder="Ex: funcionario1" required minlength="3" maxlength="30">
+        </div>
+        <div class="form-group">
+          <label>Perfil</label>
+          <select name="role" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:14px;">
+            <option value="atendente">Atendente (Mesas + Delivery)</option>
+            <option value="admin">⚠️ Admin (acesso total)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" name="password" placeholder="Mínimo 6 caracteres" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label>Confirmar senha</label>
+          <input type="password" name="confirmar" placeholder="Repita a senha" required minlength="6">
+        </div>
+        <button type="submit" class="btn-add" style="align-self:flex-end;">+ Criar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- LISTA DE USUÁRIOS -->
+  <div class="section-label">👤 Usuários cadastrados</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Usuário</th>
+        <th>Perfil</th>
+        <th>Ação</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in usuarios %}
+      <tr>
+        <td>{{ u[0] }}</td>
+        <td><strong>{{ u[1] }}</strong></td>
+        <td><span class="prod-categoria">{{ u[2] }}</span></td>
+        <td>
+          {% if u[0] != session.get('user_id') %}
+          <form method="POST" action="/admin/usuarios/remover/{{ u[0] }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn-del" onclick="return confirm('Remover o usuário {{ u[1] }}?')">Remover</button>
+          </form>
+          {% else %}
+          <span style="color:#555;font-size:12px;">Você</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</div>
+{% endblock %}

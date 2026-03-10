@@ -1,0 +1,240 @@
+/* ============================================================
+   DELIVERY — Painel Kanban de pedidos delivery
+   Status: --novo(amber) | --preparo(blue) | --saiu(purple) | --entregue(green)
+============================================================ */
+
+:root {
+    --novo:    #f59e0b;
+    --preparo: #3b82f6;
+    --saiu:    #8b5cf6;
+    --entregue:#10b981;
+    --danger:  #ef4444;
+}
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: #0f0f0f;
+    color: #f0f0f0;
+    min-height: 100vh;
+}
+
+/* ── CABEÇALHO ── */
+header {
+    background: #1a1a1a;
+    border-bottom: 1px solid #2a2a2a;
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+header h1 span { color: var(--novo); }
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--entregue);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+}
+
+.status-text {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.btn-voltar {
+    background: #2a2a2a;
+    color: #f0f0f0;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.2s;
+}
+
+.btn-voltar:hover { background: #3a3a3a; }
+
+/* ── KANBAN LAYOUT ── */
+.colunas {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+    .colunas { grid-template-columns: 1fr; padding: 1rem; }
+}
+
+/* ── TÍTULOS DAS COLUNAS ── */
+.coluna-titulo {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.coluna-novo    .coluna-titulo { background: rgba(245,158,11,0.15); color: var(--novo); }
+.coluna-preparo .coluna-titulo { background: rgba(59,130,246,0.15);  color: var(--preparo); }
+.coluna-saiu    .coluna-titulo { background: rgba(139,92,246,0.15);  color: var(--saiu); }
+
+.contador {
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.lista-pedidos {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-height: 200px;
+}
+
+/* ── CARD DE PEDIDO ── */
+.card-pedido {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 1.2rem;
+    animation: slideIn 0.3s ease;
+    transition: transform 0.2s;
+}
+
+.card-pedido:hover { transform: translateY(-2px); }
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.8rem;
+}
+
+.pedido-id {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.pedido-hora { font-size: 0.75rem; color: #888; }
+
+.cliente-info  { margin-bottom: 0.8rem; }
+.cliente-nome  { font-weight: 500; font-size: 0.95rem; margin-bottom: 0.2rem; }
+.cliente-endereco { font-size: 0.8rem; color: #888; line-height: 1.4; }
+
+.itens-lista {
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    padding: 0.7rem;
+    margin-bottom: 0.8rem;
+    font-size: 0.82rem;
+    color: #ccc;
+    line-height: 1.8;
+}
+
+.item-linha { display: flex; justify-content: space-between; }
+.item-qtd   { color: #888; margin-right: 0.3rem; }
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.total-pedido {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--entregue);
+}
+
+/* ── BOTÃO AVANÇAR STATUS ── */
+.btn-avancar {
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn-avancar:hover  { opacity: 0.85; transform: scale(1.02); }
+.btn-avancar:active { transform: scale(0.98); }
+
+.coluna-novo    .btn-avancar { background: var(--preparo);  color: #fff; }
+.coluna-preparo .btn-avancar { background: var(--saiu);     color: #fff; }
+.coluna-saiu    .btn-avancar { background: var(--entregue); color: #fff; }
+
+/* ── ESTADO VAZIO ── */
+.vazio {
+    text-align: center;
+    color: #888;
+    font-size: 0.85rem;
+    padding: 2rem 0;
+}
+
+.vazio span { display: block; font-size: 2rem; margin-bottom: 0.5rem; }
+
+/* ── TOAST (canto inferior direito, diferente do global) ── */
+#toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    color: #f0f0f0;
+    padding: 0.8rem 1.4rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 999;
+}
+
+#toast.show { opacity: 1; transform: translateY(0); }

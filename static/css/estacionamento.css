@@ -1,0 +1,110 @@
+/* ============================================================
+   ESTACIONAMENTO — Terminal aesthetic
+   Fonte: Courier New | Fundo: #070b10 | Accent: #00ff88
+============================================================ */
+
+/* Override do body definido em base.css */
+body {
+    font-family: 'Courier New', monospace !important;
+    background: #070b10 !important;
+    color: #e2e8f0;
+    margin: 0;
+}
+
+header {
+    background: #0f1520;
+    border-bottom: 2px solid #00ff88;
+    padding: 16px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    color: #00ff88;
+    margin: 0;
+    letter-spacing: 3px;
+    font-size: 1.3rem;
+}
+
+#relogio {
+    color: #fbbf24;
+    font-size: 1.1rem;
+}
+
+#grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 24px;
+}
+
+.vazio {
+    text-align: center;
+    padding: 80px;
+    color: #4a6080;
+    font-size: 1.1rem;
+    grid-column: 1 / -1;
+}
+
+/* ── MESA CARD ── */
+.mesa-card {
+    background: #0f1520;
+    border: 1px solid #1e2d40;
+    border-radius: 12px;
+    overflow: hidden;
+    animation: entrar 0.4s ease;
+}
+
+@keyframes entrar {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.mesa-header {
+    background: rgba(0, 255, 136, 0.07);
+    border-bottom: 1px solid #1e2d40;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.mesa-num {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #00ff88;
+}
+
+.mesa-hora      { font-size: 0.8rem;  color: #fbbf24; }
+.mesa-atendente { font-size: 0.75rem; color: #4a6080; }
+
+/* ── ITENS ── */
+.mesa-itens { padding: 14px 18px; }
+
+.item {
+    display: flex;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid #1e2d40;
+    gap: 10px;
+}
+
+.item:last-child { border-bottom: none; }
+
+.item-qtd   { color: #fbbf24; font-weight: bold; min-width: 28px; }
+.item-nome  { flex: 1; font-size: 0.9rem; }
+.item-obs   { font-size: 0.75rem; color: #f87171; font-style: italic; margin-top: 2px; }
+.item-preco { color: #00ff88; font-size: 0.85rem; }
+
+/* ── RODAPÉ DA MESA ── */
+.mesa-footer {
+    background: rgba(0, 255, 136, 0.04);
+    border-top: 2px solid #1e2d40;
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.total-label { font-size: 0.8rem;  color: #4a6080; letter-spacing: 2px; }
+.total-valor { font-size: 1.3rem;  font-weight: bold; color: #00ff88; }

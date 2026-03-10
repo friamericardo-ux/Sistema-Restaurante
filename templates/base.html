@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Comanda Digital{% endblock %}</title>
+
+  <!-- CSS base global -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+
+  <!-- CSS específico da página (opcional) -->
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  {% block content %}{% endblock %}
+
+  <!-- JS específico da página (opcional) -->
+  {% block extra_js %}{% endblock %}
+
+</body>
+</html>
