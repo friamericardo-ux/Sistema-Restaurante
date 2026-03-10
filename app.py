@@ -17,7 +17,7 @@ from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 
 # Logging de segurança
-logging.basicConfig(filename='security.log', level=logging.WARNING,
+logging.basicConfig(level=logging.WARNING,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
@@ -1026,4 +1026,4 @@ if __name__ == "__main__":
     print("🔐 Login obrigatório para acessar o sistema!")
     print("=" * 50)
 
-    app.run(debug=False, port=5000, host='0.0.0.0')
+    app.run(debug=False, port=int(os.environ.get('PORT', 5000)), host='0.0.0.0')
