@@ -31,7 +31,7 @@ limiter = Limiter(get_remote_address, app=app, default_limits=[])
 
 # Headers de segurança
 Talisman(app,
-    force_https=True,
+    force_https=False,
     content_security_policy={
         'default-src': "'self'",
         'script-src': "'self' 'unsafe-inline'",
