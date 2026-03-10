@@ -31,7 +31,7 @@ limiter = Limiter(get_remote_address, app=app, default_limits=[])
 
 # Headers de segurança
 Talisman(app,
-    force_https=False,  # Mude para True quando tiver HTTPS no servidor
+    force_https=True,
     content_security_policy={
         'default-src': "'self'",
         'script-src': "'self' 'unsafe-inline'",
@@ -39,7 +39,7 @@ Talisman(app,
         'img-src': "'self' data:",
         'font-src': "'self' data:",
     },
-    session_cookie_secure=False,  # Mude para True quando tiver HTTPS
+    session_cookie_secure=True,
 )
 
 # Extensões e tamanho máximo de upload
@@ -53,7 +53,7 @@ def extensao_valida(filename):
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
-    SESSION_COOKIE_SECURE=False,
+    SESSION_COOKIE_SECURE=True,
     PERMANENT_SESSION_LIFETIME=1800
 )
 # Inicia o banco usando o db.py
