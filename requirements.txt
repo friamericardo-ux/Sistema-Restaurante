@@ -1,1 +1,8 @@
 flask
+flask-wtf
+flask-limiter
+flask-talisman
+bcrypt
+python-dotenv
+Pillow
+werkzeug

@@ -53,7 +53,7 @@ def extensao_valida(filename):
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
-    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SECURE=False,
     PERMANENT_SESSION_LIFETIME=1800
 )
 # Inicia o banco usando o db.py
@@ -1026,4 +1026,4 @@ if __name__ == "__main__":
     print("🔐 Login obrigatório para acessar o sistema!")
     print("=" * 50)
 
-    app.run(debug=False, port=5000)
+    app.run(debug=False, port=5000, host='0.0.0.0')
