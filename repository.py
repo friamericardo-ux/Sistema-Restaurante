@@ -16,112 +16,115 @@ class UserRepository:
 
     def init_user_table(self):
         """Cria a tabela de usuários se não existir"""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            if is_mysql():
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS users (
-                        id INT PRIMARY KEY AUTO_INCREMENT,
-                        username VARCHAR(100) UNIQUE NOT NULL,
-                        password_hash VARCHAR(255) NOT NULL,
-                        role VARCHAR(50) DEFAULT 'admin'
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-                """)
-            else:
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS users (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        username TEXT UNIQUE NOT NULL,
-                        password_hash TEXT NOT NULL,
-                        role TEXT DEFAULT 'admin'
-                    )
-                """)
-            conn.commit()
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        if is_mysql():
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    username VARCHAR(100) UNIQUE NOT NULL,
+                    password_hash VARCHAR(255) NOT NULL,
+                    role VARCHAR(50) DEFAULT 'admin'
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            """)
+        else:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    role TEXT DEFAULT 'admin'
+                )
+            """)
+        conn.commit()
 
     def create_admin(self):
         """Cria usuário admin se não existir"""
         self.init_user_table()
         
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT id FROM users WHERE username = ?", (Config.ADMIN_USER,))
-            if cursor.fetchone():
-                return False
-            
-            password_hash = SecurityService.hash_password(Config.ADMIN_PASS)
-            cursor.execute(
-                "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-                (Config.ADMIN_USER, password_hash, "admin")
-            )
-            conn.commit()
-            return True
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM users WHERE username = ?", (Config.ADMIN_USER,))
+        if cursor.fetchone():
+            return False
+        password_hash = SecurityService.hash_password(Config.ADMIN_PASS)
+        cursor.execute(
+            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+            (Config.ADMIN_USER, password_hash, "admin")
+        )
+        conn.commit()
+        return True
 
     def has_any_user(self) -> bool:
         """Retorna True se já existe algum usuário cadastrado"""
         self.init_user_table()
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT id FROM users LIMIT 1")
-            return cursor.fetchone() is not None
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM users LIMIT 1")
+        return cursor.fetchone() is not None
 
     def create_custom_admin(self, username: str, password: str, role: str = 'atendente') -> bool:
         """Cria um usuário com o perfil indicado"""
         self.init_user_table()
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
-            if cursor.fetchone():
-                return False
-            password_hash = SecurityService.hash_password(password)
-            cursor.execute(
-                "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-                (username, password_hash, role)
-            )
-            conn.commit()
-            return True
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+        if cursor.fetchone():
+            return False
+        password_hash = SecurityService.hash_password(password)
+        cursor.execute(
+            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+            (username, password_hash, role)
+        )
+        conn.commit()
+        return True
 
     def get_user_by_username(self, username: str) -> Optional[User]:
         """Busca usuário pelo nome"""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
                 "SELECT id, username, password_hash, role FROM users WHERE username = ?",
                 (username,)
             )
-            row = cursor.fetchone()
-            
-            if row:
+        row = cursor.fetchone()
+        conn.close()
+        if row:
                 return User(id=row[0], username=row[1], password_hash=row[2], role=row[3])
-            return None
+        return None
 
     def update_password(self, user_id: int, new_password: str) -> None:
         """Atualiza a senha de um usuário"""
         new_hash = SecurityService.hash_password(new_password)
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "UPDATE users SET password_hash = ? WHERE id = ?",
-                (new_hash, user_id)
-            )
-            conn.commit()
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (new_hash, user_id)
+        )
+        conn.commit()
+        conn.close()
 
     def list_users(self):
         """Lista todos os usuários cadastrados"""
         self.init_user_table()
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT id, username, role FROM users ORDER BY id")
-            return cursor.fetchall()
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, username, role FROM users ORDER BY id")
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
 
     def delete_user(self, user_id: int, current_user_id: int) -> bool:
         """Remove um usuário (não permite remover a si mesmo)"""
         if user_id == current_user_id:
             return False
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
-            conn.commit()
-            return True
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+        conn.close()
+        return True
 
 # ========== PRODUTOS ==========
 
