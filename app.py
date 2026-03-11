@@ -75,7 +75,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             return redirect(url_for('login_web'))
-        if session.get('role') != 'admin':
+        if session.get('role') not in ('admin', 'superadmin'):
             return redirect(url_for('mesas'))
         return f(*args, **kwargs)
     return decorated_function
