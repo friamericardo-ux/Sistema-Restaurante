@@ -16,6 +16,17 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 
+def inicializar_admin():
+    from repository import UserRepository
+    from security import SecurityService
+    repo = UserRepository()
+    user = repo.get_user_by_username(Config.ADMIN_USER)
+    if not user:
+        repo.create_admin()
+        print(f"Admin '{Config.ADMIN_USER}' criado automaticamente.")
+
+inicializar_admin()
+
 # Logging de segurança
 logging.basicConfig(level=logging.WARNING,
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -137,21 +148,28 @@ def setup():
 # ========================
 # ROTAS PRINCIPAIS
 # ========================
-@app.route("/")
-def landing_page():
-    """Portal principal da Pantanal Dev"""
-    return render_template('landing.html')
-
 @app.route("/dashboard")
 @login_required
 def index():
-    return render_template('dashboard.html') # Ajustado para renderizar o dashboard diretamente se acessado via /dashboard
+    role = session.get('role')
+    if role == 'admin':
+        return render_template('dashboard.html')
+    elif role == 'atendente':
+        return render_template('atendente.html')
+    elif role == 'caixa':
+        return render_template('caixa.html')
+    else:
+        return redirect(url_for('login_web'))
 
 
 @app.route("/mesas")
 @login_required
 def mesas():
-    return render_template("atendente.html")
+    role = session.get('role')
+    if role == 'atendente':
+        return render_template("atendente.html")
+    else:
+        return redirect(url_for('index'))
 
 @app.route("/api/dashboard/resumo")
 @login_required
