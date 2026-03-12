@@ -107,13 +107,13 @@
 <!-- Toast de notificações -->
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<!-- MODAL: Adicionais + Observação -->
+<!-- MODAL: Stepper Profissional -->
 <div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-nome">
   <div class="modal-box">
 
-    <!-- Cabeçalho do modal -->
+    <!-- Cabeçalho fixo com produto -->
     <div class="modal-header">
-      <div>
+      <div class="modal-produto-info">
         <div class="modal-produto-nome" id="modal-nome"></div>
         <div class="modal-produto-preco" id="modal-preco-base"></div>
         <div class="modal-descricao" id="modal-descricao" style="display:none"></div>
@@ -121,28 +121,108 @@
       <button class="modal-fechar" onclick="fecharModal()" aria-label="Fechar modal">✕</button>
     </div>
 
-    <!-- Adicionais -->
-    <div id="modal-adicionais-section" style="display:none">
-      <div class="modal-section-label">➕ Adicionais</div>
-      <div class="modal-adicionais-lista" id="modal-adicionais-lista"></div>
+    <!-- Indicador de etapas -->
+    <div class="modal-stepper" id="modal-stepper">
+      <div class="step active" id="step-ind-1">
+        <div class="step-circle">1</div>
+        <div class="step-label">Adicionais</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" id="step-ind-2">
+        <div class="step-circle">2</div>
+        <div class="step-label">Observação</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" id="step-ind-3">
+        <div class="step-circle">3</div>
+        <div class="step-label">Pagamento</div>
+      </div>
     </div>
 
-    <!-- Observação -->
-    <div class="modal-obs-label">
-      📝 Observação
-      <span style="color:var(--muted);font-weight:400;font-size:11px;text-transform:none;letter-spacing:0">(opcional)</span>
+    <!-- ETAPA 1: Adicionais -->
+    <div class="modal-step-content" id="step-1">
+      <div id="modal-adicionais-section">
+        <div class="modal-section-label">➕ Escolha os adicionais</div>
+        <div class="modal-adicionais-lista" id="modal-adicionais-lista"></div>
+      </div>
+      <div id="sem-adicionais" class="sem-adicionais" style="display:none">
+        <span>Nenhum adicional disponível para este item.</span>
+      </div>
     </div>
-    <textarea class="modal-obs-textarea" id="modal-obs" rows="3"
-              placeholder="Ex: sem cebola, bem passado, maionese à parte..."></textarea>
 
-    <!-- Rodapé: total + confirmar -->
+    <!-- ETAPA 2: Observação -->
+    <div class="modal-step-content" id="step-2" style="display:none">
+      <div class="modal-section-label">📝 Alguma observação?</div>
+      <p class="modal-obs-dica">Ex: sem cebola, bem passado, maionese à parte...</p>
+      <textarea class="modal-obs-textarea" id="modal-obs" rows="4"
+                placeholder="Digite aqui (opcional)"></textarea>
+    </div>
+
+    <!-- ETAPA 3: Pagamento -->
+    <div class="modal-step-content" id="step-3" style="display:none">
+      <div class="modal-section-label">💳 Forma de pagamento</div>
+
+      <div class="pagamento-opcoes">
+        <label class="pagamento-card" id="label-cartao">
+          <input type="radio" name="pagamento" value="cartao" id="pag-cartao" onchange="onPagamentoChange()">
+          <div class="pagamento-icon">💳</div>
+          <div class="pagamento-texto">
+            <strong>Cartão</strong>
+            <span>Débito ou Crédito</span>
+          </div>
+          <div class="pagamento-check">✓</div>
+        </label>
+
+        <label class="pagamento-card" id="label-dinheiro">
+          <input type="radio" name="pagamento" value="dinheiro" id="pag-dinheiro" onchange="onPagamentoChange()">
+          <div class="pagamento-icon">💵</div>
+          <div class="pagamento-texto">
+            <strong>Dinheiro</strong>
+            <span>Pagamento na entrega</span>
+          </div>
+          <div class="pagamento-check">✓</div>
+        </label>
+      </div>
+
+      <!-- Troco (aparece só se dinheiro) -->
+      <div class="troco-section" id="troco-section" style="display:none">
+        <div class="modal-section-label" style="margin-top:20px">🪙 Precisa de troco?</div>
+        <div class="troco-opcoes">
+          <label class="troco-card" id="label-troco-nao">
+            <input type="radio" name="troco" value="nao" id="troco-nao" checked onchange="onTrocoChange()">
+            <span>Não preciso de troco</span>
+          </label>
+          <label class="troco-card" id="label-troco-sim">
+            <input type="radio" name="troco" value="sim" id="troco-sim" onchange="onTrocoChange()">
+            <span>Preciso de troco</span>
+          </label>
+        </div>
+        <div class="troco-valor-section" id="troco-valor-section" style="display:none">
+          <label class="troco-label">Troco para quanto?</label>
+          <div class="troco-input-wrap">
+            <span class="troco-prefix">R$</span>
+            <input type="number" id="troco-valor" class="troco-input" placeholder="0,00" min="0" step="0.01">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rodapé: total + botões de navegação -->
     <div class="modal-footer">
       <div class="modal-total-label">
         Total: <span class="modal-total-valor" id="modal-total">R$ 0,00</span>
       </div>
-      <button class="btn-confirmar-modal" onclick="confirmarAdicional()">
-        Adicionar ao Pedido
-      </button>
+      <div class="modal-nav-btns">
+        <button class="btn-voltar-modal" id="btn-voltar" onclick="stepAnterior()" style="display:none">
+          ← Voltar
+        </button>
+        <button class="btn-continuar-modal" id="btn-continuar" onclick="stepProximo()">
+          Continuar →
+        </button>
+        <button class="btn-confirmar-modal" id="btn-confirmar" onclick="confirmarAdicional()" style="display:none">
+          ✅ Adicionar ao Pedido
+        </button>
+      </div>
     </div>
 
   </div>

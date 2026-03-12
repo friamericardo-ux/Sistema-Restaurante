@@ -746,3 +746,277 @@
 @media (max-width: 768px) {
   .categoria-nav { padding: 0 16px; }
 }
+
+Css
+/* ═══════════════════════════════════════════════════
+   MODAL STEPPER — colar no final do cardapio.css
+═══════════════════════════════════════════════════ */
+
+/* ── Stepper (indicador de etapas) ── */
+.modal-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 24px 8px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.35;
+  transition: opacity 0.3s;
+}
+
+.step.active {
+  opacity: 1;
+}
+
+.step.done {
+  opacity: 0.7;
+}
+
+.step-circle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--muted, #ccc);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s;
+}
+
+.step.active .step-circle {
+  background: var(--primary, #e85d04);
+}
+
+.step.done .step-circle {
+  background: #2ecc71;
+}
+
+.step-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text, #333);
+  white-space: nowrap;
+}
+
+.step-line {
+  flex: 1;
+  height: 2px;
+  background: #e0e0e0;
+  margin: 0 6px;
+  margin-bottom: 16px;
+  min-width: 24px;
+}
+
+/* ── Conteúdo de cada etapa ── */
+.modal-step-content {
+  padding: 0 24px;
+  animation: fadeInStep 0.25s ease;
+}
+
+@keyframes fadeInStep {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Sem adicionais ── */
+.sem-adicionais {
+  text-align: center;
+  color: var(--muted, #999);
+  padding: 20px 0;
+  font-size: 14px;
+}
+
+/* ── Dica de observação ── */
+.modal-obs-dica {
+  font-size: 13px;
+  color: var(--muted, #999);
+  margin: 4px 0 10px;
+}
+
+/* ── Cards de pagamento ── */
+.pagamento-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.pagamento-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+}
+
+.pagamento-card input[type="radio"] {
+  display: none;
+}
+
+.pagamento-card:has(input:checked) {
+  border-color: var(--primary, #e85d04);
+  background: #fff8f5;
+}
+
+.pagamento-icon {
+  font-size: 24px;
+}
+
+.pagamento-texto {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.pagamento-texto strong {
+  font-size: 15px;
+  color: var(--text, #111);
+}
+
+.pagamento-texto span {
+  font-size: 12px;
+  color: var(--muted, #999);
+}
+
+.pagamento-check {
+  color: var(--primary, #e85d04);
+  font-weight: 700;
+  font-size: 16px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.pagamento-card:has(input:checked) .pagamento-check {
+  opacity: 1;
+}
+
+/* ── Seção de troco ── */
+.troco-opcoes {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.troco-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: border-color 0.2s, background 0.2s;
+  flex: 1;
+  min-width: 140px;
+}
+
+.troco-card input[type="radio"] {
+  accent-color: var(--primary, #e85d04);
+}
+
+.troco-card:has(input:checked) {
+  border-color: var(--primary, #e85d04);
+  background: #fff8f5;
+}
+
+.troco-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  color: var(--text, #333);
+}
+
+.troco-input-wrap {
+  display: flex;
+  align-items: center;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.troco-input-wrap:focus-within {
+  border-color: var(--primary, #e85d04);
+}
+
+.troco-prefix {
+  padding: 10px 12px;
+  background: #f5f5f5;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text, #555);
+  border-right: 2px solid #e0e0e0;
+}
+
+.troco-input {
+  border: none;
+  outline: none;
+  padding: 10px 12px;
+  font-size: 15px;
+  flex: 1;
+  width: 100%;
+}
+
+/* ── Botões de navegação do modal ── */
+.modal-nav-btns {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-voltar-modal {
+  background: transparent;
+  border: 2px solid #ddd;
+  color: var(--text, #555);
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.btn-voltar-modal:hover {
+  border-color: var(--primary, #e85d04);
+}
+
+.btn-continuar-modal {
+  background: var(--primary, #e85d04);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-continuar-modal:hover {
+  opacity: 0.88;
+}

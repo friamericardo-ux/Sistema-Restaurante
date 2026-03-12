@@ -15,7 +15,8 @@ from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
-
+from Pil import Image
+import io
 def inicializar_admin():
     from repository import UserRepository
     from security import SecurityService
@@ -643,7 +644,16 @@ def adicionar_produto_route():
                 return redirect('/admin/produtos')
             nome_seguro = secure_filename(arquivo.filename)
             caminho_salvar = f'static/img/produtos/{nome_seguro}'
-            arquivo.save(caminho_salvar)
+ 
+
+            img = Image.open(arquivo)
+            img.thumbnail((800, 800))  # redimensiona mantendo proporção
+
+        # Converte para RGB se necessário (PNG com transparência, etc)
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+
+            img.save(caminho_salvar, optimize=True, quality=75)
             foto = nome_seguro
 
     descricao = request.form.get('descricao', '').strip() or None
