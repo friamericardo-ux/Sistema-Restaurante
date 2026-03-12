@@ -56,7 +56,7 @@ Talisman(app,
 
 # Extensões e tamanho máximo de upload
 EXTENSOES_PERMITIDAS = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
 def extensao_valida(filename):
