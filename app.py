@@ -15,7 +15,7 @@ from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
-from Pil import Image
+from PIL import Image
 import io
 def inicializar_admin():
     from repository import UserRepository
