@@ -6,7 +6,7 @@ from config import Config
 
 def is_mysql():
     """Verifica se o banco configurado é MySQL"""
-    return Config.DB_PATH.startswith('mysql://')
+    return Config.DB_PATH.startswith('mysql')
 
 
 # ========================
