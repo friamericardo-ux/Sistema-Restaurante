@@ -8,3 +8,4 @@ Pillow
 werkzeug
 gunicorn
 pymysql
+cryptography
