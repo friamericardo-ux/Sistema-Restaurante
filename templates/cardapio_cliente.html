@@ -82,6 +82,53 @@
         <textarea id="endereco" rows="3" placeholder="Rua, número, bairro, complemento..."
                   autocomplete="street-address" maxlength="300"></textarea>
       </div>
+      <div class="form-group">
+        <label for="observacao-geral">Observação (opcional)</label>
+        <textarea id="observacao-geral" rows="2" placeholder="Ex: sem cebola, entrega rápida..." maxlength="200"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Forma de pagamento *</label>
+        <div class="pagamento-opcoes">
+          <label class="pagamento-card" id="label-cartao-carrinho">
+            <input type="radio" name="pagamento-carrinho" value="cartao" id="pag-cartao-carrinho">
+            <div class="pagamento-icon">💳</div>
+            <div class="pagamento-texto">
+              <strong>Cartão</strong>
+              <span>Débito ou Crédito</span>
+            </div>
+            <div class="pagamento-check">✓</div>
+          </label>
+          <label class="pagamento-card" id="label-dinheiro-carrinho">
+            <input type="radio" name="pagamento-carrinho" value="dinheiro" id="pag-dinheiro-carrinho">
+            <div class="pagamento-icon">💵</div>
+            <div class="pagamento-texto">
+              <strong>Dinheiro</strong>
+              <span>Pagamento na entrega</span>
+            </div>
+            <div class="pagamento-check">✓</div>
+          </label>
+        </div>
+        <div class="troco-section" id="troco-section-carrinho" style="display:none">
+          <div class="modal-section-label" style="margin-top:10px">🪙 Precisa de troco?</div>
+          <div class="troco-opcoes">
+            <label class="troco-card" id="label-troco-nao-carrinho">
+              <input type="radio" name="troco-carrinho" value="nao" id="troco-nao-carrinho" checked>
+              <span>Não preciso de troco</span>
+            </label>
+            <label class="troco-card" id="label-troco-sim-carrinho">
+              <input type="radio" name="troco-carrinho" value="sim" id="troco-sim-carrinho">
+              <span>Preciso de troco</span>
+            </label>
+          </div>
+          <div class="troco-valor-section" id="troco-valor-section-carrinho" style="display:none">
+            <label class="troco-label">Troco para quanto?</label>
+            <div class="troco-input-wrap">
+              <span class="troco-prefix">R$</span>
+              <input type="number" id="troco-valor-carrinho" class="troco-input" placeholder="0,00" min="0" step="0.01">
+            </div>
+          </div>
+        </div>
+      </div>
       <button class="btn-finalizar" id="btn-finalizar" onclick="finalizarPedido()">
         ✅ Finalizar Pedido
       </button>
@@ -127,16 +174,6 @@
         <div class="step-circle">1</div>
         <div class="step-label">Adicionais</div>
       </div>
-      <div class="step-line"></div>
-      <div class="step" id="step-ind-2">
-        <div class="step-circle">2</div>
-        <div class="step-label">Observação</div>
-      </div>
-      <div class="step-line"></div>
-      <div class="step" id="step-ind-3">
-        <div class="step-circle">3</div>
-        <div class="step-label">Pagamento</div>
-      </div>
     </div>
 
     <!-- ETAPA 1: Adicionais -->
@@ -151,61 +188,7 @@
     </div>
 
     <!-- ETAPA 2: Observação -->
-    <div class="modal-step-content" id="step-2" style="display:none">
-      <div class="modal-section-label">📝 Alguma observação?</div>
-      <p class="modal-obs-dica">Ex: sem cebola, bem passado, maionese à parte...</p>
-      <textarea class="modal-obs-textarea" id="modal-obs" rows="4"
-                placeholder="Digite aqui (opcional)"></textarea>
-    </div>
-
-    <!-- ETAPA 3: Pagamento -->
-    <div class="modal-step-content" id="step-3" style="display:none">
-      <div class="modal-section-label">💳 Forma de pagamento</div>
-
-      <div class="pagamento-opcoes">
-        <label class="pagamento-card" id="label-cartao">
-          <input type="radio" name="pagamento" value="cartao" id="pag-cartao" onchange="onPagamentoChange()">
-          <div class="pagamento-icon">💳</div>
-          <div class="pagamento-texto">
-            <strong>Cartão</strong>
-            <span>Débito ou Crédito</span>
-          </div>
-          <div class="pagamento-check">✓</div>
-        </label>
-
-        <label class="pagamento-card" id="label-dinheiro">
-          <input type="radio" name="pagamento" value="dinheiro" id="pag-dinheiro" onchange="onPagamentoChange()">
-          <div class="pagamento-icon">💵</div>
-          <div class="pagamento-texto">
-            <strong>Dinheiro</strong>
-            <span>Pagamento na entrega</span>
-          </div>
-          <div class="pagamento-check">✓</div>
-        </label>
-      </div>
-
-      <!-- Troco (aparece só se dinheiro) -->
-      <div class="troco-section" id="troco-section" style="display:none">
-        <div class="modal-section-label" style="margin-top:20px">🪙 Precisa de troco?</div>
-        <div class="troco-opcoes">
-          <label class="troco-card" id="label-troco-nao">
-            <input type="radio" name="troco" value="nao" id="troco-nao" checked onchange="onTrocoChange()">
-            <span>Não preciso de troco</span>
-          </label>
-          <label class="troco-card" id="label-troco-sim">
-            <input type="radio" name="troco" value="sim" id="troco-sim" onchange="onTrocoChange()">
-            <span>Preciso de troco</span>
-          </label>
-        </div>
-        <div class="troco-valor-section" id="troco-valor-section" style="display:none">
-          <label class="troco-label">Troco para quanto?</label>
-          <div class="troco-input-wrap">
-            <span class="troco-prefix">R$</span>
-            <input type="number" id="troco-valor" class="troco-input" placeholder="0,00" min="0" step="0.01">
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Removido: etapas de observação e pagamento do modal -->
 
     <!-- Rodapé: total + botões de navegação -->
     <div class="modal-footer">

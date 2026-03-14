@@ -196,23 +196,9 @@ function stepAnterior() {
 
 // ── Reseta o stepper ao abrir o modal ─────────────────────────
 function resetarStepper(temAdicionais) {
-  stepAtual = temAdicionais ? 1 : 2;
-
-  // Limpa campos
-  document.getElementById('modal-obs').value = '';
-  document.getElementById('pag-cartao').checked   = false;
-  document.getElementById('pag-dinheiro').checked = false;
-  document.getElementById('troco-section').style.display      = 'none';
-  document.getElementById('troco-valor-section').style.display = 'none';
-  document.getElementById('troco-nao').checked = true;
-  document.getElementById('troco-valor').value = '';
-
-  // Esconde etapa 1 no stepper visual se não houver adicionais
-  const stepInd1   = document.getElementById('step-ind-1');
-  const stepLines  = document.querySelectorAll('.step-line');
-  stepInd1.style.display = temAdicionais ? '' : 'none';
-  if (stepLines[0]) stepLines[0].style.display = temAdicionais ? '' : 'none';
-
+  stepAtual = 1;
+  // Limpa campos do modal (apenas adicionais)
+  // ...existing code...
   atualizarStepper();
 }
 
@@ -344,10 +330,7 @@ function atualizarTotalModal() {
 function confirmarAdicional() {
   if (!modalProduto) return;
 
-  // Valida pagamento antes de confirmar
-  const dadosPagamento = coletarPagamento();
-  if (!dadosPagamento) return; // toast já exibido dentro de coletarPagamento()
-
+  // Apenas adicionais por item
   const adicionaisSelecionados = [];
   let extraPreco = 0;
 
@@ -360,10 +343,8 @@ function confirmarAdicional() {
     extraPreco += parseFloat(cb.dataset.preco);
   });
 
-  const obs        = document.getElementById('modal-obs').value.trim();
   const precoFinal = modalProduto.preco + extraPreco;
-
-  const chave     = modalProduto.id + ':' + JSON.stringify(adicionaisSelecionados) + ':' + obs;
+  const chave     = modalProduto.id + ':' + JSON.stringify(adicionaisSelecionados);
   const existente = carrinho.find(i => i._chave === chave);
 
   if (existente) {
@@ -374,10 +355,7 @@ function confirmarAdicional() {
       nome:       modalProduto.nome,
       preco:      precoFinal,
       quantidade: 1,
-      observacao: obs,
-      adicionais: adicionaisSelecionados,
-      pagamento:  dadosPagamento.pagamento, // ← novo
-      troco:      dadosPagamento.troco      // ← novo
+      adicionais: adicionaisSelecionados
     });
   }
 
@@ -459,6 +437,25 @@ async function finalizarPedido() {
   const nome     = document.getElementById('nome').value.trim();
   const telefone = document.getElementById('telefone').value.trim();
   const endereco = document.getElementById('endereco').value.trim();
+  const observacaoGeral = document.getElementById('observacao-geral').value.trim();
+
+  // Coleta pagamento e troco do carrinho
+  const pagamentoSelecionado = document.querySelector('input[name="pagamento-carrinho"]:checked');
+  if (!pagamentoSelecionado) {
+    showToast('⚠️ Escolha a forma de pagamento!');
+    return;
+  }
+  const pagamento = pagamentoSelecionado.value;
+  let troco = '';
+  if (pagamento === 'dinheiro') {
+    const precisaTroco = document.getElementById('troco-sim-carrinho').checked;
+    if (precisaTroco) {
+      const valor = parseFloat(document.getElementById('troco-valor-carrinho').value);
+      troco = (!isNaN(valor) && valor > 0) ? `R$ ${valor.toFixed(2)}` : 'Não informado';
+    } else {
+      troco = 'Não precisa';
+    }
+  }
 
   if (!nome || !telefone || !endereco) {
     showToast('⚠️ Preencha todos os campos!');
@@ -479,14 +476,13 @@ async function finalizarPedido() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         nome, telefone, endereco,
+        observacao: observacaoGeral,
+        pagamento, troco,
         itens: carrinho.map(i => ({
           nome:       i.nome,
           preco:      i.preco,
           quantidade: i.quantidade,
-          observacao: i.observacao || '',
-          adicionais: i.adicionais || [],
-          pagamento:  i.pagamento  || '',
-          troco:      i.troco      || ''
+          adicionais: i.adicionais || []
         }))
       })
     });
@@ -496,9 +492,6 @@ async function finalizarPedido() {
       const subtotal   = carrinho.reduce((s, i) => s + i.preco * i.quantidade, 0);
       const total      = subtotal + 5;
 
-      // Pagamento do primeiro item (geralmente todos iguais num pedido simples)
-      const pagamento  = carrinho[0]?.pagamento || '';
-      const troco      = carrinho[0]?.troco || '';
       const pagamentoTexto = pagamento === 'cartao'
         ? '💳 Cartão'
         : `💵 Dinheiro${troco && troco !== 'Não precisa' ? ` (Troco: ${troco})` : ''}`;
@@ -506,16 +499,16 @@ async function finalizarPedido() {
       const linhaItens = carrinho.map(i => {
         const extras = i.adicionais && i.adicionais.length
           ? ` (+${i.adicionais.map(a => a.nome).join(', ')})` : '';
-        const obs    = i.observacao ? ` — ${i.observacao}` : '';
-        return `• ${i.quantidade}x ${i.nome}${extras}${obs} — R$ ${(i.preco * i.quantidade).toFixed(2)}`;
+        return `• ${i.quantidade}x ${i.nome}${extras} — R$ ${(i.preco * i.quantidade).toFixed(2)}`;
       }).join('\n');
 
       const mensagem =
         `*Novo Pedido — Comanda Digital*\n\n` +
         `👤 *Cliente:* ${nome}\n` +
         `📞 *Telefone:* ${telefone}\n` +
-        `🏠 *Endereço:* ${endereco}\n\n` +
-        `📋 *Itens:*\n${linhaItens}\n\n` +
+        `🏠 *Endereço:* ${endereco}\n` +
+        (observacaoGeral ? `📝 *Observação:* ${observacaoGeral}\n` : '') +
+        `\n📋 *Itens:*\n${linhaItens}\n\n` +
         `💰 *Subtotal:* R$ ${subtotal.toFixed(2)}\n` +
         `🚚 *Entrega:* R$ 5,00\n` +
         `💵 *Total:* R$ ${total.toFixed(2)}\n` +
@@ -557,4 +550,26 @@ function showToast(mensagem) {
   toast.textContent = mensagem;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// ── Lógica de pagamento/troco no carrinho ───────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Pagamento
+  document.getElementById('pag-cartao-carrinho').addEventListener('change', () => {
+    document.getElementById('troco-section-carrinho').style.display = 'none';
+    document.getElementById('troco-valor-section-carrinho').style.display = 'none';
+    document.getElementById('troco-nao-carrinho').checked = true;
+    document.getElementById('troco-valor-carrinho').value = '';
+  });
+  document.getElementById('pag-dinheiro-carrinho').addEventListener('change', () => {
+    document.getElementById('troco-section-carrinho').style.display = 'block';
+  });
+  // Troco
+  document.getElementById('troco-nao-carrinho').addEventListener('change', () => {
+    document.getElementById('troco-valor-section-carrinho').style.display = 'none';
+    document.getElementById('troco-valor-carrinho').value = '';
+  });
+  document.getElementById('troco-sim-carrinho').addEventListener('change', () => {
+    document.getElementById('troco-valor-section-carrinho').style.display = 'block';
+  });
 }
