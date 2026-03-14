@@ -73,7 +73,9 @@ function slugify(str) {
 
 // ── Renderiza cards agrupados por categoria ────────────────────
 function exibirCardapio(produtos) {
-            
+   const navEl = document.getElementById('categoria-nav');
+   const el = document.getElementById('cardapio-container');
+
   if (!produtos.length) {
     if (navEl) navEl.innerHTML = '';
     el.innerHTML = '<div class="empty-state">📭 Nenhum produto cadastrado ainda</div>';
