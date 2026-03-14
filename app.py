@@ -26,7 +26,7 @@ def inicializar_admin():
         repo.create_admin()
         print(f"Admin '{Config.ADMIN_USER}' criado automaticamente.")
 
-inicializar_admin()
+#inicializar_admin()
 
 # Logging de segurança
 logging.basicConfig(level=logging.WARNING,
@@ -69,7 +69,7 @@ app.config.update(
     PERMANENT_SESSION_LIFETIME=1800
 )
 # Inicia o banco usando o db.py
-init_db()
+#init_db()
 
 # ========================
 # DECORATOR PARA PROTEGER ROTAS
