@@ -149,6 +149,9 @@ def setup():
 # ========================
 # ROTAS PRINCIPAIS
 # ========================
+@app.route('/')
+def home():
+    return redirect(url_for('index'))
 @app.route("/dashboard")
 @login_required
 def index():
