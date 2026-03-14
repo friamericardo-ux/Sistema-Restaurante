@@ -21,7 +21,7 @@ window.addEventListener('load', async () => {
 
 // ── Carrega cardápio da API ────────────────────────────────────
 async function carregarCardapio() {
-  const el    = document.getElementById('cardapio-grid');
+  const el    = document.getElementById('cardapio');
   const navEl = document.getElementById('categoria-nav');
   try {
     const res = await fetch('/api/cardapio');
@@ -74,7 +74,7 @@ function slugify(str) {
 // ── Renderiza cards agrupados por categoria ────────────────────
 function exibirCardapio(produtos) {
    const navEl = document.getElementById('categoria-nav');
-   const el = document.getElementById('cardapio-container');
+   const el = document.getElementById('cardapio-grid');
 
   if (!produtos.length) {
     if (navEl) navEl.innerHTML = '';
