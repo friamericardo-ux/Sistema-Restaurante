@@ -99,8 +99,8 @@ def admin_required(f):
 @limiter.limit("5 per minute")
 def login_web():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = request.form.get('username').strip()
+        password = request.form.get('password').strip()
         
         repo = UserRepository()
         user = repo.get_user_by_username(username)
