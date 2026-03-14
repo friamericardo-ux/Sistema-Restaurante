@@ -572,4 +572,4 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('troco-sim-carrinho').addEventListener('change', () => {
     document.getElementById('troco-valor-section-carrinho').style.display = 'block';
   });
-}
+});
