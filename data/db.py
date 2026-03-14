@@ -91,13 +91,14 @@ def get_connection():
         from urllib.parse import urlparse
         parsed = urlparse(Config.DB_PATH)
         conn = pymysql.connect(
-            host=parsed.hostname or 'localhost',
-            port=parsed.port or 3306,
-            user=parsed.username or 'root',
-            password=parsed.password or '',
-            database=parsed.path.lstrip('/'),
-            charset='utf8mb4',
-        )
+        host=parsed.hostname or 'localhost',
+        port=parsed.port or 3306,
+        user=parsed.username or 'root',
+        password=parsed.password or '',
+        database=parsed.path.lstrip('/'),
+        charset='utf8mb4',
+        ssl_disabled=True,
+    )
         return _MySQLConnection(conn)
     else:
         # Usa Config.DB_PATH, que pode ser absoluto ou relativo
