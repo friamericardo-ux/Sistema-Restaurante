@@ -151,7 +151,7 @@ def setup():
 # ========================
 @app.route('/')
 def home():
-    return redirect(url_for('index'))
+    return render_template('dashboard.html')
 @app.route("/dashboard")
 @login_required
 def index():
