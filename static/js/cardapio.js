@@ -69,9 +69,7 @@ function slugify(str) {
 
 // ── Renderiza cards agrupados por categoria ────────────────────
 function exibirCardapio(produtos) {
-            <button class="btn-adicionar-rapido" aria-label="Adicionar ${p.nome} ao pedido" data-produto="${encodeURIComponent(JSON.stringify(p))}">
-              + Adicionar ao Pedido
-            </button>
+// ...existing code...
   if (!produtos.length) {
     if (navEl) navEl.innerHTML = '';
     el.innerHTML = '<div class="empty-state">📭 Nenhum produto cadastrado ainda</div>';
