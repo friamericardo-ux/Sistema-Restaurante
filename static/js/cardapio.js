@@ -69,9 +69,9 @@ function slugify(str) {
 
 // ── Renderiza cards agrupados por categoria ────────────────────
 function exibirCardapio(produtos) {
-  const navEl = document.getElementById('categoria-nav');
-  const el    = document.getElementById('cardapio');
-
+            <button class="btn-adicionar-rapido" aria-label="Adicionar ${p.nome} ao pedido" data-produto="${encodeURIComponent(JSON.stringify(p))}">
+              + Adicionar ao Pedido
+            </button>
   if (!produtos.length) {
     if (navEl) navEl.innerHTML = '';
     el.innerHTML = '<div class="empty-state">📭 Nenhum produto cadastrado ainda</div>';
@@ -82,6 +82,15 @@ function exibirCardapio(produtos) {
   for (const p of produtos) {
     const cat = (p.categoria || 'Outros').trim();
     if (!grupos.has(cat)) grupos.set(cat, []);
+    // Adiciona event listener para os botões de adicionar rápido
+    document.querySelectorAll('.btn-adicionar-rapido').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation(); // Impede propagação para o card
+        const produtoJson = btn.getAttribute('data-produto').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+        const produto = JSON.parse(produtoJson);
+        abrirModal(produto);
+      });
+    });
     grupos.get(cat).push(p);
   }
 
