@@ -21,16 +21,20 @@ window.addEventListener('load', async () => {
 
 // ── Carrega cardápio da API ────────────────────────────────────
 async function carregarCardapio() {
+  const el    = document.getElementById('cardapio-grid');
+  const navEl = document.getElementById('categoria-nav');
   try {
-    const res  = await fetch('/api/cardapio');
+    const res = await fetch('/api/cardapio');
+    if (!res.ok) throw new Error('Erro HTTP');
     const data = await res.json();
-    if (data.sucesso) exibirCardapio(data.produtos);
-  } catch {
-    document.getElementById('cardapio').innerHTML =
-      '<div class="empty-state">Erro ao carregar cardápio. Recarregue a página.</div>';
+    if (!data || !Array.isArray(data.produtos)) throw new Error('Formato inválido');
+    exibirCardapio(data.produtos);
+  } catch (e) {
+    if (navEl) navEl.innerHTML = '';
+    if (el) el.innerHTML = '<div class="empty-state">❌ Erro ao carregar cardápio</div>';
+    console.error('Erro ao carregar cardápio:', e);
   }
 }
-
 // ── Carrega adicionais da API ──────────────────────────────────
 async function carregarAdicionais() {
   try {
@@ -69,7 +73,9 @@ function slugify(str) {
 
 // ── Renderiza cards agrupados por categoria ────────────────────
 function exibirCardapio(produtos) {
-// ...existing code...
+            <button class="btn-adicionar-rapido" aria-label="Adicionar ${p.nome} ao pedido" data-produto="${encodeURIComponent(JSON.stringify(p))}">
+              + Adicionar ao Pedido
+            </button>
   if (!produtos.length) {
     if (navEl) navEl.innerHTML = '';
     el.innerHTML = '<div class="empty-state">📭 Nenhum produto cadastrado ainda</div>';
@@ -77,6 +83,17 @@ function exibirCardapio(produtos) {
   }
 
   const grupos = new Map();
+  // Adiciona event listeners para os botões de adicionar rápido após renderização
+  setTimeout(() => {
+    document.querySelectorAll('.btn-adicionar-rapido').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation(); // Impede propagação para o card
+        const produtoJson = btn.getAttribute('data-produto');
+        const produto = JSON.parse(decodeURIComponent(produtoJson));
+        abrirModal(produto);
+      });
+    });
+  }, 0);
   for (const p of produtos) {
     const cat = (p.categoria || 'Outros').trim();
     if (!grupos.has(cat)) grupos.set(cat, []);
