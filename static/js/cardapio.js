@@ -73,8 +73,8 @@ function slugify(str) {
 
 // ── Renderiza cards agrupados por categoria ────────────────────
 function exibirCardapio(produtos) {
-   const navEl = document.getElementById('categoria-nav');
-   const el = document.getElementById('cardapio-grid');
+  const navEl = document.getElementById('categoria-nav');
+  const el = document.getElementById('cardapio');
 
   if (!produtos.length) {
     if (navEl) navEl.innerHTML = '';
