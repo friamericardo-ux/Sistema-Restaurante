@@ -65,16 +65,11 @@ function finalizarPedido() {
   const observacao = document.getElementById('observacao').value.trim();
   const pagamento = document.querySelector('input[name="pagamento"]:checked')?.value;
   
-  let troco = '';
-  if (pagamento === 'dinheiro') {
-    const precisaTroco = document.getElementById('troco-sim')?.checked;
-    if (precisaTroco) {
-      const valor = parseFloat(document.getElementById('troco').value);
-      troco = (!isNaN(valor) && valor > 0) ? `R$ ${valor.toFixed(2)}` : 'Não informado';
-    } else {
-      troco = 'Não precisa';
-    }
-  }
+ let troco = '';
+if (pagamento === 'dinheiro') {
+  const valorTroco = document.getElementById('troco').value.trim();
+  troco = valorTroco ? `R$ ${parseFloat(valorTroco).toFixed(2)}` : 'Não precisa';
+}
 
   if (!nome || !telefone || !endereco || !pagamento) 
     return toast('Preencha todos os campos obrigatórios');
