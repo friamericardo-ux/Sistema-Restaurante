@@ -76,8 +76,8 @@ function finalizarPedido() {
         const trocoDar = valorPago - totalPedido;
         troco = `R$ ${valorPago.toFixed(2)}`;
         trocoTexto = trocoDar > 0
-          ? `Troco para R$ ${valorPago.toFixed(2)} — Troco a devolver: R$ ${trocoDar.toFixed(2)}`
-          : 'Valor exato';
+        ? `Troco para R$ ${valorPago.toFixed(2)}\n💰 *Troco a devolver:* R$ ${trocoDar.toFixed(2)}`
+        : 'Valor exato';
       }
     } else {
       troco = 'Não precisa';
