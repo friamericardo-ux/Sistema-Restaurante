@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="cart-header">
+  <img src="/static/img/logo.png" alt="Logo" class="logo">
+  <button class="btn-voltar" onclick="window.location.href='/cardapio'">← Voltar ao Cardápio</button>
+</div>
+<div class="cart-box">
+  <div id="cart-items" class="cart-items"></div>
+  <div class="cart-footer">
+    <div class="cart-linha">
+      <span>Subtotal</span>
+      <span id="cart-subtotal">R$ 0,00</span>
+    </div>
+    <div class="cart-linha">
+      <span>Entrega</span>
+      <span id="cart-entrega">R$ 5,00</span>
+    </div>
+    <div class="cart-total-linha">
+      <span>Total</span>
+      <span id="cart-total">R$ 0,00</span>
+    </div>
+  </div>
+</div>
+<div class="form-box" id="form-box">
+  <div class="form-title">Dados para entrega</div>
+  <div class="form-group">
+    <label for="nome">Nome</label>
+    <input type="text" id="nome" name="nome" required>
+  </div>
+  <div class="form-group">
+    <label for="telefone">Telefone</label>
+    <input type="text" id="telefone" name="telefone" required>
+  </div>
+  <div class="form-group">
+    <label for="endereco">Endereço</label>
+    <input type="text" id="endereco" name="endereco" required>
+  </div>
+  <div class="form-group">
+    <label for="observacao">Observação</label>
+    <input type="text" id="observacao" name="observacao">
+  </div>
+  <div class="pagamento-opcoes">
+    <label class="pagamento-card">
+      <input type="radio" name="pagamento" value="cartao" id="pag-cartao">
+      <span class="pagamento-icon">💳</span>
+      <span class="pagamento-texto">Cartão</span>
+      <span class="pagamento-check"></span>
+    </label>
+    <label class="pagamento-card">
+      <input type="radio" name="pagamento" value="dinheiro" id="pag-dinheiro">
+      <span class="pagamento-icon">💵</span>
+      <span class="pagamento-texto">Dinheiro</span>
+      <span class="pagamento-check"></span>
+    </label>
+  </div>
+  <div class="troco-section" id="troco-section" style="display:none;">
+    <div class="troco-label">Troco para:</div>
+    <div class="troco-input-wrap">
+      <span class="troco-prefix">R$</span>
+      <input type="text" id="troco" name="troco">
+    </div>
+  </div>
+  <button class="btn-finalizar" id="btn-finalizar" onclick="finalizarPedido()">✅ Finalizar Pedido</button>
+</div>
+<div class="sucesso-box" id="sucesso-box" style="display:none;">
+  <div class="sucesso-icon">🎉</div>
+  <div class="sucesso-titulo">Pedido Criado!</div>
+  <div class="sucesso-sub">Seu pedido foi enviado com sucesso.</div>
+  <button class="btn-whatsapp" id="btn-whatsapp">WhatsApp</button>
+  <button class="btn-novo" id="btn-novo">Novo Pedido</button>
+</div>
+<div class="toast" id="toast" style="display:none;"></div>
+<script src="/static/js/carrinho.js"></script>
+{% endblock %}

@@ -199,9 +199,9 @@ function atualizarStepper() {
   const btnContinuar = document.getElementById('btn-continuar');
   const btnConfirmar = document.getElementById('btn-confirmar');
 
-  btnVoltar.style.display    = stepAtual > 1 ? 'inline-flex' : 'none';
-  btnContinuar.style.display = stepAtual < TOTAL_STEPS ? 'inline-flex' : 'none';
-  btnConfirmar.style.display = stepAtual === TOTAL_STEPS ? 'inline-flex' : 'none';
+  btnVoltar.style.display    = 'none';
+  btnContinuar.style.display = 'none';
+  btnConfirmar.style.display = 'inline-flex';
 }
 
 // ── Avança para próxima etapa ──────────────────────────────────
@@ -290,6 +290,10 @@ async function abrirModal(produto) {
   // Busca adicionais específicos do produto
   const lista   = document.getElementById('modal-adicionais-lista');
   const section = document.getElementById('modal-adicionais-section');
+  if (!section) {
+    console.error('modal-adicionais-section not found');
+    return;
+  }
 
   try {
     const res  = await fetch(`/api/adicionais?produto_id=${produto.id}`);
@@ -300,10 +304,9 @@ async function abrirModal(produto) {
   }
 
   const temAdicionais = adicionaisDisponiveis.length > 0;
-
-  if (temAdicionais) {
-    section.style.display = 'block';
-    lista.innerHTML = adicionaisDisponiveis.map(a => `
+  section.style.display = temAdicionais ? 'block' : 'none';
+  lista.innerHTML = temAdicionais
+    ? adicionaisDisponiveis.map(a => `
       <label class="adicional-opcao">
         <input type="checkbox"
                data-id="${a.id}"
@@ -312,11 +315,8 @@ async function abrirModal(produto) {
                onchange="atualizarTotalModal()">
         <span class="adicional-opcao-nome">${escapeHtml(a.nome)}</span>
         <span class="adicional-opcao-preco">+R$ ${a.preco.toFixed(2)}</span>
-      </label>`).join('');
-  } else {
-    section.style.display = 'none';
-    lista.innerHTML = '';
-  }
+      </label>`).join('')
+    : '';
 
   atualizarTotalModal();
   resetarStepper(temAdicionais); // ← inicia stepper na etapa correta
@@ -354,7 +354,6 @@ function atualizarTotalModal() {
 function confirmarAdicional() {
   if (!modalProduto) return;
 
-  // Apenas adicionais por item
   const adicionaisSelecionados = [];
   let extraPreco = 0;
 
@@ -369,8 +368,12 @@ function confirmarAdicional() {
 
   const precoFinal = modalProduto.preco + extraPreco;
   const chave     = modalProduto.id + ':' + JSON.stringify(adicionaisSelecionados);
-  const existente = carrinho.find(i => i._chave === chave);
 
+  // Read cart from localStorage
+  let carrinho = localStorage.getItem('comanda_carrinho');
+  carrinho = carrinho ? JSON.parse(carrinho) : [];
+
+  const existente = carrinho.find(i => i._chave === chave);
   if (existente) {
     existente.quantidade++;
   } else {
@@ -383,9 +386,14 @@ function confirmarAdicional() {
     });
   }
 
+  // Save cart to localStorage
+  localStorage.setItem('comanda_carrinho', JSON.stringify(carrinho));
+
   fecharModal();
-  renderizarCarrinho();
   showToast(`✅ ${modalProduto.nome} adicionado!`);
+
+  // Update badge count
+  document.getElementById('badge-count').textContent = carrinho.reduce((s, i) => s + i.quantidade, 0);
 }
 
 

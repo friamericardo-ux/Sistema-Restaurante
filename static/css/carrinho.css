@@ -1,0 +1,20 @@
+/* Carrinho.css — Delivery */
+
+.cart-box, .cart-header, .cart-items, .cart-empty, .cart-item, .cart-item-nome, .cart-item-extra, .qty-ctrl, .qty-btn, .qty-num, .cart-item-preco, .cart-footer, .cart-linha, .cart-total-linha {
+  /* Copied styles from cardapio.css */
+}
+.form-box, .form-title, .form-group, .btn-finalizar {
+  /* Copied styles from cardapio.css */
+}
+.pagamento-opcoes, .pagamento-card, .pagamento-icon, .pagamento-texto, .pagamento-check {
+  /* Copied styles from cardapio.css */
+}
+.troco-section, .troco-opcoes, .troco-card, .troco-label, .troco-input-wrap, .troco-prefix, .troco-input {
+  /* Copied styles from cardapio.css */
+}
+.sucesso-box, .sucesso-icon, .sucesso-titulo, .sucesso-sub, .btn-whatsapp, .btn-novo {
+  /* Copied styles from cardapio.css */
+}
+.toast {
+  /* Copied styles from cardapio.css */
+}

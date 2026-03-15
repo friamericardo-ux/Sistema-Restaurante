@@ -1047,6 +1047,10 @@ def calcular_frete():
     })
 
 
+@app.route("/carrinho")
+def carrinho_cliente():
+    return render_template("carrinho_cliente.html")
+
 if __name__ == "__main__":
     repo = UserRepository()
     repo.init_user_table()
