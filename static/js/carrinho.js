@@ -14,7 +14,7 @@ function renderizarCarrinho() {
   const badge = document.getElementById('badge-count');
   if (badge) badge.textContent = itens.reduce((s, i) => s + i.quantidade, 0);
   const cartItems = document.getElementById('cart-items');
-  
+
   if (!itens.length) {
     cartItems.innerHTML = '<div class="cart-empty">Carrinho vazio</div>';
     document.getElementById('cart-subtotal').textContent = 'R$ 0,00';
@@ -27,8 +27,8 @@ function renderizarCarrinho() {
   cartItems.innerHTML = itens.map((item, idx) => {
     subtotal += parseFloat(item.preco) * parseInt(item.quantidade);
     const adicionais = item.adicionais && item.adicionais.length
-      ? '<div class="cart-item-extra">➕ ' + item.adicionais.map(a => 
-          `${a.nome} (+R$ ${parseFloat(a.preco).toFixed(2)})`).join(', ') + '</div>'
+      ? '<div class="cart-item-extra">➕ ' + item.adicionais.map(a =>
+        `${a.nome} (+R$ ${parseFloat(a.preco).toFixed(2)})`).join(', ') + '</div>'
       : '';
     return `<div class="cart-item">
       <div class="cart-item-nome">${item.nome}</div>
@@ -58,20 +58,34 @@ function mudarQtd(idx, delta) {
 function finalizarPedido() {
   const itens = lerCarrinho();
   if (!itens.length) return toast('Carrinho vazio');
-  
+
   const nome = document.getElementById('nome').value.trim();
   const telefone = document.getElementById('telefone').value.trim();
   const endereco = document.getElementById('endereco').value.trim();
   const observacao = document.getElementById('observacao').value.trim();
   const pagamento = document.querySelector('input[name="pagamento"]:checked')?.value;
-  
- let troco = '';
-if (pagamento === 'dinheiro') {
-  const valorTroco = document.getElementById('troco').value.trim();
-  troco = valorTroco ? `R$ ${parseFloat(valorTroco).toFixed(2)}` : 'Não precisa';
-}
 
-  if (!nome || !telefone || !endereco || !pagamento) 
+  let troco = '';
+  let trocoTexto = '';
+  if (pagamento === 'dinheiro') {
+    const precisaTroco = document.getElementById('troco-sim')?.checked;
+    if (precisaTroco) {
+      const valorPago = parseFloat(document.getElementById('troco').value);
+      const totalPedido = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0) + 5;
+      if (!isNaN(valorPago) && valorPago > 0) {
+        const trocoDar = valorPago - totalPedido;
+        troco = `R$ ${valorPago.toFixed(2)}`;
+        trocoTexto = trocoDar > 0
+          ? `Troco para R$ ${valorPago.toFixed(2)} — Troco a devolver: R$ ${trocoDar.toFixed(2)}`
+          : 'Valor exato';
+      }
+    } else {
+      troco = 'Não precisa';
+      trocoTexto = 'Não precisa de troco';
+    }
+  }
+
+  if (!nome || !telefone || !endereco || !pagamento)
     return toast('Preencha todos os campos obrigatórios');
 
   fetch('/api/pedido', {
@@ -90,7 +104,7 @@ if (pagamento === 'dinheiro') {
       const subtotal = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0);
       const total = subtotal + 5;
       const pagTexto = pagamento === 'cartao' ? '💳 Cartão'
-        : `💵 Dinheiro${troco && troco !== 'Não precisa' ? ` (Troco: ${troco})` : ''}`;
+        : `💵 Dinheiro`;
       const linhaItens = itens.map(i => {
         const extras = i.adicionais?.length
           ? ` (+${i.adicionais.map(a => a.nome).join(', ')})` : '';
@@ -106,8 +120,9 @@ if (pagamento === 'dinheiro') {
         `💰 *Subtotal:* R$ ${subtotal.toFixed(2)}\n` +
         `🚚 *Entrega:* R$ 5,00\n` +
         `💵 *Total:* R$ ${total.toFixed(2)}\n` +
-        `💳 *Pagamento:* ${pagTexto}\n\n` +
-        `Pedido ID: ${data.pedido_id}`;
+        `💳 *Pagamento:* ${pagTexto}\n` +
+        (trocoTexto ? `💵 *Troco:* ${trocoTexto}\n` : '') +
+        `\nPedido ID: ${data.pedido_id}`;
 
       const numero = '5567993487509';
       document.getElementById('form-box').style.display = 'none';
@@ -125,6 +140,12 @@ if (pagamento === 'dinheiro') {
     }
   }).catch(() => toast('Erro de conexão'));
 }
+
+function onTrocoChange() {
+  const precisaTroco = document.getElementById('troco-sim').checked;
+  document.getElementById('troco-valor-section').style.display = precisaTroco ? 'block' : 'none';
+}
+
 
 function limparPedido() {
   localStorage.removeItem('comanda_carrinho');
@@ -149,7 +170,7 @@ function toast(msg) {
   el.style.display = 'block';
   setTimeout(() => { el.style.display = 'none'; }, 2000);
 }
-window.onload = function() {
+window.onload = function () {
   renderizarCarrinho();
   // Atualiza badge
   const itens = lerCarrinho();
@@ -160,5 +181,8 @@ window.onload = function() {
     r.onchange = () => {
       document.getElementById('troco-section').style.display = r.value === 'dinheiro' && r.checked ? 'block' : 'none';
     };
+  });
+  document.querySelectorAll('input[name="troco-opcao"]').forEach(r => {
+    r.onchange = onTrocoChange;
   });
 };
