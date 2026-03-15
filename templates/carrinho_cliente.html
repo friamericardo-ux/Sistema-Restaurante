@@ -56,24 +56,30 @@
         <span class="pagamento-texto">Dinheiro</span>
         <span class="pagamento-check"></span>
       </label>
-    </div>
-    <div class="troco-section" id="troco-section" style="display:none;">
-      <div class="troco-label">Troco para:</div>
-      <div class="troco-input-wrap">
-        <span class="troco-prefix">R$</span>
-        <input type="text" id="troco" name="troco">
-      </div>
-    </div>
-    <button class="btn-finalizar" id="btn-finalizar" onclick="finalizarPedido()">✅ Finalizar Pedido</button>
-  </div>
-  <div class="sucesso-box" id="sucesso-box" style="display:none;">
-    <div class="sucesso-icon">🎉</div>
-    <div class="sucesso-titulo">Pedido Criado!</div>
-    <div class="sucesso-sub">Seu pedido foi enviado com sucesso.</div>
-    <button class="btn-whatsapp" id="btn-whatsapp">WhatsApp</button>
-    <button class="btn-novo" id="btn-novo">Novo Pedido</button>
+<div class="troco-section" id="troco-section" style="display:none;">
+  <label class="troco-opcao">
+  <input type="radio" name="troco-opcao" id="troco-nao" value="nao" checked onchange="onTrocoChange()">
+  Não precisa de troco
+  </label>
+  <label class="troco-opcao">
+  <input type="radio" name="troco-opcao" id="troco-sim" value="sim" onchange="onTrocoChange()">
+    Precisa de troco
+  </label>
+  <div id="troco-valor-section" style="display:none;">
+  <div class="troco-input-wrap">
+  <span class="troco-prefix">R$</span>
+  <input type="text" id="troco" name="troco">
   </div>
 </div>
-<div class="toast" id="toast"></div>
-<script src="/static/js/carrinho.js"></script>
-{% endblock %}
+      </div>
+      <div class="sucesso-box" id="sucesso-box" style="display:none;">
+        <div class="sucesso-icon">🎉</div>
+        <div class="sucesso-titulo">Pedido Criado!</div>
+        <div class="sucesso-sub">Seu pedido foi enviado com sucesso.</div>
+        <button class="btn-whatsapp" id="btn-whatsapp">WhatsApp</button>
+        <button class="btn-novo" id="btn-novo">Novo Pedido</button>
+      </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script src="/static/js/carrinho.js"></script>
+    {% endblock %}
