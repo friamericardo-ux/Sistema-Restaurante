@@ -13,29 +13,35 @@ function renderizarCarrinho() {
   const itens = lerCarrinho();
   const badge = document.getElementById('badge-count');
   if (badge) badge.textContent = itens.reduce((s, i) => s + i.quantidade, 0);
+  const cartItems = document.getElementById('cart-items');
+  
   if (!itens.length) {
     cartItems.innerHTML = '<div class="cart-empty">Carrinho vazio</div>';
     document.getElementById('cart-subtotal').textContent = 'R$ 0,00';
+    document.getElementById('cart-entrega').textContent = 'R$ 5,00';
     document.getElementById('cart-total').textContent = 'R$ 0,00';
     return;
   }
+
   let subtotal = 0;
   cartItems.innerHTML = itens.map((item, idx) => {
     subtotal += parseFloat(item.preco) * parseInt(item.quantidade);
     const adicionais = item.adicionais && item.adicionais.length
-      ? '<div class="cart-item-extra">' + item.adicionais.map(a => `${a.nome} (+R$ ${parseFloat(a.preco).toFixed(2)})`).join(', ') + '</div>'
+      ? '<div class="cart-item-extra">➕ ' + item.adicionais.map(a => 
+          `${a.nome} (+R$ ${parseFloat(a.preco).toFixed(2)})`).join(', ') + '</div>'
       : '';
     return `<div class="cart-item">
       <div class="cart-item-nome">${item.nome}</div>
       ${adicionais}
       <div class="qty-ctrl">
-        <button class="qty-btn" onclick="mudarQtd(${idx}, -1)">-</button>
+        <button class="qty-btn" onclick="mudarQtd(${idx}, -1)">−</button>
         <span class="qty-num">${item.quantidade}</span>
         <button class="qty-btn" onclick="mudarQtd(${idx}, 1)">+</button>
       </div>
       <div class="cart-item-preco">R$ ${(parseFloat(item.preco) * parseInt(item.quantidade)).toFixed(2)}</div>
     </div>`;
   }).join('');
+
   document.getElementById('cart-subtotal').textContent = `R$ ${subtotal.toFixed(2)}`;
   document.getElementById('cart-entrega').textContent = 'R$ 5,00';
   document.getElementById('cart-total').textContent = `R$ ${(subtotal + 5).toFixed(2)}`;
@@ -52,33 +58,68 @@ function mudarQtd(idx, delta) {
 function finalizarPedido() {
   const itens = lerCarrinho();
   if (!itens.length) return toast('Carrinho vazio');
-  const nome = document.getElementById('nome').value;
-  const telefone = document.getElementById('telefone').value;
-  const endereco = document.getElementById('endereco').value;
-  const observacao = document.getElementById('observacao').value;
+  
+  const nome = document.getElementById('nome').value.trim();
+  const telefone = document.getElementById('telefone').value.trim();
+  const endereco = document.getElementById('endereco').value.trim();
+  const observacao = document.getElementById('observacao').value.trim();
   const pagamento = document.querySelector('input[name="pagamento"]:checked')?.value;
-  const troco = pagamento === 'dinheiro' ? document.getElementById('troco').value : '';
-  if (!nome || !telefone || !endereco || !pagamento) return toast('Preencha todos os campos obrigatórios');
-  const pedido = {
-    nome, telefone, endereco, observacao, pagamento, troco,
-    itens: itens.map(i => ({
-      nome: i.nome,
-      preco: i.preco,
-      quantidade: i.quantidade,
-      adicionais: i.adicionais || []
-    }))
-  };
+  
+  let troco = '';
+  if (pagamento === 'dinheiro') {
+    const precisaTroco = document.getElementById('troco-sim')?.checked;
+    if (precisaTroco) {
+      const valor = parseFloat(document.getElementById('troco').value);
+      troco = (!isNaN(valor) && valor > 0) ? `R$ ${valor.toFixed(2)}` : 'Não informado';
+    } else {
+      troco = 'Não precisa';
+    }
+  }
+
+  if (!nome || !telefone || !endereco || !pagamento) 
+    return toast('Preencha todos os campos obrigatórios');
+
   fetch('/api/pedido', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(pedido)
+    body: JSON.stringify({
+      nome, telefone, endereco, observacao, pagamento, troco,
+      itens: itens.map(i => ({
+        nome: i.nome, preco: i.preco,
+        quantidade: i.quantidade,
+        adicionais: i.adicionais || []
+      }))
+    })
   }).then(res => res.json()).then(data => {
     if (data.sucesso) {
+      const subtotal = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0);
+      const total = subtotal + 5;
+      const pagTexto = pagamento === 'cartao' ? '💳 Cartão'
+        : `💵 Dinheiro${troco && troco !== 'Não precisa' ? ` (Troco: ${troco})` : ''}`;
+      const linhaItens = itens.map(i => {
+        const extras = i.adicionais?.length
+          ? ` (+${i.adicionais.map(a => a.nome).join(', ')})` : '';
+        return `• ${i.quantidade}x ${i.nome}${extras} — R$ ${(parseFloat(i.preco) * i.quantidade).toFixed(2)}`;
+      }).join('\n');
+      const mensagem =
+        `*Novo Pedido — Comanda Digital*\n\n` +
+        `👤 *Cliente:* ${nome}\n` +
+        `📞 *Telefone:* ${telefone}\n` +
+        `🏠 *Endereço:* ${endereco}\n` +
+        (observacao ? `📝 *Observação:* ${observacao}\n` : '') +
+        `\n📋 *Itens:*\n${linhaItens}\n\n` +
+        `💰 *Subtotal:* R$ ${subtotal.toFixed(2)}\n` +
+        `🚚 *Entrega:* R$ 5,00\n` +
+        `💵 *Total:* R$ ${total.toFixed(2)}\n` +
+        `💳 *Pagamento:* ${pagTexto}\n\n` +
+        `Pedido ID: ${data.pedido_id}`;
+
+      const numero = '5567993487509';
       document.getElementById('form-box').style.display = 'none';
       document.getElementById('sucesso-box').style.display = 'block';
       document.getElementById('btn-whatsapp').onclick = () => {
         limparPedido();
-        window.open('https://wa.me/5567993487509?text=' + encodeURIComponent(data.resumo), '_blank');
+        window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`, '_blank');
       };
       document.getElementById('btn-novo').onclick = () => {
         limparPedido();
@@ -87,7 +128,7 @@ function finalizarPedido() {
     } else {
       toast('Erro ao criar pedido');
     }
-  }).catch(() => toast('Erro ao criar pedido'));
+  }).catch(() => toast('Erro de conexão'));
 }
 
 function limparPedido() {
