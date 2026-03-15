@@ -20,9 +20,9 @@ function renderizarCarrinho() {
   }
   let subtotal = 0;
   cartItems.innerHTML = itens.map((item, idx) => {
-    subtotal += item.preco * item.quantidade;
+    subtotal += parseFloat(item.preco) * parseInt(item.quantidade);
     const adicionais = item.adicionais && item.adicionais.length
-      ? '<div class="cart-item-extra">' + item.adicionais.map(a => `${a.nome} (+R$ ${a.preco.toFixed(2)})`).join(', ') + '</div>'
+      ? '<div class="cart-item-extra">' + item.adicionais.map(a => `${a.nome} (+R$ ${parseFloat(a.preco).toFixed(2)})`).join(', ') + '</div>'
       : '';
     return `<div class="cart-item">
       <div class="cart-item-nome">${item.nome}</div>
@@ -32,7 +32,7 @@ function renderizarCarrinho() {
         <span class="qty-num">${item.quantidade}</span>
         <button class="qty-btn" onclick="mudarQtd(${idx}, 1)">+</button>
       </div>
-      <div class="cart-item-preco">R$ ${(item.preco * item.quantidade).toFixed(2)}</div>
+      <div class="cart-item-preco">R$ ${(parseFloat(item.preco) * parseInt(item.quantidade)).toFixed(2)}</div>
     </div>`;
   }).join('');
   document.getElementById('cart-subtotal').textContent = `R$ ${subtotal.toFixed(2)}`;
@@ -77,7 +77,7 @@ function finalizarPedido() {
       document.getElementById('sucesso-box').style.display = 'block';
       document.getElementById('btn-whatsapp').onclick = () => {
         limparPedido();
-        window.open(data.whatsapp_url, '_blank');
+        window.open('https://wa.me/5567993487509?text=' + encodeURIComponent(data.resumo), '_blank');
       };
       document.getElementById('btn-novo').onclick = () => {
         limparPedido();

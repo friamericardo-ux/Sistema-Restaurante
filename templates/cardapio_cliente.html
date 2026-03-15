@@ -61,12 +61,11 @@
 
     <!-- Indicador de etapas -->
     <div class="modal-stepper" id="modal-stepper">
-      <div class="step active" id="step-ind-1">
-        <div class="step-circle">1</div>
-        <div class="step-label">Adicionais</div>
+      <div class="step active" id="step-ind-1" onclick="toggleAdicionais()" style="cursor:pointer">
+      <div class="step-label">➕ Adicionais</div>
       </div>
     </div>
-
+git add <div class=""></div>
     <!-- ETAPA 1: Adicionais -->
     <div class="modal-step-content" id="step-1">
       <div id="modal-adicionais-section">
@@ -93,8 +92,8 @@
         <button class="btn-continuar-modal" id="btn-continuar" onclick="stepProximo()">
           Continuar →
         </button>
-        <button class="btn-confirmar-modal" id="btn-confirmar" onclick="confirmarAdicional()" style="display:none">
-          ✅ Adicionar ao Pedido
+        <button id="btn-confirmar" class="btn-confirmar-modal" onclick="confirmarAdicional()">
+          🛒 Adicionar ao Carrinho
         </button>
       </div>
     </div>

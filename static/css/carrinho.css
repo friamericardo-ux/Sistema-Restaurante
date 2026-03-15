@@ -1,20 +1,524 @@
-/* Carrinho.css — Delivery */
+/* ============================================================
+   CARRINHO.CSS — Estilos específicos da página do carrinho
+   ============================================================ */
 
-.cart-box, .cart-header, .cart-items, .cart-empty, .cart-item, .cart-item-nome, .cart-item-extra, .qty-ctrl, .qty-btn, .qty-num, .cart-item-preco, .cart-footer, .cart-linha, .cart-total-linha {
-  /* Copied styles from cardapio.css */
+/* As variáveis já estão definidas no base.css, não precisa redeclarar */
+
+/* ===== HEADER DO CARRINHO ===== */
+.cart-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
-.form-box, .form-title, .form-group, .btn-finalizar {
-  /* Copied styles from cardapio.css */
+
+.cart-header .logo {
+  height: 40px;
+  width: auto;
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 4px;
 }
-.pagamento-opcoes, .pagamento-card, .pagamento-icon, .pagamento-texto, .pagamento-check {
-  /* Copied styles from cardapio.css */
+
+.btn-voltar {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s;
 }
-.troco-section, .troco-opcoes, .troco-card, .troco-label, .troco-input-wrap, .troco-prefix, .troco-input {
-  /* Copied styles from cardapio.css */
+
+.btn-voltar:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
 }
-.sucesso-box, .sucesso-icon, .sucesso-titulo, .sucesso-sub, .btn-whatsapp, .btn-novo {
-  /* Copied styles from cardapio.css */
+
+/* ===== MAIN ===== */
+.main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px;
 }
+
+/* ===== CARRINHO BOX ===== */
+.cart-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.cart-header-title {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cart-items {
+  padding: 12px;
+  min-height: 80px;
+}
+
+.cart-empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 24px;
+}
+
+.cart-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--surface2);
+  margin-bottom: 8px;
+  animation: slideUp 0.2s ease;
+}
+
+.cart-item-nome {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.cart-item-extra {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Controles de quantidade */
+.qty-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qty-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.qty-btn:hover { 
+  background: var(--accent); 
+  border-color: var(--accent); 
+  color: white;
+}
+
+.qty-num {
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 20px;
+  text-align: center;
+}
+
+.cart-item-preco {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 55px;
+  text-align: right;
+}
+
+/* Rodapé do carrinho */
+.cart-footer {
+  border-top: 1px solid var(--border);
+  padding: 16px 20px;
+}
+
+.cart-linha {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.cart-total-linha {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.cart-total-linha span:last-child { 
+  color: var(--accent); 
+}
+
+/* ===== FORMULÁRIO ===== */
+.form-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-top: 12px;
+  display: none;
+}
+
+.form-box.show { 
+  display: block; 
+  animation: fadeIn 0.3s ease;
+}
+
+.form-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text);
+}
+
+.form-group { 
+  margin-bottom: 16px; 
+}
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 6px;
+}
+
+.form-group input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text);
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+.form-group input:focus { 
+  border-color: var(--accent); 
+}
+
+.form-group input::placeholder {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+/* ===== PAGAMENTO ===== */
+.pagamento-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.pagamento-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.pagamento-card input[type="radio"] {
+  display: none;
+}
+
+.pagamento-card:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.pagamento-icon {
+  font-size: 28px;
+  width: 48px;
+  height: 48px;
+  background: var(--surface);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+}
+
+.pagamento-texto {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.pagamento-check {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 20px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.pagamento-card:has(input:checked) .pagamento-check {
+  opacity: 1;
+}
+
+/* ===== TROCO ===== */
+.troco-section {
+  margin-top: 20px;
+  animation: slideUp 0.3s ease;
+}
+
+.troco-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.troco-input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.troco-input-wrap:focus-within {
+  border-color: var(--accent);
+}
+
+.troco-prefix {
+  padding: 12px 16px;
+  background: var(--surface);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--muted);
+  border-right: 2px solid var(--border);
+}
+
+.troco-input {
+  border: none;
+  outline: none;
+  padding: 12px 16px;
+  font-size: 15px;
+  flex: 1;
+  width: 100%;
+  background: transparent;
+  color: var(--text);
+}
+
+.troco-input::placeholder {
+  color: var(--muted);
+}
+
+/* ===== BOTÃO FINALIZAR ===== */
+.btn-finalizar {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--accent), #ff8c4a);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 24px;
+}
+
+.btn-finalizar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255,107,43,0.3);
+}
+
+.btn-finalizar:active { 
+  transform: scale(0.98); 
+}
+
+/* ===== SUCESSO ===== */
+.sucesso-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 24px;
+  margin-top: 12px;
+  display: none;
+  text-align: center;
+}
+
+.sucesso-box.show { 
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+.sucesso-icon { 
+  font-size: 64px; 
+  margin-bottom: 16px; 
+}
+
+.sucesso-titulo {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.sucesso-sub { 
+  color: var(--muted); 
+  font-size: 14px; 
+  margin-bottom: 24px; 
+}
+
+.btn-whatsapp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 16px;
+  background: #25d366;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-whatsapp:hover { 
+  background: #128C7E; 
+  transform: translateY(-2px);
+}
+
+.btn-novo {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  color: var(--muted);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: all 0.2s;
+}
+
+.btn-novo:hover { 
+  color: var(--text); 
+  border-color: var(--accent);
+}
+
+/* ===== TOAST ===== */
 .toast {
-  /* Copied styles from cardapio.css */
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 24px;
+  border-radius: 99px;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 9999;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ===== RESPONSIVO ===== */
+@media (max-width: 480px) {
+  .main {
+    padding: 16px;
+  }
+  
+  .cart-header {
+    padding: 12px 16px;
+  }
+  
+  .cart-header .logo {
+    height: 32px;
+  }
+  
+  .btn-voltar {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  
+  .cart-item {
+    padding: 10px;
+  }
+  
+  .pagamento-card {
+    padding: 12px;
+  }
+  
+  .pagamento-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+}
+
+/* ===== UTILITÁRIOS ===== */
+.hidden {
+  display: none !important;
+}
+
+.text-accent {
+  color: var(--accent);
+}
+
+.bg-surface {
+  background: var(--surface);
 }

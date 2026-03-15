@@ -16,6 +16,10 @@ let adicionaisDisponiveis = [];
 
 // ── Inicialização ──────────────────────────────────────────────
 window.addEventListener('load', async () => {
+  // Atualiza badge-count na carga da página
+  const carrinhoLS = localStorage.getItem('comanda_carrinho');
+  const arr = carrinhoLS ? JSON.parse(carrinhoLS) : [];
+  document.getElementById('badge-count').textContent = arr.reduce((s, i) => s + i.quantidade, 0);
   await carregarCardapio();
 });
 
@@ -141,8 +145,8 @@ function exibirCardapio(produtos) {
           ${descHtml}
           <div class="produto-preco">R$ ${p.preco.toFixed(2)}</div>
           <div class="add-icon" aria-hidden="true">+</div>
-          <button class="btn-adicionar-rapido" aria-label="Adicionar ${p.nome} ao pedido">
-            + Adicionar ao Pedido
+          <button class="btn-adicionar-rapido" aria-label="Adicionar ${p.nome} ao Carrinho">
+            + Adicionar ao Carrinho
           </button>
         </div>`;
     }).join('');
@@ -350,6 +354,13 @@ function atualizarTotalModal() {
   document.getElementById('modal-total').textContent = `R$ ${total.toFixed(2)}`;
 }
 
+function toggleAdicionais() {
+  const lista = document.getElementById('modal-adicionais-section');
+  if (!lista) return;
+  const visivel = lista.style.display !== 'none';
+  lista.style.display = visivel ? 'none' : 'block';
+}
+
 // ── Confirma seleção e adiciona ao carrinho ────────────────────
 function confirmarAdicional() {
   if (!modalProduto) return;
@@ -392,8 +403,10 @@ function confirmarAdicional() {
   fecharModal();
   showToast(`✅ ${modalProduto.nome} adicionado!`);
 
-  // Update badge count
-  document.getElementById('badge-count').textContent = carrinho.reduce((s, i) => s + i.quantidade, 0);
+  // Atualiza badge-count lendo do localStorage
+  const carrinhoAtualizado = localStorage.getItem('comanda_carrinho');
+  const arr = carrinhoAtualizado ? JSON.parse(carrinhoAtualizado) : [];
+  document.getElementById('badge-count').textContent = arr.reduce((s, i) => s + i.quantidade, 0);
 }
 
 
