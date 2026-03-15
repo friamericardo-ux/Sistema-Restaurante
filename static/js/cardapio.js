@@ -180,7 +180,7 @@ function irParaCategoria(id) {
    ============================================================ */
 
 let stepAtual = 1;
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 1;
 
 // ── Atualiza visual do stepper ─────────────────────────────────
 function atualizarStepper() {
