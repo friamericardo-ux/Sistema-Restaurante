@@ -19,10 +19,10 @@ window.addEventListener('load', async () => {
   // Atualiza badge-count na carga da página
   const carrinhoLS = localStorage.getItem('comanda_carrinho');
   const arr = carrinhoLS ? JSON.parse(carrinhoLS) : [];
+  carrinho = arr; // ← ADICIONA ESSA LINHA
   document.getElementById('badge-count').textContent = arr.reduce((s, i) => s + i.quantidade, 0);
   await carregarCardapio();
 });
-
 // ── Carrega cardápio da API ────────────────────────────────────
 async function carregarCardapio() {
   const el    = document.getElementById('cardapio');

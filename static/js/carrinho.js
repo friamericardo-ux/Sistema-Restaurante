@@ -11,7 +11,8 @@ function salvarCarrinho(carrinho) {
 
 function renderizarCarrinho() {
   const itens = lerCarrinho();
-  const cartItems = document.getElementById('cart-items');
+  const badge = document.getElementById('badge-count');
+  if (badge) badge.textContent = itens.reduce((s, i) => s + i.quantidade, 0);
   if (!itens.length) {
     cartItems.innerHTML = '<div class="cart-empty">Carrinho vazio</div>';
     document.getElementById('cart-subtotal').textContent = 'R$ 0,00';
@@ -112,9 +113,13 @@ function toast(msg) {
   el.style.display = 'block';
   setTimeout(() => { el.style.display = 'none'; }, 2000);
 }
-
 window.onload = function() {
   renderizarCarrinho();
+  // Atualiza badge
+  const itens = lerCarrinho();
+  const badge = document.getElementById('badge-count');
+  if (badge) badge.textContent = itens.reduce((s, i) => s + i.quantidade, 0);
+
   document.querySelectorAll('input[name="pagamento"]').forEach(r => {
     r.onchange = () => {
       document.getElementById('troco-section').style.display = r.value === 'dinheiro' && r.checked ? 'block' : 'none';
