@@ -1,34 +1,8 @@
 // ════ CONFIGURAÇÃO ════════════════════════════════════════════
-// Quando integrar com Flask, substitua esta linha:
-//   const WHATSAPP = '{{ restaurante.whatsapp }}';
-// E os dados de cats:
-//   const cats = {{ categorias | tojson }};
-const WHATSAPP = '5511999999999';
 
-const cats = [
-  { id:'lanches', nome:'Lanches', emoji:'🍔', prods:[
-    { id:1, nome:'X-Burguer', desc:'Pão brioche, carne 180g, queijo cheddar e molho especial da casa', preco:22.90, emoji:'🍔',
-      ads:[{id:'bacon',nome:'Bacon crocante',preco:4},{id:'duplo',nome:'Carne dupla',preco:8},{id:'ovo',nome:'Ovo frito',preco:3},{id:'catupiry',nome:'Catupiry',preco:4}]},
-    { id:2, nome:'X-Frango', desc:'Frango grelhado, alface, tomate e maionese caseira', preco:20.90, emoji:'🐔',
-      ads:[{id:'bacon',nome:'Bacon crocante',preco:4},{id:'queijo',nome:'Queijo extra',preco:3}]},
-    { id:3, nome:'X-Tudo', desc:'Carne, frango, bacon, ovo, queijo e muito mais', preco:32.90, emoji:'🥪', ads:[]},
-    { id:4, nome:'Hot Dog', desc:'Salsicha grossa, purê de batata e molho especial', preco:16.90, emoji:'🌭',
-      ads:[{id:'batata',nome:'Batata palha',preco:2},{id:'milho',nome:'Milho verde',preco:2}]},
-  ]},
-  { id:'marmitas', nome:'Marmitas', emoji:'🍱', prods:[
-    { id:5, nome:'Marmita P', desc:'Arroz, feijão, proteína grelhada e salada fresca', preco:18.90, emoji:'🍱',
-      ads:[{id:'extra',nome:'Proteína extra',preco:8},{id:'farofa',nome:'Farofa',preco:3},{id:'macarrao',nome:'Macarrão',preco:3}]},
-    { id:6, nome:'Marmita G', desc:'Arroz, feijão, proteína grelhada, salada e acompanhamento', preco:25.90, emoji:'🥘',
-      ads:[{id:'extra',nome:'Proteína extra',preco:8},{id:'farofa',nome:'Farofa',preco:3}]},
-    { id:7, nome:'Frango Grelhado', desc:'Peito de frango grelhado com arroz e legumes frescos', preco:24.90, emoji:'🍗', ads:[]},
-  ]},
-  { id:'bebidas', nome:'Bebidas', emoji:'🥤', prods:[
-    { id:8, nome:'Refrigerante Lata', desc:'Coca-Cola, Guaraná, Fanta (350ml)', preco:7.00, emoji:'🥤', ads:[]},
-    { id:9, nome:'Suco Natural', desc:'Laranja, Limão, Maracujá ou Abacaxi (400ml)', preco:10.00, emoji:'🧃', ads:[]},
-    { id:10, nome:'Água Mineral', desc:'Com ou sem gás (500ml)', preco:4.50, emoji:'💧', ads:[]},
-    { id:11, nome:'Cerveja Long Neck', desc:'Heineken, Budweiser ou Stella (330ml)', preco:12.00, emoji:'🍺', ads:[]},
-  ]},
-];
+const WHATSAPP = '5567993487509';
+
+let cats = [];
 
 // ════ ESTADO ═════════════════════════════════════════════════
 let carrinho = [];
@@ -302,5 +276,32 @@ document.getElementById('buscaInput').addEventListener('input',function(){
 });
 
 // ════ INIT ════════════════════════════════════════════════════
-renderCats();
-renderProds();
+async function init() {
+  try {
+    const res = await fetch('/api/cardapio');
+    const data = await res.json();
+
+    const grupos = {};
+    data.produtos.forEach(p => {
+      const cat = p.categoria || 'outros';
+      if (!grupos[cat]) grupos[cat] = { id: cat, nome: cat, emoji: '🍽', prods: [] };
+      grupos[cat].prods.push({
+        id: p.id,
+        nome: p.nome,
+        desc: p.descricao || '',
+        preco: parseFloat(p.preco),
+        emoji: p.emoji || '🍽',
+        foto: p.foto || null,
+        ads: []
+      });
+    });
+
+    cats = Object.values(grupos);
+    renderCats();
+    renderProds();
+  } catch (e) {
+    console.error('Erro ao carregar cardápio:', e);
+  }
+}
+
+init();
