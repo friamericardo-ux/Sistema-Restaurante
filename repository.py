@@ -1,21 +1,18 @@
-
-
 from config import Config
 from models.user import User
 from security import SecurityService
 from typing import Optional
 from data.db import get_connection, is_mysql
 
+
 class UserRepository:
     def __init__(self):
-       self.db_path = Config.DB_PATH
+        self.db_path = Config.DB_PATH
 
     def get_connection(self):
-        """Retorna conexão com o banco (SQLite ou MySQL)"""
         return get_connection()
 
     def init_user_table(self):
-        """Cria a tabela de usuários se não existir"""
         conn = self.get_connection()
         cursor = conn.cursor()
         if is_mysql():
@@ -39,9 +36,7 @@ class UserRepository:
         conn.commit()
 
     def create_admin(self):
-        """Cria usuário admin se não existir"""
         self.init_user_table()
-        
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM users WHERE username = ?", (Config.ADMIN_USER,))
@@ -56,7 +51,6 @@ class UserRepository:
         return True
 
     def has_any_user(self) -> bool:
-        """Retorna True se já existe algum usuário cadastrado"""
         self.init_user_table()
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -64,7 +58,6 @@ class UserRepository:
         return cursor.fetchone() is not None
 
     def create_custom_admin(self, username: str, password: str, role: str = 'atendente') -> bool:
-        """Cria um usuário com o perfil indicado"""
         self.init_user_table()
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -80,21 +73,19 @@ class UserRepository:
         return True
 
     def get_user_by_username(self, username: str) -> Optional[User]:
-        """Busca usuário pelo nome"""
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute(
-                "SELECT id, username, password_hash, role FROM users WHERE username = ?",
-                (username,)
-            )
+            "SELECT id, username, password_hash, role FROM users WHERE username = ?",
+            (username,)
+        )
         row = cursor.fetchone()
         conn.close()
         if row:
-                return User(id=row[0], username=row[1], password_hash=row[2], role=row[3])
+            return User(id=row[0], username=row[1], password_hash=row[2], role=row[3])
         return None
 
     def update_password(self, user_id: int, new_password: str) -> None:
-        """Atualiza a senha de um usuário"""
         new_hash = SecurityService.hash_password(new_password)
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -106,7 +97,6 @@ class UserRepository:
         conn.close()
 
     def list_users(self):
-        """Lista todos os usuários cadastrados"""
         self.init_user_table()
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -116,7 +106,6 @@ class UserRepository:
         return rows
 
     def delete_user(self, user_id: int, current_user_id: int) -> bool:
-        """Remove um usuário (não permite remover a si mesmo)"""
         if user_id == current_user_id:
             return False
         conn = self.get_connection()
@@ -125,6 +114,7 @@ class UserRepository:
         conn.commit()
         conn.close()
         return True
+
 
 # ========== PRODUTOS ==========
 
@@ -163,36 +153,87 @@ def desativar_produto(id):
     conn.commit()
     conn.close()
 
+
 # ========== ADICIONAIS ==========
 
-def listar_adicionais(produto_id=None):
+def listar_adicionais(categoria=None):
+    """
+    Lista adicionais ativos.
+    Se categoria informada, retorna só os vinculados àquela categoria.
+    """
     conn = get_connection()
     cursor = conn.cursor()
-    if produto_id is not None:
-        cursor.execute("SELECT categoria FROM produtos WHERE id = ?", (produto_id,))
-        row = cursor.fetchone()
-        categoria_produto = row[0] if row else None
+    if categoria:
         cursor.execute("""
-            SELECT * FROM adicionais 
-            WHERE ativo = 1 AND (
-                produto_id = ? 
-                OR categoria = ?
-                OR (produto_id IS NULL AND categoria IS NULL)
-            )
-        """, (produto_id, categoria_produto))
+            SELECT a.id, a.nome, a.preco
+            FROM adicionais a
+            INNER JOIN adicional_categoria ac ON a.id = ac.adicional_id
+            WHERE a.ativo = 1 AND ac.categoria = ?
+        """, (categoria,))
     else:
-        cursor.execute("SELECT * FROM adicionais WHERE ativo = 1")
+        cursor.execute("SELECT id, nome, preco FROM adicionais WHERE ativo = 1")
     rows = cursor.fetchall()
     conn.close()
     return rows
 
-def adicionar_adicional(nome, preco, produto_id=None, categoria=None):
+def listar_adicionais_com_categorias():
+    """Lista todos os adicionais com suas categorias vinculadas (para o painel admin)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, nome, preco, ativo FROM adicionais ORDER BY nome")
+    adicionais = cursor.fetchall()
+
+    resultado = []
+    for a in adicionais:
+        cursor.execute(
+            "SELECT categoria FROM adicional_categoria WHERE adicional_id = ?", (a[0],)
+        )
+        categorias = [row[0] for row in cursor.fetchall()]
+        resultado.append({
+            "id": a[0],
+            "nome": a[1],
+            "preco": a[2],
+            "ativo": a[3],
+            "categorias": categorias
+        })
+    conn.close()
+    return resultado
+
+def adicionar_adicional(nome, preco, categorias: list):
+    """
+    Cadastra um adicional e vincula às categorias informadas.
+    categorias: lista de strings, ex: ['Lanches', 'Porções']
+    """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO adicionais (nome, preco, produto_id, categoria) VALUES (?, ?, ?, ?)",
-        (nome, preco, produto_id, categoria)
+        "INSERT INTO adicionais (nome, preco) VALUES (?, ?)",
+        (nome, preco)
     )
+    adicional_id = cursor.lastrowid
+    for cat in categorias:
+        cursor.execute(
+            "INSERT INTO adicional_categoria (adicional_id, categoria) VALUES (?, ?)",
+            (adicional_id, cat)
+        )
+    conn.commit()
+    conn.close()
+    return adicional_id
+
+def editar_adicional(id, nome, preco, categorias: list):
+    """Atualiza nome/preço e recadastra as categorias vinculadas."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE adicionais SET nome=?, preco=? WHERE id=?",
+        (nome, preco, id)
+    )
+    cursor.execute("DELETE FROM adicional_categoria WHERE adicional_id = ?", (id,))
+    for cat in categorias:
+        cursor.execute(
+            "INSERT INTO adicional_categoria (adicional_id, categoria) VALUES (?, ?)",
+            (id, cat)
+        )
     conn.commit()
     conn.close()
 
@@ -202,3 +243,12 @@ def desativar_adicional(id):
     cursor.execute("UPDATE adicionais SET ativo = 0 WHERE id = ?", (id,))
     conn.commit()
     conn.close()
+
+def listar_categorias_produtos():
+    """Retorna lista de categorias únicas dos produtos ativos."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT categoria FROM produtos WHERE ativo = 1 ORDER BY categoria")
+    rows = cursor.fetchall()
+    conn.close()
+    return [row[0] for row in rows]

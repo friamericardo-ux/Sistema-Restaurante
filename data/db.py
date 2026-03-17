@@ -21,9 +21,7 @@ class _MySQLCursor:
         sql = sql.replace('?', '%s')
         sql = sql.replace("DATE('now', 'localtime')", 'CURDATE()')
         sql = sql.replace("DATE('now')", 'CURDATE()')
-        # Converter DATE(coluna, 'localtime') → DATE(coluna) para MySQL
         sql = sql.replace(", 'localtime')", ")")
-        # Converter CAST(strftime('%H', coluna) AS INTEGER) → HOUR(coluna) para MySQL
         sql = re.sub(r"CAST\(strftime\('%H',\s*(\w+)\)\s*AS\s*INTEGER\)", r"HOUR(\1)", sql)
         return self._cursor.execute(sql, params or ())
 
@@ -91,19 +89,17 @@ def get_connection():
         from urllib.parse import urlparse
         parsed = urlparse(Config.DB_PATH)
         conn = pymysql.connect(
-        host=parsed.hostname or 'localhost',
-        port=parsed.port or 3306,
-        user=parsed.username or 'root',
-        password=parsed.password or '',
-        database=parsed.path.lstrip('/'),
-        charset='utf8mb4',
-        ssl_disabled=True,
-    )
+            host=parsed.hostname or 'localhost',
+            port=parsed.port or 3306,
+            user=parsed.username or 'root',
+            password=parsed.password or '',
+            database=parsed.path.lstrip('/'),
+            charset='utf8mb4',
+            ssl_disabled=True,
+        )
         return _MySQLConnection(conn)
     else:
-        # Usa Config.DB_PATH, que pode ser absoluto ou relativo
         db_path = Config.DB_PATH
-        # Se for relativo, torna relativo à raiz do projeto
         if not os.path.isabs(db_path):
             db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), db_path)
         return sqlite3.connect(db_path)
@@ -131,21 +127,6 @@ def _init_sqlite():
     )
     """)
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS adicionais (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nome TEXT NOT NULL,
-        preco REAL NOT NULL DEFAULT 0.0,
-        produto_id INTEGER DEFAULT NULL,
-        ativo INTEGER DEFAULT 1,
-        FOREIGN KEY (produto_id) REFERENCES produtos(id)
-    )
-    """)
-    # Migração: adicionar produto_id se não existir (bancos antigos)
-    cursor.execute("PRAGMA table_info(adicionais)")
-    colunas = [col[1] for col in cursor.fetchall()]
-    if 'produto_id' not in colunas:
-        cursor.execute("ALTER TABLE adicionais ADD COLUMN produto_id INTEGER DEFAULT NULL")
-    cursor.execute('''
     CREATE TABLE IF NOT EXISTS produtos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nome TEXT NOT NULL,
@@ -156,7 +137,23 @@ def _init_sqlite():
         foto TEXT DEFAULT NULL,
         descricao TEXT DEFAULT NULL
     )
-    ''')
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS adicionais (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        preco REAL NOT NULL DEFAULT 0.0,
+        ativo INTEGER DEFAULT 1
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS adicional_categoria (
+        adicional_id INTEGER NOT NULL,
+        categoria TEXT NOT NULL,
+        PRIMARY KEY (adicional_id, categoria),
+        FOREIGN KEY (adicional_id) REFERENCES adicionais(id)
+    )
+    """)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS pedidos_delivery (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -166,6 +163,8 @@ def _init_sqlite():
         itens TEXT,
         taxa_entrega REAL DEFAULT 5.0,
         total REAL,
+        troco REAL DEFAULT 0,
+        forma_pagamento TEXT DEFAULT '',
         status TEXT DEFAULT 'novo',
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
@@ -229,21 +228,6 @@ def _init_mysql():
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS adicionais (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        nome VARCHAR(255) NOT NULL,
-        preco DOUBLE NOT NULL DEFAULT 0.0,
-        produto_id INT DEFAULT NULL,
-        ativo TINYINT DEFAULT 1,
-        FOREIGN KEY (produto_id) REFERENCES produtos(id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    """)
-    # Migração: adicionar produto_id se não existir (bancos antigos)
-    try:
-        cursor.execute("ALTER TABLE adicionais ADD COLUMN produto_id INT DEFAULT NULL")
-    except Exception:
-        pass  # Coluna já existe
-    cursor.execute("""
     CREATE TABLE IF NOT EXISTS produtos (
         id INT PRIMARY KEY AUTO_INCREMENT,
         nome VARCHAR(255) NOT NULL,
@@ -256,6 +240,22 @@ def _init_mysql():
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
     cursor.execute("""
+    CREATE TABLE IF NOT EXISTS adicionais (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        nome VARCHAR(255) NOT NULL,
+        preco DOUBLE NOT NULL DEFAULT 0.0,
+        ativo TINYINT DEFAULT 1
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS adicional_categoria (
+        adicional_id INT NOT NULL,
+        categoria VARCHAR(100) NOT NULL,
+        PRIMARY KEY (adicional_id, categoria),
+        FOREIGN KEY (adicional_id) REFERENCES adicionais(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    """)
+    cursor.execute("""
     CREATE TABLE IF NOT EXISTS pedidos_delivery (
         id INT PRIMARY KEY AUTO_INCREMENT,
         cliente_nome VARCHAR(255),
@@ -264,6 +264,8 @@ def _init_mysql():
         itens TEXT,
         taxa_entrega DOUBLE DEFAULT 5.0,
         total DOUBLE,
+        troco DOUBLE DEFAULT 0,
+        forma_pagamento VARCHAR(50) DEFAULT '',
         status VARCHAR(50) DEFAULT 'novo',
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -342,20 +344,17 @@ def adicionar_item(mesa_id, nome, preco, quantidade=1, observacao=""):
 
 def listar_itens(mesa_id):
     conn = get_connection()
-    conn.row_factory = sqlite3.Row
     itens = conn.execute(
         "SELECT * FROM itens WHERE mesa_id = ?", (mesa_id,)
     ).fetchall()
     conn.close()
-    return [dict(i) for i in itens]
+    return itens
 
 
 def remover_item(item_id, mesa_id):
     conn = get_connection()
 
     conn.execute("DELETE FROM itens WHERE id = ?", (item_id,))
-
-    # Recalcula total
     conn.execute("""
         UPDATE mesas
         SET total = (
@@ -371,7 +370,6 @@ def remover_item(item_id, mesa_id):
 
 def fechar_mesa(mesa_id):
     conn = get_connection()
-    # Apaga os itens e zera o total
     conn.execute("DELETE FROM itens WHERE mesa_id = ?", (mesa_id,))
     conn.execute("UPDATE mesas SET total = 0 WHERE id = ?", (mesa_id,))
     conn.commit()

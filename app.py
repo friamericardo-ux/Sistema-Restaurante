@@ -1,7 +1,12 @@
 import json
 import os
 import logging
-from repository import listar_adicionais, listar_produtos, adicionar_produto, editar_produto, desativar_produto, adicionar_adicional, desativar_adicional
+from repository import (
+    listar_adicionais, listar_adicionais_com_categorias,
+    listar_produtos, adicionar_produto, editar_produto, desativar_produto,
+    adicionar_adicional, editar_adicional, desativar_adicional,
+    listar_categorias_produtos
+)
 import urllib.parse
 from services.whatsapp_service import WhatsAppService
 from repository import UserRepository
@@ -181,7 +186,7 @@ def mesas():
 def dashboard_resumo():
     """Retorna contadores para o dashboard"""
     db = get_connection()
-    db.row_factory = __import__('sqlite3').Row
+    db.row_factory = True
     cursor = db.cursor()
 
     # Mesas abertas
@@ -228,7 +233,7 @@ def dashboard_resumo():
 @login_required
 def listar_mesas():
     db = get_connection()
-    db.row_factory = __import__('sqlite3').Row
+    db.row_factory = True
     cursor = db.cursor()
 
     cursor.execute("SELECT id, numero, total FROM mesas")
@@ -420,15 +425,9 @@ def api_cardapio():
 
 @app.route("/api/adicionais")
 def api_adicionais():
-    produto_id = request.args.get('produto_id', type=int)
-    adicionais = listar_adicionais(produto_id=produto_id)
-    resultado = []
-    for a in adicionais:
-        resultado.append({
-            "id": a[0],
-            "nome": a[1],
-            "preco": a[2]
-        })
+    categoria = request.args.get('categoria', None)
+    adicionais = listar_adicionais(categoria=categoria)
+    resultado = [{"id": a[0], "nome": a[1], "preco": a[2]} for a in adicionais]
     return jsonify({"sucesso": True, "adicionais": resultado})
 
 @app.route("/api/pedido", methods=["POST"])
@@ -511,7 +510,7 @@ def whatsapp_pedido():
     pedido_id = request.args.get("pedido_id")
     
     db = get_connection()
-    db.row_factory = __import__('sqlite3').Row
+    db.row_factory = True
     cursor = db.cursor()
     
     cursor.execute("SELECT * FROM pedidos_delivery WHERE id = ?", (pedido_id,))
@@ -549,7 +548,7 @@ def painel_delivery():
 def listar_pedidos_delivery():
     """Retorna todos os pedidos delivery (exceto entregues)"""
     db = get_connection()
-    db.row_factory = __import__('sqlite3').Row
+    db.row_factory = True
     cursor = db.cursor()
 
     cursor.execute("""
@@ -692,30 +691,7 @@ def desativar_produto_route(id):
     desativar_produto(id)
     return redirect('/admin/produtos')
 
-# ========== ADMIN ADICIONAIS ==========
 
-@app.route('/admin/adicionais')
-@admin_required
-def admin_adicionais():
-    adicionais = listar_adicionais()
-    produtos = listar_produtos()
-    categorias = list(set(p[3] for p in produtos if p[3]))
-    return render_template('admin_adicionais.html', adicionais=adicionais, produtos=produtos, categorias=categorias)
-
-@app.route('/admin/adicionais/adicionar', methods=['POST'])
-@admin_required
-def adicionar_adicional_route():
-    nome = request.form['nome']
-    preco = float(request.form['preco'])
-    tipo_vinculo = request.form.get('tipo_vinculo', 'categoria')
-    produto_id = None
-    categoria = None
-    if tipo_vinculo == 'produto':
-        produto_id = request.form.get('produto_id') or None
-    else:
-        categoria = request.form.get('categoria') or None
-    adicionar_adicional(nome, preco, produto_id, categoria)
-    return redirect('/admin/adicionais')
 
 @app.route('/admin/alterar-senha', methods=['GET', 'POST'])
 @admin_required
@@ -796,7 +772,7 @@ def caixa():
 def caixa_resumo():
     """Retorna resumo financeiro do dia para o caixa"""
     db = get_connection()
-    db.row_factory = __import__('sqlite3').Row
+    db.row_factory = True
     cursor = db.cursor()
 
     # Faturamento delivery (pedidos entregues hoje)
@@ -850,7 +826,7 @@ def caixa_resumo():
 def caixa_movimentacoes():
     """Retorna lista de movimentações do dia (delivery + mesas)"""
     db = get_connection()
-    db.row_factory = __import__('sqlite3').Row
+    db.row_factory = True
     cursor = db.cursor()
 
     movimentacoes = []
@@ -898,7 +874,7 @@ def caixa_movimentacoes():
 def fechar_caixa():
     """Registra o fechamento do caixa do dia"""
     db = get_connection()
-    db.row_factory = __import__('sqlite3').Row
+    db.row_factory = True
     cursor = db.cursor()
 
     # Verificar se já foi fechado hoje
@@ -954,7 +930,7 @@ def fechar_caixa():
 def caixa_grafico():
     """Retorna faturamento agrupado por hora para gráfico"""
     db = get_connection()
-    db.row_factory = __import__('sqlite3').Row
+    db.row_factory = True
     cursor = db.cursor()
 
     horas = {}
@@ -1049,6 +1025,43 @@ def calcular_frete():
 @app.route("/carrinho")
 def carrinho_cliente():
     return render_template("carrinho_cliente.html")
+
+@app.route('/admin/adicionais')
+@admin_required
+def admin_adicionais():
+    adicionais = listar_adicionais_com_categorias()
+    categorias = listar_categorias_produtos()
+    return render_template('admin_adicionais.html', adicionais=adicionais, categorias=categorias)
+
+@app.route('/admin/adicionais/adicionar', methods=['POST'])
+@admin_required
+def adicionar_adicional_route():
+    nome = request.form['nome'].strip()
+    preco = float(request.form['preco'])
+    categorias = request.form.getlist('categorias')
+    if nome and preco >= 0 and categorias:
+        adicionar_adicional(nome, preco, categorias)
+    return redirect('/admin/adicionais')
+
+@app.route('/admin/adicionais/editar/<int:id>', methods=['POST'])
+@admin_required
+def editar_adicional_route(id):
+    nome = request.form['nome'].strip()
+    preco = float(request.form['preco'])
+    categorias = request.form.getlist('categorias')
+    editar_adicional(id, nome, preco, categorias)
+    return redirect('/admin/adicionais')
+
+@app.route('/admin/adicionais/desativar/<int:id>', methods=['POST'])
+@admin_required
+def desativar_adicional_route(id):
+    desativar_adicional(id)
+    return redirect('/admin/adicionais')
+
+@app.route('/api/categorias')
+def api_categorias():
+    categorias = listar_categorias_produtos()
+    return jsonify({"sucesso": True, "categorias": categorias})
 
 if __name__ == "__main__":
     repo = UserRepository()
