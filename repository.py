@@ -169,19 +169,29 @@ def listar_adicionais(produto_id=None):
     conn = get_connection()
     cursor = conn.cursor()
     if produto_id is not None:
-        cursor.execute("SELECT * FROM adicionais WHERE ativo = 1 AND (produto_id = ? OR produto_id IS NULL)", (produto_id,))
+        cursor.execute("SELECT categoria FROM produtos WHERE id = ?", (produto_id,))
+        row = cursor.fetchone()
+        categoria_produto = row[0] if row else None
+        cursor.execute("""
+            SELECT * FROM adicionais 
+            WHERE ativo = 1 AND (
+                produto_id = ? 
+                OR categoria = ?
+                OR (produto_id IS NULL AND categoria IS NULL)
+            )
+        """, (produto_id, categoria_produto))
     else:
         cursor.execute("SELECT * FROM adicionais WHERE ativo = 1")
     rows = cursor.fetchall()
     conn.close()
     return rows
 
-def adicionar_adicional(nome, preco, produto_id=None):
+def adicionar_adicional(nome, preco, produto_id=None, categoria=None):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO adicionais (nome, preco, produto_id) VALUES (?, ?, ?)",
-        (nome, preco, produto_id)
+        "INSERT INTO adicionais (nome, preco, produto_id, categoria) VALUES (?, ?, ?, ?)",
+        (nome, preco, produto_id, categoria)
     )
     conn.commit()
     conn.close()

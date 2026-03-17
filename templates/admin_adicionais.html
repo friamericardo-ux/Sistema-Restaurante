@@ -26,7 +26,7 @@
   <div class="form-box">
     <h2>&#10133; Novo Adicional</h2>
     <form method="POST" action="/admin/adicionais/adicionar">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div class="form-row">
         <div class="form-group">
           <label>Nome do adicional</label>
@@ -37,9 +37,27 @@
           <input type="number" name="preco" step="0.01" min="0" placeholder="3.00" required>
         </div>
         <div class="form-group">
-          <label>Produto vinculado</label>
-          <select name="produto_id">
+          <label>Vincular a</label>
+          <select name="tipo_vinculo" onchange="alternarVinculo(this.value)">
+            <option value="categoria">Categoria inteira</option>
+            <option value="produto">Produto específico</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="grupo-categoria">
+          <label>Categoria</label>
+          <select name="categoria">
             <option value="">Todos os produtos</option>
+            {% for cat in categorias %}
+            <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group" id="grupo-produto" style="display:none">
+          <label>Produto específico</label>
+          <select name="produto_id">
+            <option value="">Nenhum</option>
             {% for p in produtos %}
             <option value="{{ p[0] }}">{{ p[1] }} ({{ p[3] }})</option>
             {% endfor %}
@@ -54,29 +72,35 @@
 
   <div class="adicional-list">
     {% if adicionais %}
-      {% for a in adicionais %}
-      <div class="adicional-item">
-        <div class="adicional-info">
-          <span class="adicional-nome">{{ a[1] }}</span>
-          <span class="adicional-preco">+R$ {{ "%.2f"|format(a[2]) }}</span>
-          {% if a[3] %}
-            <span class="adicional-produto" style="color:var(--muted);font-size:12px;margin-left:8px;">
-              (Produto ID: {{ a[3] }})
-            </span>
-          {% else %}
-            <span class="adicional-produto" style="color:var(--accent);font-size:12px;margin-left:8px;">
-              (Todos os produtos)
-            </span>
-          {% endif %}
-        </div>
-        <a href="/admin/adicionais/desativar/{{ a[0] }}" class="btn-remover"
-           onclick="return confirm('Remover {{ a[1] }}?')">Remover</a>
+    {% for a in adicionais %}
+    <div class="adicional-item">
+      <div class="adicional-info">
+        <span class="adicional-nome">{{ a[1] }}</span>
+        <span class="adicional-preco">+R$ {{ "%.2f"|format(a[2]) }}</span>
+        {% if a[3] %}
+        <span class="adicional-produto" style="color:var(--muted);font-size:12px;margin-left:8px;">
+          (Produto ID: {{ a[3] }})
+        </span>
+        {% else %}
+        <span class="adicional-produto" style="color:var(--accent);font-size:12px;margin-left:8px;">
+          (Todos os produtos)
+        </span>
+        {% endif %}
       </div>
-      {% endfor %}
+      <a href="/admin/adicionais/desativar/{{ a[0] }}" class="btn-remover"
+        onclick="return confirm('Remover {{ a[1] }}?')">Remover</a>
+    </div>
+    {% endfor %}
     {% else %}
-      <div class="empty">Nenhum adicional cadastrado ainda.</div>
+    <div class="empty">Nenhum adicional cadastrado ainda.</div>
     {% endif %}
   </div>
 
 </div>
+<script>
+function alternarVinculo(valor) {
+  document.getElementById('grupo-categoria').style.display = valor === 'categoria' ? 'block' : 'none';
+  document.getElementById('grupo-produto').style.display = valor === 'produto' ? 'block' : 'none';
+}
+</script>
 {% endblock %}

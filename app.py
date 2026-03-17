@@ -67,7 +67,7 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
     SESSION_COOKIE_SECURE=True,
-    PERMANENT_SESSION_LIFETIME=1800
+    PERMANENT_SESSION_LIFETIME=28800
 )
 # Inicia o banco usando o db.py
 #init_db()
@@ -699,25 +699,23 @@ def desativar_produto_route(id):
 def admin_adicionais():
     adicionais = listar_adicionais()
     produtos = listar_produtos()
-    return render_template('admin_adicionais.html', adicionais=adicionais, produtos=produtos)
+    categorias = list(set(p[3] for p in produtos if p[3]))
+    return render_template('admin_adicionais.html', adicionais=adicionais, produtos=produtos, categorias=categorias)
 
 @app.route('/admin/adicionais/adicionar', methods=['POST'])
 @admin_required
 def adicionar_adicional_route():
     nome = request.form['nome']
     preco = float(request.form['preco'])
-    produto_id = request.form.get('produto_id', '').strip()
-    produto_id = int(produto_id) if produto_id else None
-    adicionar_adicional(nome, preco, produto_id)
+    tipo_vinculo = request.form.get('tipo_vinculo', 'categoria')
+    produto_id = None
+    categoria = None
+    if tipo_vinculo == 'produto':
+        produto_id = request.form.get('produto_id') or None
+    else:
+        categoria = request.form.get('categoria') or None
+    adicionar_adicional(nome, preco, produto_id, categoria)
     return redirect('/admin/adicionais')
-
-@app.route('/admin/adicionais/desativar/<int:id>')
-@admin_required
-def desativar_adicional_route(id):
-    desativar_adicional(id)
-    return redirect('/admin/adicionais')
-
-# ========== ALTERAR SENHA ==========
 
 @app.route('/admin/alterar-senha', methods=['GET', 'POST'])
 @admin_required
