@@ -48,7 +48,7 @@ function renderProds(busca=''){
       const qc=qtdNoCarrinho(p.id);
       html+=`
         <div class="card ${qc>0?'sel':''}" onclick="abrirModal(${p.id})">
-          <div class="card-foto">${p.emoji}</div>
+          <div class="card-foto">${p.foto ? `<img src="/static/uploads/${p.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">` : p.emoji}</div>
           <div class="card-badge ${qc>0?'v':''}">${qc}</div>
           <div class="card-body">
             <div class="card-nome">${p.nome}</div>
