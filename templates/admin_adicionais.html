@@ -1,106 +1,148 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Adicionais</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_adicionais.css') }}">
+</head>
+<body>
 
-{% block title %}Admin &mdash; Adicionais{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-{% endblock %}
-
-{% block content %}
-<div class="header">
-  <h1>&#9881;&#65039; Admin &mdash; Adicionais</h1>
-  <nav class="nav-links">
-    <a href="/dashboard">🏠 Painel</a>
-    <a href="/admin/produtos">Produtos</a>
-    <a href="/admin/adicionais" class="active">Adicionais</a>
-    <a href="/mesas">Mesas</a>
-    <a href="/delivery">Delivery</a>
-    <a href="/admin/usuarios">👥 Usuários</a>
-    <a href="/admin/alterar-senha">🔑 Alterar Senha</a>
-    <a href="/logout">Sair</a>
-  </nav>
-</div>
-
-<div class="container">
-
-  <div class="form-box">
-    <h2>&#10133; Novo Adicional</h2>
-    <form method="POST" action="/admin/adicionais/adicionar">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <div class="form-row">
-        <div class="form-group">
-          <label>Nome do adicional</label>
-          <input type="text" name="nome" placeholder="Ex: Bacon, Queijo extra..." required>
-        </div>
-        <div class="form-group" style="max-width:140px;">
-          <label>Pre&ccedil;o (R$)</label>
-          <input type="number" name="preco" step="0.01" min="0" placeholder="3.00" required>
-        </div>
-        <div class="form-group">
-          <label>Vincular a</label>
-          <select name="tipo_vinculo" onchange="alternarVinculo(this.value)">
-            <option value="categoria">Categoria inteira</option>
-            <option value="produto">Produto específico</option>
-          </select>
-        </div>
-
-        <div class="form-group" id="grupo-categoria">
-          <label>Categoria</label>
-          <select name="categoria">
-            <option value="">Todos os produtos</option>
-            {% for cat in categorias %}
-            <option value="{{ cat }}">{{ cat }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="form-group" id="grupo-produto" style="display:none">
-          <label>Produto específico</label>
-          <select name="produto_id">
-            <option value="">Nenhum</option>
-            {% for p in produtos %}
-            <option value="{{ p[0] }}">{{ p[1] }} ({{ p[3] }})</option>
-            {% endfor %}
-          </select>
-        </div>
-        <button type="submit" class="btn-add">Adicionar</button>
-      </div>
-    </form>
+  <!-- CABEÇALHO -->
+  <div class="header">
+    <h1>🍽️ Comanda Digital</h1>
+    <nav class="nav-links">
+      <a href="/dashboard">Painel</a>
+      <a href="/admin/produtos">Produtos</a>
+      <a href="/admin/adicionais" class="active">Adicionais</a>
+      <a href="/admin/usuarios">Usuários</a>
+      <a href="/logout">Sair</a>
+    </nav>
   </div>
 
-  <div class="section-label">&#128203; Adicionais cadastrados</div>
+  <div class="container">
 
-  <div class="adicional-list">
-    {% if adicionais %}
-    {% for a in adicionais %}
-    <div class="adicional-item">
-      <div class="adicional-info">
-        <span class="adicional-nome">{{ a[1] }}</span>
-        <span class="adicional-preco">+R$ {{ "%.2f"|format(a[2]) }}</span>
-        {% if a[3] %}
-        <span class="adicional-produto" style="color:var(--muted);font-size:12px;margin-left:8px;">
-          (Produto ID: {{ a[3] }})
-        </span>
-        {% else %}
-        <span class="adicional-produto" style="color:var(--accent);font-size:12px;margin-left:8px;">
-          (Todos os produtos)
-        </span>
-        {% endif %}
-      </div>
-      <a href="/admin/adicionais/desativar/{{ a[0] }}" class="btn-remover"
-        onclick="return confirm('Remover {{ a[1] }}?')">Remover</a>
+    <!-- FORMULÁRIO NOVO ADICIONAL -->
+    <div class="form-box">
+      <h2>+ Novo Adicional</h2>
+      <form method="POST" action="/admin/adicionais/adicionar">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome do adicional</label>
+            <input type="text" name="nome" placeholder="Ex: Bacon, Queijo extra..." required>
+          </div>
+          <div class="form-group" style="max-width: 160px;">
+            <label>Preço (R$)</label>
+            <input type="number" name="preco" step="0.01" min="0" placeholder="0,00" required>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label>Vincular às categorias</label>
+          <div class="categorias-grid">
+            {% for cat in categorias %}
+            <label class="categoria-chip">
+              <input type="checkbox" name="categorias" value="{{ cat }}">
+              <span>{{ cat }}</span>
+            </label>
+            {% endfor %}
+            {% if not categorias %}
+            <span class="sem-categorias">Nenhuma categoria encontrada. Cadastre produtos primeiro.</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div style="margin-top: 18px;">
+          <button type="submit" class="btn-add">Adicionar</button>
+        </div>
+      </form>
     </div>
-    {% endfor %}
+
+    <!-- LISTA -->
+    <p class="section-label">Adicionais cadastrados</p>
+
+    {% if adicionais %}
+    <div class="adicional-list">
+      {% for a in adicionais %}
+      <div class="adicional-item">
+        <div class="adicional-info">
+          <span class="adicional-nome">{{ a.nome }}</span>
+          <div class="adicional-cats">
+            {% for cat in a.categorias %}
+              <span class="cat-badge">{{ cat }}</span>
+            {% else %}
+              <span class="cat-badge cat-badge--vazia">sem categoria</span>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="adicional-acoes">
+          <span class="adicional-preco">R$ {{ "%.2f"|format(a.preco) }}</span>
+          {% if a.ativo %}
+            <button class="btn-del btn-editar"
+              data-id="{{ a.id }}"
+              data-nome="{{ a.nome }}"
+              data-preco="{{ a.preco }}"
+              data-categorias='{{ a.categorias | tojson }}'>
+              Editar
+            </button>
+            <form method="POST" action="/admin/adicionais/desativar/{{ a.id }}" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn-del btn-del--danger"
+                onclick="return confirm('Desativar {{ a.nome }}?')">Desativar</button>
+            </form>
+          {% else %}
+            <span class="status-inativo">Inativo</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
     {% else %}
     <div class="empty">Nenhum adicional cadastrado ainda.</div>
     {% endif %}
+
   </div>
 
-</div>
-<script>
-function alternarVinculo(valor) {
-  document.getElementById('grupo-categoria').style.display = valor === 'categoria' ? 'block' : 'none';
-  document.getElementById('grupo-produto').style.display = valor === 'produto' ? 'block' : 'none';
-}
-</script>
-{% endblock %}
+  <!-- MODAL -->
+  <div class="modal-overlay" id="modalEditar">
+    <div class="modal-box">
+      <h3>Editar Adicional</h3>
+      <form method="POST" id="formEditar">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" name="nome" id="editNome" required>
+          </div>
+          <div class="form-group" style="max-width: 160px;">
+            <label>Preço (R$)</label>
+            <input type="number" name="preco" id="editPreco" step="0.01" min="0" required>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 16px;">
+          <label>Categorias</label>
+          <div class="categorias-grid" id="editCategorias">
+            {% for cat in categorias %}
+            <label class="categoria-chip" data-cat="{{ cat }}">
+              <input type="checkbox" name="categorias" value="{{ cat }}">
+              <span>{{ cat }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn-add">Salvar</button>
+          <button type="button" class="btn-del" id="btnFecharModal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/admin_adicionais.js') }}"></script>
+</body>
+</html>

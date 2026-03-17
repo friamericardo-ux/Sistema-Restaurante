@@ -1,0 +1,166 @@
+/* ============================================================
+   admin_adicionais.css — estilos específicos da página de adicionais
+   Depende de admin.css (variáveis e base)
+============================================================ */
+
+/* ── CHIPS DE CATEGORIA ── */
+.categorias-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.categoria-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #242424;
+  border: 1px solid #2e2e2e;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #aaa;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  user-select: none;
+}
+
+.categoria-chip input[type="checkbox"] {
+  display: none;
+}
+
+.categoria-chip:hover {
+  border-color: #ff6b2b;
+  color: #f0f0f0;
+}
+
+.categoria-chip.ativa {
+  border-color: #ff6b2b;
+  background: rgba(255, 107, 43, 0.12);
+  color: #ff6b2b;
+  font-weight: 600;
+}
+
+.sem-categorias {
+  font-size: 13px;
+  color: #555;
+  font-style: italic;
+}
+
+/* ── ITEM DE ADICIONAL ── */
+.adicional-item {
+  background: #1a1a1a;
+  border: 1px solid #2e2e2e;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: border-color 0.2s;
+}
+
+.adicional-item:hover {
+  border-color: #3a3a3a;
+}
+
+.adicional-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.adicional-nome {
+  font-size: 15px;
+  font-weight: 600;
+  color: #f0f0f0;
+}
+
+.adicional-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cat-badge {
+  background: #242424;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 500;
+}
+
+.cat-badge--vazia {
+  color: #555;
+  border-style: dashed;
+}
+
+.adicional-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.adicional-preco {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ff6b2b;
+  min-width: 72px;
+  text-align: right;
+}
+
+.btn-del--danger:hover {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #ef4444 !important;
+}
+
+.status-inativo {
+  font-size: 12px;
+  color: #555;
+  font-style: italic;
+}
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal-overlay.aberto {
+  display: flex;
+}
+
+.modal-box {
+  background: #1a1a1a;
+  border: 1px solid #2e2e2e;
+  border-radius: 14px;
+  padding: 28px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+.modal-box h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #f0f0f0;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
