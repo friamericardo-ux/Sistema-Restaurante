@@ -33,6 +33,7 @@ logging.basicConfig(level=logging.WARNING,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
+
 app.secret_key = Config.SECRET_KEY
 
 # Proteção CSRF

@@ -1,109 +1,152 @@
-{% extends "base.html" %}
-
-{% block title %}Cardápio — Comanda Digital{% endblock %}
-
-{% block extra_css %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Cardápio</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/cardapio.css') }}">
-{% endblock %}
+</head>
+<body>
 
-{% block content %}
+<!-- ══ TELA CARDÁPIO ══ -->
+<div id="telaCardapio" class="tela ativa">
 
-<!-- Número do WhatsApp passado ao JS sem expor no código-fonte -->
-<span id="numero-whatsapp" data-numero="5567993487509" hidden></span>
-
-<!-- HEADER -->
-<header class="header">
-  <div class="logo">🍔 Comanda<span>Digital</span></div>
-  <button class="carrinho-badge" onclick="window.location.href='/carrinho'" aria-label="Ver carrinho">
-    🛒 Carrinho
-    <span id="badge-count">0</span>
-  </button>
-</header>
-
-<!-- HERO -->
-<div class="hero">
-  <div class="hero-tag">🛵 Delivery Online</div>
-  <h1>Peça agora,<br>receba <em>rápido</em></h1>
-  <p>Escolha os itens e finalize pelo WhatsApp em segundos.</p>
-</div>
-
-<!-- BARRA DE CATEGORIAS -->
-<div id="categoria-nav" class="categoria-nav" role="navigation" aria-label="Categorias do cardápio"></div>
-
-<!-- CONTEÚDO PRINCIPAL -->
-<div class="main">
-
-  <!-- CARDÁPIO -->
-  <div class="left-col">
-    <div class="section-label">📋 Cardápio</div>
-    <div id="cardapio">
-      <div class="empty-state">Carregando cardápio...</div>
-    </div>
+  <div class="header">
+    <div class="header-logo">🍽 Cardápio</div>
+    <div class="header-tag" id="headerTag">Pedido online</div>
   </div>
-</div><!-- /main -->
 
-<!-- Toast de notificações -->
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="busca"><input type="text" placeholder="Buscar no cardápio..." id="buscaInput"></div>
+  <div class="cats" id="catsWrap"></div>
+  <div id="conteudo"></div>
 
-<!-- MODAL: Stepper Profissional -->
-<div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-nome">
-  <div class="modal-box">
-
-    <!-- Cabeçalho fixo com produto -->
-    <div class="modal-header">
-      <div class="modal-produto-info">
-        <div class="modal-produto-nome" id="modal-nome"></div>
-        <div class="modal-produto-preco" id="modal-preco-base"></div>
-        <div class="modal-descricao" id="modal-descricao" style="display:none"></div>
+  <!-- Footer fixo -->
+  <div class="footer">
+    <button class="footer-btn" id="footerBtn" onclick="irCarrinho()">
+      <div class="footer-esq">
+        <div class="footer-badge" id="fBadge">0</div>
+        <div class="footer-resumo">
+          <div id="fLinhas"></div>
+          <div class="footer-total-rodape" id="fTotalRodape"></div>
+        </div>
       </div>
-      <button class="modal-fechar" onclick="fecharModal()" aria-label="Fechar modal">✕</button>
-    </div>
-
-    <!-- Indicador de etapas -->
-    <div class="modal-stepper" id="modal-stepper">
-      <div class="step active" id="step-ind-1" onclick="toggleAdicionais()" style="cursor:pointer">
-      <div class="step-label">➕ Adicionais</div>
-      </div>
-    </div>
-git add <div class=""></div>
-    <!-- ETAPA 1: Adicionais -->
-    <div class="modal-step-content" id="step-1">
-      <div id="modal-adicionais-section">
-        <div class="modal-section-label">➕ Escolha os adicionais</div>
-        <div class="modal-adicionais-lista" id="modal-adicionais-lista"></div>
-      </div>
-      <div id="sem-adicionais" class="sem-adicionais" style="display:none">
-        <span>Nenhum adicional disponível para este item.</span>
-      </div>
-    </div>
-
-    <!-- ETAPA 2: Observação -->
-    <!-- Removido: etapas de observação e pagamento do modal -->
-
-    <!-- Rodapé: total + botões de navegação -->
-    <div class="modal-footer">
-      <div class="modal-total-label">
-        Total: <span class="modal-total-valor" id="modal-total">R$ 0,00</span>
-      </div>
-      <div class="modal-nav-btns">
-        <button class="btn-voltar-modal" id="btn-voltar" onclick="stepAnterior()" style="display:none">
-          ← Voltar
-        </button>
-        <button class="btn-continuar-modal" id="btn-continuar" onclick="stepProximo()">
-          Continuar →
-        </button>
-        <button id="btn-confirmar" class="btn-confirmar-modal" onclick="confirmarAdicional()">
-          🛒 Adicionar ao Carrinho
-        </button>
-      </div>
-    </div>
-
+      <div class="footer-dir">Avançar →</div>
+    </button>
   </div>
 </div>
 
-{% endblock %}
+<!-- ══ TELA CARRINHO ══ -->
+<div id="telaCarrinho" class="tela">
 
-{% block extra_js %}
+  <div class="carr-header">
+    <button class="carr-voltar" onclick="voltarCardapio()">←</button>
+    <div class="carr-titulo">Seu pedido</div>
+  </div>
+
+  <!-- Itens -->
+  <div class="carr-section">
+    <div class="carr-section-titulo">Itens selecionados</div>
+    <div id="carrItens"></div>
+  </div>
+
+  <!-- Dados -->
+  <div class="carr-section">
+    <div class="carr-section-titulo">Seus dados</div>
+    <div class="campo">
+      <label>Seu nome *</label>
+      <input type="text" id="cNome" placeholder="Ex: João Silva">
+    </div>
+    <div class="campo">
+      <label>Telefone (WhatsApp) *</label>
+      <input type="tel" id="cTel" placeholder="(11) 99999-9999">
+    </div>
+    <div class="campo">
+      <label>Endereço de entrega</label>
+      <input type="text" id="cEnd" placeholder="Rua, número, bairro (ou 'Retirada no local')">
+    </div>
+  </div>
+
+  <!-- Pagamento -->
+  <div class="carr-section">
+    <div class="carr-section-titulo">Forma de pagamento</div>
+    <div class="pgto-grid">
+      <div class="pgto-btn on" id="pg-pix" onclick="selecionarPgto('pix')">
+        <div class="pgto-btn-icone">💠</div>
+        <div class="pgto-btn-nome">Pix</div>
+      </div>
+      <div class="pgto-btn" id="pg-dinheiro" onclick="selecionarPgto('dinheiro')">
+        <div class="pgto-btn-icone">💵</div>
+        <div class="pgto-btn-nome">Dinheiro</div>
+      </div>
+      <div class="pgto-btn" id="pg-credito" onclick="selecionarPgto('credito')">
+        <div class="pgto-btn-icone">💳</div>
+        <div class="pgto-btn-nome">Crédito</div>
+      </div>
+      <div class="pgto-btn" id="pg-debito" onclick="selecionarPgto('debito')">
+        <div class="pgto-btn-icone">💳</div>
+        <div class="pgto-btn-nome">Débito</div>
+      </div>
+    </div>
+    <div id="trocoWrap">
+      <div class="campo" style="margin-top:0">
+        <label>Troco para quanto?</label>
+        <input type="number" id="cTroco" placeholder="Ex: 50">
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumo -->
+  <div class="carr-section">
+    <div class="carr-section-titulo">Resumo</div>
+    <div id="carrResumo"></div>
+  </div>
+
+  <!-- Botão finalizar -->
+  <div class="btn-finalizar">
+    <button onclick="finalizarPedido()">
+      <span>📲</span> Finalizar e enviar no WhatsApp
+    </button>
+  </div>
+
+</div>
+
+<!-- ══ MODAL PRODUTO ══ -->
+<div class="overlay" id="overlay" onclick="fecharOverlay(event)">
+  <div class="modal" id="modal">
+    <div class="modal-foto" id="mFoto">
+      <button class="modal-fechar" onclick="fecharModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-nome" id="mNome"></div>
+      <div class="modal-desc" id="mDesc"></div>
+      <div class="modal-preco" id="mPreco"></div>
+
+      <div class="qtd-row">
+        <div class="qtd-label">Quantidade</div>
+        <div class="qtd">
+          <button class="qtd-btn" onclick="dQtd(-1)">−</button>
+          <div class="qtd-num" id="qtdNum">1</div>
+          <button class="qtd-btn" onclick="dQtd(1)">+</button>
+        </div>
+      </div>
+
+      <div class="obs-titulo">Observações</div>
+      <div class="obs-sub">Alguma preferência especial?</div>
+      <textarea class="obs-ta" id="obsInput" rows="2" placeholder="Ex: sem cebola, bem passado, molho à parte..."></textarea>
+
+      <div id="adsArea"></div>
+
+      <button class="btn-modal" id="btnModal" onclick="addCarrinho()">
+        <span>Adicionar ao carrinho</span>
+        <span class="btn-modal-total" id="btnModalTotal">R$ 0,00</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script src="{{ url_for('static', filename='js/cardapio.js') }}"></script>
-<script src="{{ url_for('static', filename='js/maps_delivery.js') }}"></script>
-{% endblock %}
+</body>
+</html>
