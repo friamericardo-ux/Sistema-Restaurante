@@ -38,7 +38,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--texto);min-
 .card:active{transform:scale(.97)}
 .card.sel{border-color:var(--laranja)}
 
-.card-foto{width:100%;aspect-ratio:1/1;background:linear-gradient(135deg,#2A1A0A,#3D2B10);display:flex;align-items:center;justify-content:center;font-size:48px}
+.card-foto{width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#2A1A0A,#3D2B10);display:flex;align-items:center;justify-content:center;font-size:48px}
 .card-foto img{width:100%;height:100%;object-fit:cover;display:block}
 .card-badge{position:absolute;top:8px;right:8px;background:var(--laranja);color:#fff;font-family:'Sora',sans-serif;font-size:11px;font-weight:800;width:22px;height:22px;border-radius:50%;display:none;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(249,115,22,.5)}
 .card-badge.v{display:flex}
