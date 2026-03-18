@@ -93,7 +93,7 @@ function abrirModal(id){
       <div class="ads-sub">Toque para adicionar</div>
       <div class="ads-grid">
         ${pAtual.ads.map(a=>`
-          <div class="ad-chip" id="ad-${a.id}" onclick="toggleAd('${a.id}')">
+          <div class="ad-chip" id="ad-${a.id}" onclick="toggleAd(${a.id})">
             <div class="ad-chip-nome">${a.nome}</div>
             <div class="ad-chip-preco">+${fmt(a.preco)}</div>
           </div>`).join('')}
@@ -118,6 +118,7 @@ function dQtd(d){
 }
 
 function toggleAd(id){
+  id = Number(id);  // ← adiciona essa linha
   const idx=adsSel.indexOf(id);
   const chip=document.getElementById('ad-'+id);
   if(idx===-1){adsSel.push(id);chip.classList.add('on');}
@@ -128,7 +129,7 @@ function toggleAd(id){
 function calcTotal(){
   if(!pAtual)return 0;
   let t=pAtual.preco;
-  adsSel.forEach(id=>{const a=pAtual.ads.find(x=>x.id===id);if(a)t+=a.preco;});
+  adsSel.forEach(id=>{const a=pAtual.ads.find(x=>x.id===Number(id));if(a)t+=a.preco;});
   return t*qtd;
 }
 
@@ -138,7 +139,7 @@ function atualizarTotalModal(){
 
 function addCarrinho(){
   const obs=document.getElementById('obsInput').value.trim();
-  const adObjs=adsSel.map(id=>pAtual.ads.find(a=>a.id===id));
+  const adObjs=adsSel.map(id=>pAtual.ads.find(a=>a.id===Number(id)));
   carrinho.push({id:pAtual.id,nome:pAtual.nome,preco:pAtual.preco,qtd,ads:adObjs,obs,emoji:pAtual.emoji});
   fecharModal();
   renderProds(document.getElementById('buscaInput').value);
