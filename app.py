@@ -258,6 +258,7 @@ def listar_mesas():
     return jsonify({"sucesso": True, "mesas": mesas})
 
 @app.route("/api/mesa/abrir", methods=["POST"])
+@csrf.exempt
 @login_required
 def abrir_mesa():
     dados = request.get_json()
@@ -281,6 +282,7 @@ def abrir_mesa():
     return jsonify({"sucesso": True})
 
 @app.route("/api/mesa/item", methods=["POST"])
+@csrf.exempt
 @login_required
 def adicionar_item():
     dados = request.get_json()
@@ -322,6 +324,7 @@ def adicionar_item():
 
 
 @app.route("/api/mesa/item/remover", methods=["POST"])
+@csrf.exempt
 @login_required
 def remover_item():
     dados = request.get_json()
@@ -356,6 +359,7 @@ def remover_item():
 
 
 @app.route("/api/mesa/fechar", methods=["POST"])
+@csrf.exempt
 @login_required
 def fechar_mesa():
     dados = request.get_json()
