@@ -847,6 +847,8 @@ def caixa_movimentacoes():
             "hora": row["criado_em"]
         })
 
+
+
     # Mesas fechadas hoje
     cursor.execute("""
         SELECT id, mesa_numero, total, fechado_em
@@ -965,6 +967,52 @@ def caixa_grafico():
     return jsonify({
         "sucesso": True,
         "horas": [{"hora": h, "total": horas[h]} for h in sorted(horas.keys())]
+    })
+
+@app.route("/api/caixa/balanco")
+@admin_required
+def caixa_balanco():
+    """Retorna balanço mensal agrupado por dia"""
+    mes = request.args.get("mes", "01").zfill(2)
+    ano = request.args.get("ano", "2026")
+
+    db = get_connection()
+    db.row_factory = True
+    cursor = db.cursor()
+
+    # Busca todos os fechamentos do mês
+    cursor.execute("""
+        SELECT data, total_delivery, total_mesas, total_geral,
+               qtd_pedidos_delivery, qtd_mesas, fechado_por
+        FROM caixa_fechamentos
+        WHERE strftime('%m', data) = ? AND strftime('%Y', data) = ?
+        ORDER BY data ASC
+    """, (mes, ano))
+
+    dias = [dict(row) for row in cursor.fetchall()]
+
+    # Totais do mês
+    total_mes_delivery = sum(d["total_delivery"] for d in dias)
+    total_mes_mesas = sum(d["total_mesas"] for d in dias)
+    total_mes_geral = sum(d["total_geral"] for d in dias)
+    qtd_mes_delivery = sum(d["qtd_pedidos_delivery"] for d in dias)
+    qtd_mes_mesas = sum(d["qtd_mesas"] for d in dias)
+
+    db.close()
+
+    return jsonify({
+        "sucesso": True,
+        "mes": mes,
+        "ano": ano,
+        "dias": dias,
+        "totais": {
+            "total_delivery": total_mes_delivery,
+            "total_mesas": total_mes_mesas,
+            "total_geral": total_mes_geral,
+            "qtd_delivery": qtd_mes_delivery,
+            "qtd_mesas": qtd_mes_mesas,
+            "dias_trabalhados": len(dias)
+        }
     })
 
 
