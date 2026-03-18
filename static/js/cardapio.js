@@ -275,7 +275,6 @@ document.getElementById('buscaInput').addEventListener('input',function(){
   renderProds(this.value);
 });
 
-// ════ INIT ════════════════════════════════════════════════════
 async function init() {
   try {
     const res = await fetch('/api/cardapio');
@@ -292,7 +291,24 @@ async function init() {
         preco: parseFloat(p.preco),
         emoji: p.emoji || '🍽',
         foto: p.foto || null,
+        categoria: cat,
         ads: []
+      });
+    });
+
+    // Busca adicionais por categoria
+    const categoriasUnicas = Object.keys(grupos);
+    const adsMap = {};
+    await Promise.all(categoriasUnicas.map(async cat => {
+      const r = await fetch(`/api/adicionais?categoria=${encodeURIComponent(cat)}`);
+      const d = await r.json();
+      adsMap[cat] = d.adicionais || [];
+    }));
+
+    // Vincula adicionais a cada produto pela categoria
+    Object.values(grupos).forEach(cat => {
+      cat.prods.forEach(p => {
+        p.ads = adsMap[p.categoria] || [];
       });
     });
 
