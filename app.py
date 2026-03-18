@@ -1,6 +1,7 @@
 import json
 import os
 import logging
+import sqlite3
 from repository import (
     listar_adicionais, listar_adicionais_com_categorias,
     listar_produtos, adicionar_produto, editar_produto, desativar_produto,
@@ -186,7 +187,7 @@ def mesas():
 def dashboard_resumo():
     """Retorna contadores para o dashboard"""
     db = get_connection()
-    db.row_factory = True
+    db.row_factory = sqlite3.Row
     cursor = db.cursor()
 
     # Mesas abertas
@@ -233,7 +234,7 @@ def dashboard_resumo():
 @login_required
 def listar_mesas():
     db = get_connection()
-    db.row_factory = True
+    db.row_factory = sqlite3.Row
     cursor = db.cursor()
 
     cursor.execute("SELECT id, numero, total FROM mesas")
@@ -514,7 +515,7 @@ def whatsapp_pedido():
     pedido_id = request.args.get("pedido_id")
     
     db = get_connection()
-    db.row_factory = True
+    db.row_factory = sqlite3.Row
     cursor = db.cursor()
     
     cursor.execute("SELECT * FROM pedidos_delivery WHERE id = ?", (pedido_id,))
@@ -552,7 +553,7 @@ def painel_delivery():
 def listar_pedidos_delivery():
     """Retorna todos os pedidos delivery (exceto entregues)"""
     db = get_connection()
-    db.row_factory = True
+    db.row_factory = sqlite3.Row
     cursor = db.cursor()
 
     cursor.execute("""
@@ -776,7 +777,7 @@ def caixa():
 def caixa_resumo():
     """Retorna resumo financeiro do dia para o caixa"""
     db = get_connection()
-    db.row_factory = True
+    db.row_factory = sqlite3.Row
     cursor = db.cursor()
 
     # Faturamento delivery (pedidos entregues hoje)
@@ -830,7 +831,7 @@ def caixa_resumo():
 def caixa_movimentacoes():
     """Retorna lista de movimentações do dia (delivery + mesas)"""
     db = get_connection()
-    db.row_factory = True
+    db.row_factory = sqlite3.Row
     cursor = db.cursor()
 
     movimentacoes = []
@@ -876,11 +877,12 @@ def caixa_movimentacoes():
 
 
 @app.route("/api/caixa/fechar", methods=["POST"])
+@csrf.exempt
 @admin_required
 def fechar_caixa():
     """Registra o fechamento do caixa do dia"""
     db = get_connection()
-    db.row_factory = True
+    db.row_factory = sqlite3.Row
     cursor = db.cursor()
 
     # Verificar se já foi fechado hoje
@@ -936,7 +938,7 @@ def fechar_caixa():
 def caixa_grafico():
     """Retorna faturamento agrupado por hora para gráfico"""
     db = get_connection()
-    db.row_factory = True
+    db.row_factory = sqlite3.Row
     cursor = db.cursor()
 
     horas = {}
@@ -981,7 +983,7 @@ def caixa_balanco():
     ano = request.args.get("ano", "2026")
 
     db = get_connection()
-    db.row_factory = True
+    db.row_factory = sqlite3.Row
     cursor = db.cursor()
 
     # Busca todos os fechamentos do mês

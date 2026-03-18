@@ -3,7 +3,7 @@ from datetime import datetime
 from models.item import Item
 
 class Mesa:
-    def _init_(self, numero):
+    def __init__(self, numero):
         self.numero   = numero          # Ex: 5
         self.itens    = []              # Lista vazia de itens
         self.aberta   = True            # Mesa começa aberta

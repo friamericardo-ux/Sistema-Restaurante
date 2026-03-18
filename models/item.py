@@ -1,6 +1,6 @@
 
 class Item:
-    def _init_(self, produto_id, nome, preco, quantidade, obs=""):
+    def __init__(self, produto_id, nome, preco, quantidade, obs=""):
         self.produto_id = produto_id  # Ex: "P001"
         self.nome       = nome        # Ex: "Batata Frita"
         self.preco      = preco       # Ex: 12.00

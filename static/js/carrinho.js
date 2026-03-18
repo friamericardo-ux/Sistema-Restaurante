@@ -126,6 +126,7 @@ function finalizarPedido() {
 
       const numero = '5567993487509';
       document.getElementById('form-box').style.display = 'none';
+      document.getElementById('cart-box').style.display = 'none';
       document.getElementById('sucesso-box').style.display = 'block';
       document.getElementById('btn-whatsapp').onclick = () => {
         limparPedido();
@@ -157,6 +158,7 @@ function limparPedido() {
   document.getElementById('troco-section').style.display = 'none';
   document.getElementById('troco').value = '';
   document.getElementById('sucesso-box').style.display = 'none';
+  document.getElementById('cart-box').style.display = 'block';
   document.getElementById('form-box').style.display = 'block';
   document.getElementById('cart-items').innerHTML = '<div class="cart-empty">Carrinho vazio</div>';
   document.getElementById('cart-subtotal').textContent = 'R$ 0,00';

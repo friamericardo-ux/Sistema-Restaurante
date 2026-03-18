@@ -8,7 +8,7 @@ from data.cardapio import buscar_produto_por_id
 ARQUIVO_PEDIDOS = "data/pedidos_salvos.json"
 
 class ComandaService:
-    def _init_(self):
+    def __init__(self):
         self.mesas = {}  # {numero: Mesa}
 
     def abrir_mesa(self, numero, atendente=""):
