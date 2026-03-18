@@ -176,7 +176,7 @@ def index():
 @login_required
 def mesas():
     role = session.get('role')
-    if role == 'atendente':
+    if role in ('atendente', 'admin', 'superadmin'):
         return render_template("atendente.html")
     else:
         return redirect(url_for('index'))

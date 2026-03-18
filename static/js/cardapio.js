@@ -238,7 +238,7 @@ function selecionarPgto(p){
 }
 
 // ════ FINALIZAR ═══════════════════════════════════════════════
-function finalizarPedido(){
+async function finalizarPedido(){
   const nome=document.getElementById('cNome').value.trim();
   const tel=document.getElementById('cTel').value.trim();
   const end=document.getElementById('cEnd').value.trim();
@@ -246,6 +246,26 @@ function finalizarPedido(){
 
   if(!nome){showToast('⚠️ Informe seu nome!');return;}
   if(!tel){showToast('⚠️ Informe seu telefone!');return;}
+
+  // Salva no banco antes de abrir WhatsApp
+  try {
+    await fetch('/api/pedido', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        nome, telefone: tel, endereco: end,
+        itens: carrinho.map(i=>({
+          nome: i.nome,
+          preco: i.preco,
+          quantidade: i.qtd,
+          adicionais: i.ads.map(a=>a.nome).join(', '),
+          obs: i.obs
+        }))
+      })
+    });
+  } catch(e) {
+    console.error('Erro ao salvar pedido:', e);
+  }
 
   const pgtoNomes={pix:'Pix',dinheiro:'Dinheiro',credito:'Cartão de Crédito',debito:'Cartão de Débito'};
 
