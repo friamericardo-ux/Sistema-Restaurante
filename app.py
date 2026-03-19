@@ -99,9 +99,9 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# ========================
+
 # ROTAS DE AUTENTICAÇÃO
-# ========================
+
 @app.route("/login", methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
 def login_web():
@@ -202,22 +202,34 @@ def dashboard_resumo():
     """)
     pedidos_por_status = {row["status"]: row["total"] for row in cursor.fetchall()}
 
-    # Total de pedidos hoje (todos os status)
+    # Verificar se caixa foi fechado hoje
     cursor.execute("""
-        SELECT COUNT(*) as total
-        FROM pedidos_delivery
-        WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime')
+        SELECT id FROM caixa_fechamentos
+        WHERE data = DATE('now', 'localtime')
+        LIMIT 1
     """)
-    pedidos_hoje = cursor.fetchone()["total"]
+    caixa_fechado = cursor.fetchone() is not None
 
-    # Faturamento hoje (apenas pedidos entregues)
-    cursor.execute("""
-        SELECT COALESCE(SUM(total), 0) as faturamento
-        FROM pedidos_delivery
-        WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime')
-        AND status = 'entregue'
-    """)
-    faturamento_hoje = cursor.fetchone()["faturamento"]
+    if caixa_fechado:
+        pedidos_hoje = 0
+        faturamento_hoje = 0.0
+    else:
+        # Total de pedidos hoje (todos os status)
+        cursor.execute("""
+            SELECT COUNT(*) as total
+            FROM pedidos_delivery
+            WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime')
+        """)
+        pedidos_hoje = cursor.fetchone()["total"]
+
+        # Faturamento hoje (apenas pedidos entregues)
+        cursor.execute("""
+            SELECT COALESCE(SUM(total), 0) as faturamento
+            FROM pedidos_delivery
+            WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime')
+            AND status = 'entregue'
+        """)
+        faturamento_hoje = cursor.fetchone()["faturamento"]
 
     db.close()
     return jsonify({
@@ -922,6 +934,24 @@ def fechar_caixa():
         VALUES (DATE('now', 'localtime'), ?, ?, ?, ?, ?, ?)
     """, (total_delivery, total_mesas, total_geral, delivery["qtd"], mesas["qtd"], usuario))
 
+    # Criar tabela fechamentos_caixa se não existir e salvar resumo do dia
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS fechamentos_caixa (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data TEXT,
+            total_faturado REAL DEFAULT 0,
+            total_pedidos INTEGER DEFAULT 0,
+            total_entregas INTEGER DEFAULT 0,
+            valor_entregas REAL DEFAULT 0,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("""
+        INSERT INTO fechamentos_caixa
+        (data, total_faturado, total_pedidos, total_entregas, valor_entregas)
+        VALUES (DATE('now', 'localtime'), ?, ?, ?, ?)
+    """, (total_geral, delivery["qtd"] + mesas["qtd"], delivery["qtd"], total_delivery))
+
     db.commit()
     db.close()
 
@@ -931,6 +961,22 @@ def fechar_caixa():
         "total_mesas": total_mesas,
         "total_geral": total_geral
     })
+
+
+@app.route("/api/caixa/abrir", methods=["POST"])
+@csrf.exempt
+@admin_required
+def abrir_caixa():
+    """Reabre o caixa do dia removendo o registro de fechamento"""
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute("""
+        DELETE FROM caixa_fechamentos
+        WHERE data = DATE('now', 'localtime')
+    """)
+    db.commit()
+    db.close()
+    return jsonify({"sucesso": True})
 
 
 @app.route("/api/caixa/grafico")

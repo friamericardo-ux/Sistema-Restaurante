@@ -211,6 +211,17 @@ def _init_sqlite():
         fechado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS fechamentos_caixa (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data TEXT,
+        total_faturado REAL DEFAULT 0,
+        total_pedidos INTEGER DEFAULT 0,
+        total_entregas INTEGER DEFAULT 0,
+        valor_entregas REAL DEFAULT 0,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
 
     conn.commit()
     conn.close()
@@ -310,6 +321,17 @@ def _init_mysql():
         qtd_mesas INT DEFAULT 0,
         fechado_por VARCHAR(100),
         fechado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS fechamentos_caixa (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        data VARCHAR(10),
+        total_faturado DOUBLE DEFAULT 0,
+        total_pedidos INT DEFAULT 0,
+        total_entregas INT DEFAULT 0,
+        valor_entregas DOUBLE DEFAULT 0,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
 

@@ -37,14 +37,18 @@ async function carregarResumo() {
       statusDiv.className = 'caixa-status fechado';
       document.getElementById('caixa-status-texto').textContent =
         '🔒 Caixa fechado por ' + data.fechamento.fechado_por;
-      btnFechar.disabled = true;
-      btnFechar.textContent = '🔒 Caixa já fechado';
+      btnFechar.disabled = false;
+      btnFechar.style.cursor = 'pointer';
+      btnFechar.textContent = '🔓 Abrir Caixa';
+      btnFechar.onclick = abrirCaixa;
     } else {
       statusDiv.style.display = 'block';
       statusDiv.className = 'caixa-status aberto';
       document.getElementById('caixa-status-texto').textContent = '✅ Caixa aberto';
       btnFechar.disabled = false;
+      btnFechar.style.cursor = 'pointer';
       btnFechar.textContent = '🔒 Fechar Caixa do Dia';
+      btnFechar.onclick = confirmarFechamento;
     }
   } catch (e) {
     console.error('Erro ao carregar resumo:', e);
@@ -145,6 +149,28 @@ async function executarFechamento() {
     }
   } catch (e) {
     console.error('Erro ao fechar caixa:', e);
+    alert('Erro de conexão.');
+  }
+}
+
+// ── Abrir caixa ──
+async function abrirCaixa() {
+  if (!confirm('Deseja reabrir o caixa?')) return;
+  try {
+    const res = await fetch('/api/caixa/abrir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (data.sucesso) {
+      carregarResumo();
+      carregarMovimentacoes();
+      carregarGrafico();
+    } else {
+      alert(data.erro || 'Erro ao abrir caixa.');
+    }
+  } catch (e) {
+    console.error('Erro ao abrir caixa:', e);
     alert('Erro de conexão.');
   }
 }
