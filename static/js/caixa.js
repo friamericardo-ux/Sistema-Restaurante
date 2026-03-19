@@ -28,6 +28,8 @@ async function carregarResumo() {
     document.getElementById('val-total').textContent = formatarReais(data.total_geral);
     document.getElementById('qtd-delivery').textContent = data.qtd_delivery;
     document.getElementById('qtd-mesas').textContent = data.qtd_mesas;
+    document.getElementById('val-taxa-entrega').textContent = formatarReais(data.taxa_entrega_total || 0);
+    document.getElementById('qtd-entregas-taxa').textContent = data.qtd_entregas_taxa || 0;
 
     const statusDiv = document.getElementById('caixa-status');
     const btnFechar = document.getElementById('btn-fechar');

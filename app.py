@@ -14,7 +14,7 @@ from repository import UserRepository
 from security import SecurityService
 from config import Config
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
-from data.db import init_db, get_connection
+from data.db import init_db, get_connection, is_mysql
 from functools import wraps
 from werkzeug.utils import secure_filename
 from flask_wtf.csrf import CSRFProtect
@@ -96,6 +96,50 @@ def _garantir_fechamentos_caixa():
     db.close()
 
 _garantir_fechamentos_caixa()
+
+
+def _garantir_caixa_sessoes():
+    db = get_connection()
+    cursor = db.cursor()
+    if is_mysql():
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS caixa_sessoes (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                aberto_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+    else:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS caixa_sessoes (
+                id INTEGER PRIMARY KEY,
+                aberto_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    db.commit()
+    db.close()
+
+_garantir_caixa_sessoes()
+
+
+def _get_sessao_inicio(cursor):
+    """Retorna o datetime de início da sessão atual do caixa como string."""
+    cursor.execute("""
+        SELECT aberto_em FROM caixa_sessoes
+        WHERE DATE(aberto_em, 'localtime') = DATE('now', 'localtime')
+        ORDER BY aberto_em DESC LIMIT 1
+    """)
+    row = cursor.fetchone()
+    if row:
+        try:
+            aberto_em = row['aberto_em']
+        except (TypeError, KeyError):
+            aberto_em = row[0]
+        if hasattr(aberto_em, 'strftime'):
+            return aberto_em.strftime('%Y-%m-%d %H:%M:%S')
+        return str(aberto_em)
+    from datetime import datetime
+    return datetime.now().strftime('%Y-%m-%d') + ' 00:00:00'
+
 
 # ========================
 # DECORATOR PARA PROTEGER ROTAS
@@ -806,27 +850,10 @@ def caixa():
 @app.route("/api/caixa/resumo")
 @admin_required
 def caixa_resumo():
-    """Retorna resumo financeiro do dia para o caixa"""
+    """Retorna resumo financeiro da sessão atual do caixa"""
     db = get_connection()
     db.row_factory = sqlite3.Row
     cursor = db.cursor()
-
-    # Faturamento delivery (pedidos entregues hoje)
-    cursor.execute("""
-        SELECT COUNT(*) as qtd, COALESCE(SUM(total), 0) as total
-        FROM pedidos_delivery
-        WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime')
-        AND status = 'entregue'
-    """)
-    delivery = cursor.fetchone()
-
-    # Faturamento mesas (fechadas hoje)
-    cursor.execute("""
-        SELECT COUNT(*) as qtd, COALESCE(SUM(total), 0) as total
-        FROM historico_mesas
-        WHERE DATE(fechado_em, 'localtime') = DATE('now', 'localtime')
-    """)
-    mesas = cursor.fetchone()
 
     # Verificar se caixa já foi fechado hoje
     cursor.execute("""
@@ -837,50 +864,80 @@ def caixa_resumo():
     """)
     fechamento = cursor.fetchone()
 
-    db.close()
-
     if fechamento is not None:
-        total_delivery = 0.0
-        total_mesas = 0.0
-        delivery = {"qtd": 0, "total": 0}
-        mesas = {"qtd": 0, "total": 0}
-    else:
-        total_delivery = delivery["total"]
-        total_mesas = mesas["total"]
+        db.close()
+        return jsonify({
+            "sucesso": True,
+            "total_delivery": 0.0,
+            "total_mesas": 0.0,
+            "total_geral": 0.0,
+            "qtd_delivery": 0,
+            "qtd_mesas": 0,
+            "taxa_entrega_total": 0.0,
+            "qtd_entregas_taxa": 0,
+            "caixa_fechado": True,
+            "fechamento": {
+                "fechado_em": fechamento["fechado_em"],
+                "fechado_por": fechamento["fechado_por"]
+            }
+        })
+
+    # Obter início da sessão atual
+    sessao_inicio = _get_sessao_inicio(cursor)
+
+    # Faturamento delivery (pedidos entregues nesta sessão)
+    cursor.execute("""
+        SELECT COUNT(*) as qtd, COALESCE(SUM(total), 0) as total,
+               COALESCE(SUM(taxa_entrega), 0) as taxa_total
+        FROM pedidos_delivery
+        WHERE criado_em >= ?
+        AND status = 'entregue'
+    """, (sessao_inicio,))
+    delivery = cursor.fetchone()
+
+    # Faturamento mesas (fechadas nesta sessão)
+    cursor.execute("""
+        SELECT COUNT(*) as qtd, COALESCE(SUM(total), 0) as total
+        FROM historico_mesas
+        WHERE fechado_em >= ?
+    """, (sessao_inicio,))
+    mesas = cursor.fetchone()
+
+    db.close()
 
     return jsonify({
         "sucesso": True,
-        "total_delivery": total_delivery,
-        "total_mesas": total_mesas,
-        "total_geral": total_delivery + total_mesas,
+        "total_delivery": delivery["total"],
+        "total_mesas": mesas["total"],
+        "total_geral": delivery["total"] + mesas["total"],
         "qtd_delivery": delivery["qtd"],
         "qtd_mesas": mesas["qtd"],
-        "caixa_fechado": fechamento is not None,
-        "fechamento": {
-            "fechado_em": fechamento["fechado_em"],
-            "fechado_por": fechamento["fechado_por"]
-        } if fechamento else None
+        "taxa_entrega_total": delivery["taxa_total"],
+        "qtd_entregas_taxa": delivery["qtd"],
+        "caixa_fechado": False,
+        "fechamento": None
     })
 
 
 @app.route("/api/caixa/movimentacoes")
 @admin_required
 def caixa_movimentacoes():
-    """Retorna lista de movimentações do dia (delivery + mesas)"""
+    """Retorna lista de movimentações da sessão atual (delivery + mesas)"""
     db = get_connection()
     db.row_factory = sqlite3.Row
     cursor = db.cursor()
 
+    sessao_inicio = _get_sessao_inicio(cursor)
     movimentacoes = []
 
-    # Pedidos delivery entregues hoje
+    # Pedidos delivery entregues nesta sessão
     cursor.execute("""
         SELECT id, cliente_nome, total, criado_em
         FROM pedidos_delivery
-        WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime')
+        WHERE criado_em >= ?
         AND status = 'entregue'
         ORDER BY criado_em DESC
-    """)
+    """, (sessao_inicio,))
     for row in cursor.fetchall():
         movimentacoes.append({
             "tipo": "delivery",
@@ -889,15 +946,13 @@ def caixa_movimentacoes():
             "hora": row["criado_em"]
         })
 
-
-
-    # Mesas fechadas hoje
+    # Mesas fechadas nesta sessão
     cursor.execute("""
         SELECT id, mesa_numero, total, fechado_em
         FROM historico_mesas
-        WHERE DATE(fechado_em, 'localtime') = DATE('now', 'localtime')
+        WHERE fechado_em >= ?
         ORDER BY fechado_em DESC
-    """)
+    """, (sessao_inicio,))
     for row in cursor.fetchall():
         movimentacoes.append({
             "tipo": "mesa",
@@ -931,20 +986,23 @@ def fechar_caixa():
         db.close()
         return jsonify({"sucesso": False, "erro": "Caixa já foi fechado hoje!"})
 
-    # Buscar totais do dia
+    # Buscar totais da sessão atual
+    sessao_inicio = _get_sessao_inicio(cursor)
+
     cursor.execute("""
-        SELECT COUNT(*) as qtd, COALESCE(SUM(total), 0) as total
+        SELECT COUNT(*) as qtd, COALESCE(SUM(total), 0) as total,
+               COALESCE(SUM(taxa_entrega), 0) as taxa_total
         FROM pedidos_delivery
-        WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime')
+        WHERE criado_em >= ?
         AND status = 'entregue'
-    """)
+    """, (sessao_inicio,))
     delivery = cursor.fetchone()
 
     cursor.execute("""
         SELECT COUNT(*) as qtd, COALESCE(SUM(total), 0) as total
         FROM historico_mesas
-        WHERE DATE(fechado_em, 'localtime') = DATE('now', 'localtime')
-    """)
+        WHERE fechado_em >= ?
+    """, (sessao_inicio,))
     mesas = cursor.fetchone()
 
     total_delivery = delivery["total"]
@@ -977,13 +1035,13 @@ def fechar_caixa():
         VALUES (DATE('now', 'localtime'), ?, ?, ?, ?)
     """, (total_geral, delivery["qtd"] + mesas["qtd"], delivery["qtd"], total_delivery))
 
-    # Zerar pedidos entregues do dia para que os contadores voltem a 0
+    # Zerar pedidos entregues desta sessão
     cursor.execute("""
         UPDATE pedidos_delivery
         SET status = 'fechado'
-        WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime')
+        WHERE criado_em >= ?
         AND status = 'entregue'
-    """)
+    """, (sessao_inicio,))
 
     db.commit()
     db.close()
@@ -1038,13 +1096,15 @@ def caixa_historico():
 @csrf.exempt
 @admin_required
 def abrir_caixa():
-    """Reabre o caixa do dia removendo o registro de fechamento"""
+    """Reabre o caixa removendo o registro de fechamento e inicia nova sessão"""
     db = get_connection()
     cursor = db.cursor()
     cursor.execute("""
         DELETE FROM caixa_fechamentos
         WHERE data = DATE('now', 'localtime')
     """)
+    # Registrar início da nova sessão
+    cursor.execute("INSERT INTO caixa_sessoes (aberto_em) VALUES (CURRENT_TIMESTAMP)")
     db.commit()
     db.close()
     return jsonify({"sucesso": True})
@@ -1058,30 +1118,31 @@ def caixa_grafico():
     db.row_factory = sqlite3.Row
     cursor = db.cursor()
 
+    sessao_inicio = _get_sessao_inicio(cursor)
     horas = {}
     for h in range(24):
         horas[h] = 0.0
 
-    # Delivery por hora
+    # Delivery por hora (desta sessão)
     cursor.execute("""
         SELECT CAST(strftime('%H', criado_em, 'localtime') AS INTEGER) as hora,
                COALESCE(SUM(total), 0) as total
         FROM pedidos_delivery
-        WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime')
+        WHERE criado_em >= ?
         AND status = 'entregue'
         GROUP BY hora
-    """)
+    """, (sessao_inicio,))
     for row in cursor.fetchall():
         horas[row["hora"]] += row["total"]
 
-    # Mesas por hora
+    # Mesas por hora (desta sessão)
     cursor.execute("""
         SELECT CAST(strftime('%H', fechado_em, 'localtime') AS INTEGER) as hora,
                COALESCE(SUM(total), 0) as total
         FROM historico_mesas
-        WHERE DATE(fechado_em, 'localtime') = DATE('now', 'localtime')
+        WHERE fechado_em >= ?
         GROUP BY hora
-    """)
+    """, (sessao_inicio,))
     for row in cursor.fetchall():
         horas[row["hora"]] += row["total"]
 

@@ -10,25 +10,35 @@ function escapeHtml(str) {
 
 var mesaAtual = null;
 
-// Cardápio pré-definido (edite como quiser!)
-var cardapio = [
-    { nome: "X-Burguer",   preco: 18.50 },
-    { nome: "X-Bacon",     preco: 22.00 },
-    { nome: "Fritas P",    preco: 8.00  },
-    { nome: "Fritas G",    preco: 12.00 },
-    { nome: "Refrigerante",preco: 6.00  },
-    { nome: "Suco Natural",preco: 9.00  },
-    { nome: "Água",        preco: 3.50  },
-    { nome: "Sorvete",     preco: 10.00 },
-];
-
-function montarCardapio() {
+async function montarCardapio() {
     var grid = document.getElementById("cardapio-grid");
-    grid.innerHTML = "";
-    cardapio.forEach(function(c) {
-        grid.innerHTML += '<button class="btn-cardapio" onclick="adicionarDoCardapio(\'' + c.nome + '\', ' + c.preco + ')">' +
-            c.nome + '<span>R$ ' + c.preco.toFixed(2) + '</span></button>';
-    });
+    grid.innerHTML = '<span style="color:#aaa;font-size:12px;">Carregando...</span>';
+    try {
+        var res = await fetch('/api/cardapio');
+        var data = await res.json();
+        grid.innerHTML = "";
+        if (!data.sucesso || !data.produtos.length) {
+            grid.innerHTML = '<span style="color:#aaa;font-size:12px;">Nenhum produto cadastrado.</span>';
+            return;
+        }
+        data.produtos.forEach(function(p) {
+            var btn = document.createElement('button');
+            btn.className = 'btn-cardapio';
+            var label = (p.emoji ? p.emoji + ' ' : '') + p.nome;
+            btn.appendChild(document.createTextNode(label));
+            var span = document.createElement('span');
+            span.textContent = 'R$ ' + parseFloat(p.preco).toFixed(2);
+            btn.appendChild(span);
+            btn.dataset.nome = p.nome;
+            btn.dataset.preco = p.preco;
+            btn.addEventListener('click', function() {
+                adicionarDoCardapio(this.dataset.nome, parseFloat(this.dataset.preco));
+            });
+            grid.appendChild(btn);
+        });
+    } catch (e) {
+        grid.innerHTML = '<span style="color:#aaa;font-size:12px;">Erro ao carregar produtos.</span>';
+    }
 }
 
 function adicionarDoCardapio(nome, preco) {

@@ -222,6 +222,12 @@ def _init_sqlite():
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS caixa_sessoes (
+        id INTEGER PRIMARY KEY,
+        aberto_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
 
     conn.commit()
     conn.close()
@@ -332,6 +338,12 @@ def _init_mysql():
         total_entregas INT DEFAULT 0,
         valor_entregas DOUBLE DEFAULT 0,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS caixa_sessoes (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        aberto_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
 
