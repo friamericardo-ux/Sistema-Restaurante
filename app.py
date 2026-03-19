@@ -839,8 +839,14 @@ def caixa_resumo():
 
     db.close()
 
-    total_delivery = delivery["total"]
-    total_mesas = mesas["total"]
+    if fechamento is not None:
+        total_delivery = 0.0
+        total_mesas = 0.0
+        delivery = {"qtd": 0, "total": 0}
+        mesas = {"qtd": 0, "total": 0}
+    else:
+        total_delivery = delivery["total"]
+        total_mesas = mesas["total"]
 
     return jsonify({
         "sucesso": True,
@@ -970,6 +976,14 @@ def fechar_caixa():
         (data, total_faturado, total_pedidos, total_entregas, valor_entregas)
         VALUES (DATE('now', 'localtime'), ?, ?, ?, ?)
     """, (total_geral, delivery["qtd"] + mesas["qtd"], delivery["qtd"], total_delivery))
+
+    # Zerar pedidos entregues do dia para que os contadores voltem a 0
+    cursor.execute("""
+        UPDATE pedidos_delivery
+        SET status = 'fechado'
+        WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime')
+        AND status = 'entregue'
+    """)
 
     db.commit()
     db.close()
