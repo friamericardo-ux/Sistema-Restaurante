@@ -78,6 +78,25 @@ app.config.update(
 # Inicia o banco usando o db.py
 #init_db()
 
+def _garantir_fechamentos_caixa():
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS fechamentos_caixa (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            data VARCHAR(10),
+            total_faturado DOUBLE DEFAULT 0,
+            total_pedidos INT DEFAULT 0,
+            total_entregas INT DEFAULT 0,
+            valor_entregas DOUBLE DEFAULT 0,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    """)
+    db.commit()
+    db.close()
+
+_garantir_fechamentos_caixa()
+
 # ========================
 # DECORATOR PARA PROTEGER ROTAS
 # ========================
