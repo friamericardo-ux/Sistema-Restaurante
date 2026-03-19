@@ -996,7 +996,7 @@ def caixa_historico():
     cursor.execute("""
         SELECT data, total_faturado, total_pedidos, total_entregas, valor_entregas
         FROM fechamentos_caixa
-        WHERE strftime('%m', data) = ? AND strftime('%Y', data) = ?
+        WHERE MONTH(data) = ? AND YEAR(data) = ?
         ORDER BY data ASC
     """, (mes, ano))
 
@@ -1094,7 +1094,7 @@ def caixa_balanco():
         SELECT data, total_delivery, total_mesas, total_geral,
                qtd_pedidos_delivery, qtd_mesas, fechado_por
         FROM caixa_fechamentos
-        WHERE strftime('%m', data) = ? AND strftime('%Y', data) = ?
+        WHERE MONTH(data) = ? AND YEAR(data) = ?
         ORDER BY data ASC
     """, (mes, ano))
 
