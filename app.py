@@ -937,7 +937,7 @@ def fechar_caixa():
     # Criar tabela fechamentos_caixa se não existir e salvar resumo do dia
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS fechamentos_caixa (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id INTEGER PRIMARY KEY AUTO_INCREMENT,
             data TEXT,
             total_faturado REAL DEFAULT 0,
             total_pedidos INTEGER DEFAULT 0,
