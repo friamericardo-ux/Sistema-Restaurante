@@ -79,6 +79,44 @@
     </button>
   </div>
 
+  <!-- Histórico mensal (visível apenas com caixa fechado) -->
+  <div id="historico-section" style="display:none">
+    <div class="section-title">📅 Histórico Mensal</div>
+
+    <div class="historico-filtro">
+      <label for="filtro-mes">Mês:</label>
+      <select id="filtro-mes" onchange="carregarHistorico()"></select>
+      <label for="filtro-ano">Ano:</label>
+      <select id="filtro-ano" onchange="carregarHistorico()"></select>
+    </div>
+
+    <div class="caixa-tabela-container">
+      <table class="caixa-tabela">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Pedidos</th>
+            <th>Entregas</th>
+            <th>Valor Entregas</th>
+            <th>Faturamento</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-historico">
+          <tr><td colspan="5" class="sem-dados">Selecione um período.</td></tr>
+        </tbody>
+        <tfoot id="historico-rodape" style="display:none">
+          <tr class="historico-total">
+            <td><strong>Total</strong></td>
+            <td id="hist-total-pedidos"></td>
+            <td id="hist-total-entregas"></td>
+            <td id="hist-valor-entregas"></td>
+            <td id="hist-total-faturado"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
 </div>
 
 <!-- Modal de confirmação -->

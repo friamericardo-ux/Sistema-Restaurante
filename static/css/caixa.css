@@ -390,6 +390,39 @@
 }
 .btn-confirmar:hover { transform: translateY(-1px); }
 
+/* ── Histórico mensal ── */
+.historico-filtro {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.historico-filtro label {
+  color: #aaa;
+  font-size: 14px;
+}
+.historico-filtro select {
+  background: #1e1e1e;
+  color: #e0e0e0;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.historico-filtro select:focus {
+  outline: none;
+  border-color: #f59e0b;
+}
+.historico-total td {
+  background: #1e1e1e;
+  border-top: 2px solid #333;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #e0e0e0;
+}
+
 /* ── Responsivo ── */
 @media (max-width: 600px) {
   .caixa-cards { grid-template-columns: 1fr; }

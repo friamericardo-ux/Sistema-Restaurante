@@ -32,6 +32,8 @@ async function carregarResumo() {
     const statusDiv = document.getElementById('caixa-status');
     const btnFechar = document.getElementById('btn-fechar');
 
+    const historicoSection = document.getElementById('historico-section');
+
     if (data.caixa_fechado) {
       statusDiv.style.display = 'block';
       statusDiv.className = 'caixa-status fechado';
@@ -41,6 +43,10 @@ async function carregarResumo() {
       btnFechar.style.cursor = 'pointer';
       btnFechar.textContent = '🔓 Abrir Caixa';
       btnFechar.onclick = abrirCaixa;
+      if (historicoSection.style.display === 'none') {
+        historicoSection.style.display = 'block';
+        carregarHistorico();
+      }
     } else {
       statusDiv.style.display = 'block';
       statusDiv.className = 'caixa-status aberto';
@@ -49,6 +55,7 @@ async function carregarResumo() {
       btnFechar.style.cursor = 'pointer';
       btnFechar.textContent = '🔒 Fechar Caixa do Dia';
       btnFechar.onclick = confirmarFechamento;
+      historicoSection.style.display = 'none';
     }
   } catch (e) {
     console.error('Erro ao carregar resumo:', e);
@@ -183,7 +190,73 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// ── Histórico mensal ──
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+               'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function inicializarFiltros() {
+  const agora = new Date();
+  const selMes = document.getElementById('filtro-mes');
+  const selAno = document.getElementById('filtro-ano');
+
+  selMes.innerHTML = MESES.map((nome, i) => {
+    const val = String(i + 1).padStart(2, '0');
+    const sel = (i + 1 === agora.getMonth() + 1) ? ' selected' : '';
+    return `<option value="${val}"${sel}>${nome}</option>`;
+  }).join('');
+
+  for (let y = agora.getFullYear(); y >= agora.getFullYear() - 3; y--) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    if (y === agora.getFullYear()) opt.selected = true;
+    selAno.appendChild(opt);
+  }
+}
+
+async function carregarHistorico() {
+  const mes = document.getElementById('filtro-mes').value;
+  const ano = document.getElementById('filtro-ano').value;
+  const tbody = document.getElementById('tabela-historico');
+  const tfoot = document.getElementById('historico-rodape');
+
+  tbody.innerHTML = '<tr><td colspan="5" class="sem-dados">Carregando...</td></tr>';
+  tfoot.style.display = 'none';
+
+  try {
+    const res = await fetch(`/api/caixa/historico?mes=${mes}&ano=${ano}`);
+    const data = await res.json();
+    if (!data.sucesso) return;
+
+    if (!data.fechamentos.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="sem-dados">Nenhum fechamento neste período.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.fechamentos.map(f => {
+      const data_fmt = f.data ? f.data.slice(8, 10) + '/' + f.data.slice(5, 7) + '/' + f.data.slice(0, 4) : f.data;
+      return `<tr>
+        <td>${data_fmt}</td>
+        <td>${f.total_pedidos}</td>
+        <td>${f.total_entregas}</td>
+        <td class="valor-positivo">${formatarReais(f.valor_entregas)}</td>
+        <td class="valor-positivo">${formatarReais(f.total_faturado)}</td>
+      </tr>`;
+    }).join('');
+
+    const t = data.totais;
+    document.getElementById('hist-total-pedidos').textContent = t.total_pedidos;
+    document.getElementById('hist-total-entregas').textContent = t.total_entregas;
+    document.getElementById('hist-valor-entregas').innerHTML = `<strong>${formatarReais(t.valor_entregas)}</strong>`;
+    document.getElementById('hist-total-faturado').innerHTML = `<strong>${formatarReais(t.total_faturado)}</strong>`;
+    tfoot.style.display = '';
+  } catch (e) {
+    console.error('Erro ao carregar histórico:', e);
+  }
+}
+
 // ── Inicialização ──
+inicializarFiltros();
 carregarResumo();
 carregarMovimentacoes();
 carregarGrafico();

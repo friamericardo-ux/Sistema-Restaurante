@@ -963,6 +963,44 @@ def fechar_caixa():
     })
 
 
+@app.route("/api/caixa/historico")
+@admin_required
+def caixa_historico():
+    """Retorna fechamentos da tabela fechamentos_caixa filtrados por mês/ano"""
+    mes = request.args.get("mes", "01").zfill(2)
+    ano = request.args.get("ano", "2026")
+
+    db = get_connection()
+    db.row_factory = sqlite3.Row
+    cursor = db.cursor()
+
+    cursor.execute("""
+        SELECT data, total_faturado, total_pedidos, total_entregas, valor_entregas
+        FROM fechamentos_caixa
+        WHERE strftime('%m', data) = ? AND strftime('%Y', data) = ?
+        ORDER BY data ASC
+    """, (mes, ano))
+
+    fechamentos = [dict(row) for row in cursor.fetchall()]
+    db.close()
+
+    total_faturado = sum(f["total_faturado"] for f in fechamentos)
+    total_pedidos = sum(f["total_pedidos"] for f in fechamentos)
+    total_entregas = sum(f["total_entregas"] for f in fechamentos)
+    valor_entregas = sum(f["valor_entregas"] for f in fechamentos)
+
+    return jsonify({
+        "sucesso": True,
+        "fechamentos": fechamentos,
+        "totais": {
+            "total_faturado": total_faturado,
+            "total_pedidos": total_pedidos,
+            "total_entregas": total_entregas,
+            "valor_entregas": valor_entregas
+        }
+    })
+
+
 @app.route("/api/caixa/abrir", methods=["POST"])
 @csrf.exempt
 @admin_required
