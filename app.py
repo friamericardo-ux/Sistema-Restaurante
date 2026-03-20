@@ -565,22 +565,24 @@ def criar_pedido():
     cliente_telefone = dados.get("telefone")
     cliente_endereco = dados.get("endereco")
     itens = dados.get("itens", [])
+    forma_pagamento = dados.get("pagamento", "")
+    troco = dados.get("troco", 0)
     taxa_entrega = 5.00
-    
+
     if not itens or not cliente_nome:
         return jsonify({"sucesso": False, "erro": "Dados incompletos!"})
-    
+
     # Calcula total
     total = sum(item.get("preco", 0) * item.get("quantidade", 1) for item in itens)
     total += taxa_entrega
-    
+
     # Salva no banco
     db = get_connection()
     cursor = db.cursor()
     cursor.execute("""
-        INSERT INTO pedidos_delivery 
-        (cliente_nome, cliente_telefone, cliente_endereco, itens, taxa_entrega, total, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO pedidos_delivery
+        (cliente_nome, cliente_telefone, cliente_endereco, itens, taxa_entrega, total, forma_pagamento, troco, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         cliente_nome,
         cliente_telefone,
@@ -588,6 +590,8 @@ def criar_pedido():
         json.dumps(itens, ensure_ascii=False),
         taxa_entrega,
         total,
+        forma_pagamento,
+        troco,
         'novo'
     ))
     
