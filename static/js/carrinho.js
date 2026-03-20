@@ -65,7 +65,7 @@ function finalizarPedido() {
   const observacao = document.getElementById('observacao').value.trim();
   const pagamento = document.querySelector('input[name="pagamento"]:checked')?.value;
 
-  let troco = '';
+  let troco = 0;
   let trocoTexto = '';
   if (pagamento === 'dinheiro') {
     const precisaTroco = document.getElementById('troco-sim')?.checked;
@@ -74,13 +74,12 @@ function finalizarPedido() {
       const totalPedido = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0) + 5;
       if (!isNaN(valorPago) && valorPago > 0) {
         const trocoDar = valorPago - totalPedido;
-        troco = `R$ ${valorPago.toFixed(2)}`;
+        troco = valorPago;
         trocoTexto = trocoDar > 0
         ? `Troco para R$ ${valorPago.toFixed(2)}\n💰 *Troco a devolver:* R$ ${trocoDar.toFixed(2)}`
         : 'Valor exato';
       }
     } else {
-      troco = 'Não precisa';
       trocoTexto = 'Não precisa de troco';
     }
   }
