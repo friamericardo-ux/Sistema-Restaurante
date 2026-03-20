@@ -763,21 +763,27 @@ def migrar_banco():
     resultados = []
 
     migracoes = [
-        ("pedidos_delivery", "forma_pagamento", "TEXT DEFAULT ''"),
-        ("pedidos_delivery", "troco",           "REAL DEFAULT 0"),
+        ("pedidos_delivery", "forma_pagamento", "VARCHAR(50) DEFAULT NULL"),
+        ("pedidos_delivery", "troco",           "DOUBLE DEFAULT 0"),
     ]
 
     for tabela, coluna, definicao in migracoes:
         try:
-            cursor.execute(f"ALTER TABLE {tabela} ADD COLUMN {coluna} {definicao}")
-            db.commit()
-            resultados.append(f"OK: coluna '{coluna}' adicionada em '{tabela}'")
-        except Exception as e:
-            msg = str(e).lower()
-            if "duplicate column" in msg or "already exists" in msg:
-                resultados.append(f"JA EXISTE: '{coluna}' em '{tabela}'")
+            # Verifica se a coluna já existe
+            cursor.execute(f"SHOW COLUMNS FROM {tabela} LIKE '{coluna}'")
+            existe = cursor.fetchone()
+            if existe:
+                # Coluna existe — corrige o tipo com MODIFY
+                cursor.execute(f"ALTER TABLE {tabela} MODIFY {coluna} {definicao}")
+                db.commit()
+                resultados.append(f"CORRIGIDO: '{coluna}' em '{tabela}' → {definicao}")
             else:
-                resultados.append(f"ERRO em '{tabela}.{coluna}': {e}")
+                # Coluna não existe — cria
+                cursor.execute(f"ALTER TABLE {tabela} ADD COLUMN {coluna} {definicao}")
+                db.commit()
+                resultados.append(f"OK: coluna '{coluna}' adicionada em '{tabela}'")
+        except Exception as e:
+            resultados.append(f"ERRO em '{tabela}.{coluna}': {e}")
 
     db.close()
     return "<br>".join(resultados) + "<br><br><a href='/admin'>Voltar ao painel</a>"
