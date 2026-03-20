@@ -268,6 +268,8 @@ async function finalizarPedido(){
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         nome, telefone: tel, endereco: end,
+        pagamento: pgtoSel,
+        troco: pgtoSel === 'dinheiro' ? parseFloat(troco) || 0 : 0,
         itens: carrinho.map(i=>({
           nome: i.nome,
           preco: i.preco,
