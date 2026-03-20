@@ -9,6 +9,7 @@ function escapeHtml(str) {
 }
 
 var mesaAtual = null;
+var _itemSelecionado = null;
 
 async function montarCardapio() {
     var grid = document.getElementById("cardapio-grid");
@@ -31,8 +32,15 @@ async function montarCardapio() {
             btn.appendChild(span);
             btn.dataset.nome = p.nome;
             btn.dataset.preco = p.preco;
+            btn.dataset.categoria = p.categoria || '';
+            btn.dataset.descricao = p.descricao || '';
             btn.addEventListener('click', function() {
-                adicionarDoCardapio(this.dataset.nome, parseFloat(this.dataset.preco));
+                selecionarProduto({
+                    nome: this.dataset.nome,
+                    preco: parseFloat(this.dataset.preco),
+                    categoria: this.dataset.categoria,
+                    descricao: this.dataset.descricao
+                });
             });
             grid.appendChild(btn);
         });
@@ -50,7 +58,7 @@ function adicionarDoCardapio(nome, preco) {
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.sucesso) {
-                abrirModal(mesaAtual);
+                atualizarConsumoModal(mesaAtual);
             } else {
                 alert("Erro: " + data.erro);
             }
@@ -78,7 +86,7 @@ function adicionarItem() {
                 document.getElementById("item-nome").value = "";
                 document.getElementById("item-preco").value = "";
                 document.getElementById("item-qtd").value = "1";
-                abrirModal(mesaAtual);
+                atualizarConsumoModal(mesaAtual);
             } else {
                 alert("Erro: " + data.erro);
             }
@@ -94,7 +102,7 @@ function removerItem(id) {
     })
         .then(function(r) { return r.json(); })
         .then(function(data) {
-            if (data.sucesso) abrirModal(mesaAtual);
+            if (data.sucesso) atualizarConsumoModal(mesaAtual);
         });
 }
 
@@ -112,6 +120,31 @@ function fecharMesa() {
             } else {
                 alert("Erro: " + data.erro);
             }
+        });
+}
+
+// Atualiza apenas lista de itens e total sem recarregar o cardápio
+function atualizarConsumoModal(numMesa) {
+    fetch("/api/mesas")
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var mesa = data.mesas.find(function(m) { return m.numero == numMesa; });
+            if (!mesa) return;
+            var lista = document.getElementById("lista-itens-modal");
+            lista.innerHTML = "";
+            if (mesa.itens && mesa.itens.length > 0) {
+                mesa.itens.forEach(function(item) {
+                    lista.innerHTML +=
+                        '<div class="item-linha">' +
+                            '<span class="item-nome">' + item.quantidade + 'x ' + escapeHtml(item.nome) + '</span>' +
+                            '<span class="item-preco">R$ ' + (item.preco * item.quantidade).toFixed(2) + '</span>' +
+                            '<button class="btn-remover" onclick="removerItem(' + item.id + ')">✖</button>' +
+                        '</div>';
+                });
+            } else {
+                lista.innerHTML = "<p style='color:#aaa;'>Nenhum item ainda.</p>";
+            }
+            document.getElementById("total-modal").innerText = "Total: R$ " + mesa.total.toFixed(2);
         });
 }
 
@@ -188,6 +221,67 @@ function abrirModalNovaMesa() {
                 }
             });
     }
+}
+
+// Mostra adicionais disponíveis para o produto clicado
+async function selecionarProduto(produto) {
+    _itemSelecionado = { nome: produto.nome, preco: produto.preco };
+    document.getElementById('adicionais-produto-label').textContent =
+        produto.nome + '  —  R$ ' + produto.preco.toFixed(2);
+    document.getElementById('adicionais-produto-desc').textContent = produto.descricao || '';
+    var lista = document.getElementById('adicionais-lista');
+    lista.innerHTML = '<span style="color:#aaa;font-size:12px;">Carregando adicionais...</span>';
+    document.getElementById('adicionais-area').style.display = 'block';
+    try {
+        var url = '/api/adicionais' + (produto.categoria ? '?categoria=' + encodeURIComponent(produto.categoria) : '');
+        var res = await fetch(url);
+        var data = await res.json();
+        lista.innerHTML = '';
+        if (data.sucesso && data.adicionais.length > 0) {
+            data.adicionais.forEach(function(a) {
+                var lbl = document.createElement('label');
+                lbl.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:#2a2a2a;padding:4px 10px;border-radius:4px;cursor:pointer;color:#ddd;font-size:13px;';
+                var cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.dataset.nome = a.nome;
+                cb.dataset.preco = a.preco;
+                lbl.appendChild(cb);
+                lbl.appendChild(document.createTextNode(
+                    a.nome + (parseFloat(a.preco) > 0 ? '  +R$' + parseFloat(a.preco).toFixed(2) : '')
+                ));
+                lista.appendChild(lbl);
+            });
+        } else {
+            lista.innerHTML = '<span style="color:#aaa;font-size:12px;">Sem adicionais para esta categoria.</span>';
+        }
+    } catch (e) {
+        lista.innerHTML = '<span style="color:#aaa;font-size:12px;">Erro ao carregar adicionais.</span>';
+    }
+}
+
+// Confirma adição do item com os adicionais selecionados
+function confirmarItemComAdicionais() {
+    if (!_itemSelecionado) return;
+    var checkboxes = document.querySelectorAll('#adicionais-lista input[type=checkbox]:checked');
+    var adicionais = [];
+    checkboxes.forEach(function(cb) {
+        adicionais.push({ nome: cb.dataset.nome, preco: parseFloat(cb.dataset.preco) });
+    });
+    var nomeCompleto = _itemSelecionado.nome;
+    var precoTotal = _itemSelecionado.preco;
+    if (adicionais.length > 0) {
+        nomeCompleto += ' (+ ' + adicionais.map(function(a) { return a.nome; }).join(', ') + ')';
+        precoTotal += adicionais.reduce(function(s, a) { return s + a.preco; }, 0);
+    }
+    cancelarAdicionais();
+    adicionarDoCardapio(nomeCompleto, precoTotal);
+}
+
+// Oculta a área de adicionais
+function cancelarAdicionais() {
+    _itemSelecionado = null;
+    document.getElementById('adicionais-area').style.display = 'none';
+    document.getElementById('adicionais-lista').innerHTML = '';
 }
 
 window.onload = renderizarMesas;

@@ -471,6 +471,24 @@ def fechar_mesa():
     return jsonify({"sucesso": True})
 
 
+@app.route("/admin/force_close_mesa/<int:mesa_id>")
+@login_required
+def force_close_mesa(mesa_id):
+    """Fecha forçado de mesa corrompida — sem validações, direto no banco."""
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, numero FROM mesas WHERE id = ?", (mesa_id,))
+    mesa = cursor.fetchone()
+    if not mesa:
+        db.close()
+        return jsonify({"sucesso": False, "erro": f"Mesa ID {mesa_id} não encontrada."})
+    cursor.execute("DELETE FROM itens WHERE mesa_id = ?", (mesa_id,))
+    cursor.execute("DELETE FROM mesas WHERE id = ?", (mesa_id,))
+    db.commit()
+    db.close()
+    return jsonify({"sucesso": True, "mensagem": f"Mesa ID {mesa_id} (número {mesa[1]}) fechada forçadamente."})
+
+
 # ========================
 # REMOVA OU COMENTE O LOGIN DO TERMINAL
 # ========================

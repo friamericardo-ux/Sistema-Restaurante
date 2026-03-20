@@ -24,6 +24,15 @@
     <p style="color:#aaa;margin-bottom:8px;">Card&aacute;pio r&aacute;pido:</p>
     <div class="cardapio-grid" id="cardapio-grid"></div>
 
+    <!-- Área de seleção de adicionais (aparece ao clicar num produto) -->
+    <div id="adicionais-area" style="display:none;margin:8px 0;padding:10px;background:#1e1e1e;border-radius:8px;border:1px solid #333;">
+      <strong id="adicionais-produto-label" style="color:#f5a623;display:block;margin-bottom:4px;"></strong>
+      <small id="adicionais-produto-desc" style="color:#aaa;display:block;margin-bottom:8px;"></small>
+      <div id="adicionais-lista" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+      <button class="btn-add" onclick="confirmarItemComAdicionais()">&#10133; Adicionar</button>
+      <button onclick="cancelarAdicionais()" style="background:#333;color:#aaa;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;margin-left:6px;">Cancelar</button>
+    </div>
+
     <p style="color:#aaa;margin:10px 0 4px;">Ou adicione manualmente:</p>
     <input type="text"   id="item-nome"  placeholder="Nome do item (ex: X-Burguer)">
     <input type="number" id="item-preco" placeholder="Pre&ccedil;o (ex: 18.50)" step="0.01" min="0">
