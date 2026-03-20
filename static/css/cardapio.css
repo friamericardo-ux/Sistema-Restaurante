@@ -145,7 +145,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--texto);min-
 .carr-item-ads{font-size:11px;color:var(--sub);margin-bottom:2px}
 .carr-item-obs{font-size:11px;color:var(--sub);font-style:italic}
 .carr-item-preco{font-family:'Sora',sans-serif;font-size:14px;font-weight:800;color:var(--laranja);flex-shrink:0}
-.carr-remover{background:none;border:none;color:var(--sub);font-size:18px;cursor:pointer;padding:0 2px;margin-left:4px;flex-shrink:0}
+.carr-qtd-ctrl{display:flex;align-items:center;gap:6px;background:var(--bg);border-radius:10px;padding:3px 8px}
+.carr-qtd-btn{width:26px;height:26px;border:none;background:var(--laranja);border-radius:7px;font-size:16px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s}
+.carr-qtd-btn:active{transform:scale(.88)}
+.carr-qtd-num{font-family:'Sora',sans-serif;font-size:14px;font-weight:800;min-width:16px;text-align:center;color:var(--texto)}
 
 .campo{margin-bottom:14px}
 .campo label{display:block;font-size:13px;font-weight:600;color:var(--sub);margin-bottom:6px}

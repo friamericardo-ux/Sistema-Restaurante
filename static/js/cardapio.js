@@ -206,9 +206,13 @@ function renderCarrinho(){
           ${adsStr?`<div class="carr-item-ads">+ ${adsStr}</div>`:''}
           ${item.obs?`<div class="carr-item-obs">"${item.obs}"</div>`:''}
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
           <div class="carr-item-preco">${fmt(subtotal)}</div>
-          <button class="carr-remover" onclick="removerItem(${idx})">🗑</button>
+          <div class="carr-qtd-ctrl">
+            <button class="carr-qtd-btn" onclick="alterarQtdCarrinho(${idx},-1)">-</button>
+            <span class="carr-qtd-num">${item.qtd}</span>
+            <button class="carr-qtd-btn" onclick="alterarQtdCarrinho(${idx},1)">+</button>
+          </div>
         </div>
       </div>`;
   }).join('');
@@ -217,6 +221,16 @@ function renderCarrinho(){
 
 function removerItem(idx){
   carrinho.splice(idx,1);
+  renderCarrinho();
+  atualizarFooter();
+  if(carrinho.length===0){voltarCardapio();}
+}
+
+function alterarQtdCarrinho(idx,delta){
+  carrinho[idx].qtd+=delta;
+  if(carrinho[idx].qtd<=0){
+    carrinho.splice(idx,1);
+  }
   renderCarrinho();
   atualizarFooter();
   if(carrinho.length===0){voltarCardapio();}
