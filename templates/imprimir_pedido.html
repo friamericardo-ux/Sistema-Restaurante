@@ -5,126 +5,136 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comanda #{{ pedido_id }}</title>
   <style>
-    /* ── Reset & Base ── */
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: 'Courier New', Courier, monospace;
-      font-size: 13px;
+      font-size: 12px;
       color: #000;
-      background: #f5f5f5;
+      background: #e8e8e8;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
       padding: 20px;
     }
 
     .comanda {
       background: #fff;
       width: 80mm;
-      padding: 8mm 4mm;
-      border: 1px dashed #ccc;
+      padding: 6mm 5mm;
     }
 
-    .text-center { text-align: center; }
-
-    .estabelecimento {
-      font-size: 16px;
-      font-weight: bold;
-      margin-bottom: 4px;
-    }
-
-    .separador {
-      border: none;
-      border-top: 1px dashed #000;
-      margin: 6px 0;
-    }
-
-    .info-linha {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
+    /* ── Cabeçalho ── */
+    .cabecalho {
+      text-align: center;
       margin-bottom: 2px;
     }
 
-    .info-linha span:first-child { font-weight: bold; }
-
-    .cliente-info {
-      margin: 4px 0;
-      font-size: 12px;
-      line-height: 1.5;
+    .nome-estabelecimento {
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-transform: uppercase;
     }
 
-    .cliente-info strong { display: block; }
-
-    /* ── Tabela de itens ── */
-    .itens-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 4px 0;
-    }
-
-    .itens-table th {
+    .titulo-comanda {
       font-size: 11px;
-      text-align: left;
-      border-bottom: 1px solid #000;
-      padding: 2px 0;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin-top: 3px;
     }
 
-    .itens-table th:last-child { text-align: right; }
+    .cabecalho-sub {
+      font-size: 10px;
+      margin-top: 3px;
+    }
 
-    .itens-table td {
+    /* ── Separadores ── */
+    .sep {
+      border: none;
+      border-top: 1px dashed #000;
+      margin: 5px 0;
+    }
+
+    /* ── Linhas chave:valor ── */
+    .linha-kv {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      margin-bottom: 2px;
+    }
+
+    .linha-kv .chave { font-weight: bold; }
+
+    /* ── Seção título ── */
+    .sec-titulo {
+      font-size: 10px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      margin-bottom: 3px;
+      text-transform: uppercase;
+    }
+
+    /* ── Dados do cliente ── */
+    .cliente-dados {
+      font-size: 11px;
+      line-height: 1.7;
+    }
+
+    /* ── Itens ── */
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
       font-size: 12px;
-      padding: 3px 0;
-      vertical-align: top;
+      margin-bottom: 1px;
     }
 
-    .itens-table td:last-child { text-align: right; white-space: nowrap; }
-
-    .item-extras {
-      font-size: 10px;
-      color: #555;
-      padding-left: 4px;
+    .item-descricao {
+      flex: 1;
+      padding-right: 6px;
     }
 
-    .item-obs {
+    .item-valor {
+      white-space: nowrap;
+      font-size: 11px;
+    }
+
+    .item-detalhe {
       font-size: 10px;
-      color: #555;
-      font-style: italic;
-      padding-left: 4px;
+      padding-left: 10px;
+      margin-bottom: 2px;
+      line-height: 1.4;
     }
 
     /* ── Totais ── */
-    .totais {
-      margin: 4px 0;
-    }
+    .totais { margin: 2px 0; }
 
-    .totais .linha {
+    .total-final {
       display: flex;
       justify-content: space-between;
-      font-size: 12px;
-      margin-bottom: 2px;
-    }
-
-    .totais .total-final {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: bold;
-      border-top: 1px dashed #000;
       padding-top: 4px;
-      margin-top: 4px;
+      margin-top: 2px;
+      border-top: 1px solid #000;
     }
 
+    /* ── Pagamento ── */
+    .pagamento { margin: 2px 0; }
+
+    /* ── Rodapé ── */
     .rodape {
-      font-size: 10px;
       text-align: center;
-      margin-top: 8px;
-      color: #555;
+      font-size: 10px;
+      margin-top: 6px;
+      line-height: 1.9;
     }
 
-    /* ── Botão Imprimir ── */
+    /* ── Botão (fora da comanda) ── */
     .btn-imprimir {
-      display: block;
-      width: 100%;
-      margin-top: 12px;
+      width: 80mm;
+      margin-top: 14px;
       padding: 10px;
       background: #ff6b2b;
       color: #fff;
@@ -133,31 +143,17 @@
       font-size: 15px;
       font-weight: bold;
       cursor: pointer;
+      font-family: 'Courier New', Courier, monospace;
     }
 
     .btn-imprimir:hover { background: #e55a20; }
 
-    /* ── Impressão (@media print) ── */
+    /* ── Impressão ── */
     @media print {
-      body {
-        background: #fff;
-        padding: 0;
-        margin: 0;
-      }
-
-      .comanda {
-        border: none;
-        padding: 0;
-        width: 80mm;
-        margin: 0;
-      }
-
+      body { background: #fff; padding: 0; margin: 0; }
+      .comanda { padding: 0; width: 80mm; }
       .btn-imprimir { display: none !important; }
-
-      @page {
-        size: 80mm auto;
-        margin: 2mm;
-      }
+      @page { size: 80mm auto; margin: 2mm; }
     }
   </style>
 </head>
@@ -165,104 +161,114 @@
 
 <div class="comanda">
 
-  <!-- Cabeçalho -->
-  <div class="text-center">
-    <div class="estabelecimento">🍔 Comanda Digital</div>
-    <div style="font-size:11px;color:#555;">Comanda Online</div>
+  <!-- ══ 1. CABEÇALHO ══ -->
+  <div class="cabecalho">
+    <div class="nome-estabelecimento">Comanda Digital</div>
+    <div class="titulo-comanda">*** COMANDA DE PEDIDO ***</div>
+    <div class="cabecalho-sub">{{ criado_em }}</div>
   </div>
 
-  <hr class="separador">
+  <hr class="sep">
 
-  <!-- Tipo + ID -->
-  <div class="info-linha">
-    <span>PEDIDO</span>
+  <div class="linha-kv">
+    <span class="chave">PEDIDO N&#x00BA;</span>
     <span>#{{ pedido_id }}</span>
   </div>
-  <div class="info-linha">
-    <span>DATA/HORA</span>
-    <span>{{ criado_em }}</span>
-  </div>
-  <div class="info-linha">
-    <span>STATUS</span>
-    <span>{{ status|upper }}</span>
+  <div class="linha-kv">
+    <span class="chave">STATUS</span>
+    <span>{{ status | upper }}</span>
   </div>
 
-  <hr class="separador">
+  <hr class="sep">
 
-  <!-- Dados do cliente -->
-  <div class="cliente-info">
-    <strong>🛵 DELIVERY</strong>
-    {% if cliente_nome %}👤 {{ cliente_nome }}{% endif %}
-    {% if cliente_telefone %}<br>📞 {{ cliente_telefone }}{% endif %}
-    {% if cliente_endereco %}<br>📍 {{ cliente_endereco }}{% endif %}
+  <!-- ══ 2. DADOS DO CLIENTE ══ -->
+  <div class="sec-titulo">&#x1F4CB; Dados do Cliente</div>
+  <div class="cliente-dados">
+    {% if cliente_nome %}
+    <div>&#x1F464; {{ cliente_nome }}</div>
+    {% endif %}
+    {% if cliente_telefone %}
+    <div>&#x1F4DE; {{ cliente_telefone }}</div>
+    {% endif %}
+    {% if cliente_endereco and cliente_endereco | lower != 'retirada no local' %}
+    <div>&#x1F4CD; {{ cliente_endereco }}</div>
+    {% else %}
+    <div>&#x1F3EA; Retirada no balc&#x00E3;o</div>
+    {% endif %}
   </div>
 
-  <hr class="separador">
+  <hr class="sep">
 
-  <!-- Itens -->
-  <table class="itens-table">
-    <thead>
-      <tr>
-        <th>Qtd</th>
-        <th>Item</th>
-        <th>Valor</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in itens %}
-      <tr>
-        <td>{{ item.quantidade }}x</td>
-        <td>
-          {{ item.nome }}
-          {% if item.adicionais and item.adicionais|length > 0 %}
-            <div class="item-extras">
-              ➕ {{ item.adicionais|map(attribute='nome')|join(', ') }}
-            </div>
-          {% endif %}
-          {% if item.observacao %}
-            <div class="item-obs">📝 {{ item.observacao }}</div>
-          {% endif %}
-        </td>
-        <td>R$ {{ "%.2f"|format(item.preco * item.quantidade) }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <!-- ══ 3. ITENS DO PEDIDO ══ -->
+  <div class="sec-titulo">&#x1F6D2; Itens do Pedido</div>
 
-  <hr class="separador">
+  {% for item in itens %}
+  <div class="item-row">
+    <span class="item-descricao">{{ item.quantidade }}x {{ item.nome }}</span>
+    <span class="item-valor">R$ {{ "%.2f"|format(item.preco * item.quantidade) }}</span>
+  </div>
+  {% if item.adicionais and item.adicionais | length > 0 %}
+  <div class="item-detalhe">&#x21B3; Adicionais: {{ item.adicionais | map(attribute='nome') | join(', ') }}</div>
+  {% endif %}
+  {% if item.observacao %}
+  <div class="item-detalhe">&#x21B3; Obs: {{ item.observacao }}</div>
+  {% endif %}
+  {% endfor %}
 
-  <!-- Totais -->
+  <hr class="sep">
+
+  <!-- ══ 4. RODAPÉ FINANCEIRO ══ -->
+  {% set ns = namespace(subtotal=0) %}
+  {% for item in itens %}
+    {% set ns.subtotal = ns.subtotal + (item.preco * item.quantidade) %}
+  {% endfor %}
+
   <div class="totais">
-    {% set subtotal = [] %}
-    {% for item in itens %}
-      {% if subtotal.append(item.preco * item.quantidade) %}{% endif %}
-    {% endfor %}
-    <div class="linha">
-      <span>Subtotal</span>
-      <span>R$ {{ "%.2f"|format(subtotal|sum) }}</span>
+    <div class="linha-kv">
+      <span>Subtotal dos itens</span>
+      <span>R$ {{ "%.2f"|format(ns.subtotal) }}</span>
     </div>
-    <div class="linha">
-      <span>🛵 Entrega</span>
+    {% if taxa_entrega and taxa_entrega > 0 %}
+    <div class="linha-kv">
+      <span>&#x1F6F5; Taxa de entrega</span>
       <span>R$ {{ "%.2f"|format(taxa_entrega) }}</span>
     </div>
-    <div class="linha total-final">
-      <span>TOTAL</span>
-      <span>R$ {{ "%.2f"|format(total) }}</span>
+    {% endif %}
+  </div>
+
+  <div class="total-final">
+    <span>TOTAL GERAL</span>
+    <span>R$ {{ "%.2f"|format(total) }}</span>
+  </div>
+
+  {% if forma_pagamento is defined and forma_pagamento %}
+  <hr class="sep">
+  <div class="pagamento">
+    <div class="linha-kv">
+      <span class="chave">Pagamento</span>
+      <span>{{ forma_pagamento }}</span>
     </div>
+    {% if troco is defined and troco and troco > 0 %}
+    <div class="linha-kv">
+      <span class="chave">Troco para</span>
+      <span>R$ {{ "%.2f"|format(troco) }}</span>
+    </div>
+    {% endif %}
   </div>
+  {% endif %}
 
-  <hr class="separador">
+  <hr class="sep">
 
-  <!-- Rodapé -->
+  <!-- ══ 5. RODAPÉ FIXO ══ -->
   <div class="rodape">
-    Obrigado pela preferência!<br>
-    🍔 Comanda Digital
+    --------------------------------<br>
+    Obrigado pela prefer&#x00EA;ncia!<br>
+    Pedido gerado pelo Comanda Digital
   </div>
-
-  <!-- Botão Imprimir -->
-  <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir Comanda</button>
 
 </div>
+
+<button class="btn-imprimir" onclick="window.print()">&#x1F5A8; Imprimir Comanda</button>
 
 </body>
 </html>

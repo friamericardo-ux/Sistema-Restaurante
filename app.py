@@ -725,7 +725,7 @@ def imprimir_pedido(id):
     db = get_connection()
     cursor = db.cursor()
     cursor.execute(
-        "SELECT id, cliente_nome, cliente_telefone, cliente_endereco, itens, taxa_entrega, total, status, criado_em FROM pedidos_delivery WHERE id = ?",
+        "SELECT id, cliente_nome, cliente_telefone, cliente_endereco, itens, taxa_entrega, total, forma_pagamento, troco, status, criado_em FROM pedidos_delivery WHERE id = ?",
         (id,)
     )
     pedido = cursor.fetchone()
@@ -744,8 +744,10 @@ def imprimir_pedido(id):
         itens=itens,
         taxa_entrega=pedido[5],
         total=pedido[6],
-        status=pedido[7],
-        criado_em=pedido[8]
+        forma_pagamento=pedido[7],
+        troco=pedido[8],
+        status=pedido[9],
+        criado_em=pedido[10]
     )
 
 # ========== ADMIN PRODUTOS ==========
