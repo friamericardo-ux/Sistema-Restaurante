@@ -247,7 +247,7 @@
     <span>R$ {{ "%.2f"|format(total) }}</span>
   </div>
 
-  {% set pgto_label = {'pix': 'PIX', 'dinheiro': 'Dinheiro', 'credito': 'Cartão de Crédito', 'debito': 'Cartão de Débito', 'cartao': 'Cartão'} %}
+  {% set pgto_label = {'pix': 'PIX', 'dinheiro': 'Dinheiro', 'credito': 'Cartão de Crédito', 'cartao_credito': 'Cartão de Crédito', 'debito': 'Cartão de Débito', 'cartao_debito': 'Cartão de Débito', 'cartao': 'Cartão'} %}
   {% if forma_pagamento %}
   <hr class="sep">
   <div class="pagamento">
