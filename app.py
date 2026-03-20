@@ -721,6 +721,25 @@ def atualizar_status_pedido():
 
     return jsonify({"sucesso": True})
 
+@app.route("/pedido/<int:id>/cancelar", methods=["POST"])
+@csrf.exempt
+@login_required
+def cancelar_pedido(id):
+    """Cancela um pedido delivery (muda status para 'cancelado')"""
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute(
+        "UPDATE pedidos_delivery SET status = 'cancelado' WHERE id = ? AND status = 'novo'",
+        (id,)
+    )
+    alterado = cursor.rowcount
+    db.commit()
+    db.close()
+
+    if alterado == 0:
+        return jsonify({"sucesso": False, "erro": "Pedido não encontrado ou não está como 'novo'."})
+    return jsonify({"sucesso": True})
+
 # ========== IMPRESSÃO DE COMANDA ==========
 
 @app.route('/pedido/<int:id>/imprimir')

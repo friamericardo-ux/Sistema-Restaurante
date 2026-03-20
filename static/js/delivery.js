@@ -55,10 +55,34 @@ function criarCard(pedido) {
             <span class="total-pedido">R$ ${pedido.total.toFixed(2)}</span>
             <a href="/pedido/${pedido.id}/imprimir" target="_blank" class="btn-avancar" style="text-decoration:none;background:#555;">🖨️ Imprimir</a>
             ${prox ? `<button class="btn-avancar" onclick="avancarStatus(${pedido.id}, '${prox.status}')">${prox.label}</button>` : ''}
+            ${pedido.status === 'novo' ? `<button class="btn-cancelar" onclick="cancelarPedido(${pedido.id})">✕ Cancelar</button>` : ''}
         </div>
     `;
 
     return div;
+}
+
+/* ── Cancelar pedido (coluna NOVOS apenas) ── */
+async function cancelarPedido(pedido_id) {
+    if (!confirm('Cancelar este pedido?')) return;
+
+    const card = document.getElementById(`pedido-${pedido_id}`);
+    if (card) card.remove();
+    delete pedidosAtuais[pedido_id];
+
+    try {
+        const res = await fetch(`/pedido/${pedido_id}/cancelar`, { method: 'POST' });
+        const data = await res.json();
+        if (data.sucesso) {
+            mostrarToast('🚫 Pedido cancelado.');
+        } else {
+            mostrarToast('❌ Erro: ' + (data.erro || 'Falha ao cancelar'));
+            await buscarPedidos(); // restaura se falhou
+        }
+    } catch (e) {
+        mostrarToast('❌ Erro de conexão ao cancelar');
+        await buscarPedidos();
+    }
 }
 
 /* ── Avançar status com feedback imediato ── */

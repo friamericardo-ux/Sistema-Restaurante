@@ -209,6 +209,22 @@ header h1 span { color: var(--novo); }
 .coluna-preparo .btn-avancar { background: var(--saiu);     color: #fff; }
 .coluna-saiu    .btn-avancar { background: var(--entregue); color: #fff; }
 
+/* ── BOTÃO CANCELAR (coluna NOVOS) ── */
+.btn-cancelar {
+    border: 1px solid #c0392b;
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    background: transparent;
+    color: #c0392b;
+    transition: background 0.2s, color 0.2s, transform 0.1s;
+}
+.btn-cancelar:hover  { background: #c0392b; color: #fff; }
+.btn-cancelar:active { transform: scale(0.97); }
+
 /* ── ESTADO VAZIO ── */
 .vazio {
     text-align: center;
