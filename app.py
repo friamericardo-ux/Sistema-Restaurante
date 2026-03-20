@@ -121,6 +121,33 @@ def _garantir_caixa_sessoes():
 _garantir_caixa_sessoes()
 
 
+def _garantir_clientes_cache():
+    db = get_connection()
+    cursor = db.cursor()
+    if is_mysql():
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS clientes_cache (
+                telefone VARCHAR(20) PRIMARY KEY,
+                nome VARCHAR(100),
+                endereco VARCHAR(255),
+                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+    else:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS clientes_cache (
+                telefone TEXT PRIMARY KEY,
+                nome TEXT,
+                endereco TEXT,
+                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    db.commit()
+    db.close()
+
+_garantir_clientes_cache()
+
+
 def _get_sessao_inicio(cursor):
     """Retorna o datetime de início da sessão atual do caixa como string."""
     cursor.execute("""
@@ -1312,6 +1339,55 @@ def desativar_adicional_route(id):
 def api_categorias():
     categorias = listar_categorias_produtos()
     return jsonify({"sucesso": True, "categorias": categorias})
+
+
+# ========================
+# CACHE DE CLIENTES
+# ========================
+
+@app.route("/api/cliente/<telefone>")
+@csrf.exempt
+def get_cliente(telefone):
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute(
+        "SELECT nome, endereco FROM clientes_cache WHERE telefone = ?",
+        (telefone,)
+    )
+    row = cursor.fetchone()
+    db.close()
+    if row:
+        return jsonify({"sucesso": True, "nome": row[0], "endereco": row[1]})
+    return jsonify({"sucesso": False})
+
+
+@app.route("/api/cliente", methods=["POST"])
+@csrf.exempt
+def salvar_cliente():
+    dados = request.get_json()
+    telefone = dados.get("telefone", "").strip()
+    nome = dados.get("nome", "").strip()
+    endereco = dados.get("endereco", "").strip()
+    if not telefone:
+        return jsonify({"sucesso": False})
+    db = get_connection()
+    cursor = db.cursor()
+    if is_mysql():
+        cursor.execute("""
+            INSERT INTO clientes_cache (telefone, nome, endereco)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE nome=%s, endereco=%s
+        """, (telefone, nome, endereco, nome, endereco))
+    else:
+        cursor.execute("""
+            INSERT INTO clientes_cache (telefone, nome, endereco)
+            VALUES (?, ?, ?)
+            ON CONFLICT(telefone) DO UPDATE SET nome=excluded.nome, endereco=excluded.endereco
+        """, (telefone, nome, endereco))
+    db.commit()
+    db.close()
+    return jsonify({"sucesso": True})
+
 
 if __name__ == "__main__":
     repo = UserRepository()

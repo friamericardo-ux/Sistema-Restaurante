@@ -101,6 +101,12 @@ function finalizarPedido() {
     })
   }).then(res => res.json()).then(data => {
     if (data.sucesso) {
+      fetch('/api/cliente', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telefone, nome, endereco })
+      }).catch(() => {});
+
       const subtotal = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0);
       const total = subtotal + 5;
       const pagTexto = pagamento === 'cartao' ? '💳 Cartão'
@@ -186,5 +192,22 @@ window.onload = function () {
   });
   document.querySelectorAll('input[name="troco-opcao"]').forEach(r => {
     r.onchange = onTrocoChange;
+  });
+
+  document.getElementById('telefone').addEventListener('blur', function () {
+    const tel = this.value.trim();
+    if (!tel) return;
+    fetch(`/api/cliente/${encodeURIComponent(tel)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.sucesso) {
+          document.getElementById('nome').value = data.nome || '';
+          document.getElementById('endereco').value = data.endereco || '';
+          document.getElementById('msg-autopreenchido').style.display = 'block';
+        } else {
+          document.getElementById('msg-autopreenchido').style.display = 'none';
+        }
+      })
+      .catch(() => {});
   });
 };
