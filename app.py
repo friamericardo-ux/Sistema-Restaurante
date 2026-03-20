@@ -750,6 +750,37 @@ def imprimir_pedido(id):
         criado_em=pedido[10]
     )
 
+# ========== MIGRAÇÃO DO BANCO ==========
+
+@app.route('/admin/migrar-banco')
+@admin_required
+def migrar_banco():
+    """Adiciona colunas faltantes ao banco sem perder dados existentes."""
+    db = get_connection()
+    cursor = db.cursor()
+    resultados = []
+
+    migracoes = [
+        ("pedidos_delivery", "forma_pagamento", "TEXT DEFAULT ''"),
+        ("pedidos_delivery", "troco",           "REAL DEFAULT 0"),
+    ]
+
+    for tabela, coluna, definicao in migracoes:
+        try:
+            cursor.execute(f"ALTER TABLE {tabela} ADD COLUMN {coluna} {definicao}")
+            db.commit()
+            resultados.append(f"OK: coluna '{coluna}' adicionada em '{tabela}'")
+        except Exception as e:
+            msg = str(e).lower()
+            if "duplicate column" in msg or "already exists" in msg:
+                resultados.append(f"JA EXISTE: '{coluna}' em '{tabela}'")
+            else:
+                resultados.append(f"ERRO em '{tabela}.{coluna}': {e}")
+
+    db.close()
+    return "<br>".join(resultados) + "<br><br><a href='/admin'>Voltar ao painel</a>"
+
+
 # ========== ADMIN PRODUTOS ==========
 
 @app.route('/admin/produtos')
