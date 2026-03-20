@@ -753,9 +753,11 @@ def imprimir_pedido(id):
 # ========== MIGRAÇÃO DO BANCO ==========
 
 @app.route('/admin/migrar-banco')
-@admin_required
+@login_required
 def migrar_banco():
     """Adiciona colunas faltantes ao banco sem perder dados existentes."""
+    if session.get('role') not in ('admin', 'superadmin', 'super_admin'):
+        return redirect(url_for('mesas'))
     db = get_connection()
     cursor = db.cursor()
     resultados = []
