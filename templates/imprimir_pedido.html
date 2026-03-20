@@ -208,7 +208,13 @@
     <span class="item-valor">R$ {{ "%.2f"|format(item.preco * item.quantidade) }}</span>
   </div>
   {% if item.adicionais and item.adicionais | length > 0 %}
-  <div class="item-detalhe">&#x21B3; Adicionais: {{ item.adicionais | map(attribute='nome') | join(', ') }}</div>
+  <div class="item-detalhe">&#x21B3; Adicionais:
+    {%- if item.adicionais is string %}
+      {{ item.adicionais }}
+    {%- else %}
+      {{ item.adicionais | map(attribute='nome') | join(', ') }}
+    {%- endif %}
+  </div>
   {% endif %}
   {% if item.observacao %}
   <div class="item-detalhe">&#x21B3; Obs: {{ item.observacao }}</div>
