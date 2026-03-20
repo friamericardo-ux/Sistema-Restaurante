@@ -87,6 +87,7 @@ function finalizarPedido() {
   if (!nome || !telefone || !endereco || !pagamento)
     return toast('Preencha todos os campos obrigatórios');
 
+  console.log('forma_pagamento:', pagamento, 'troco:', troco);
   fetch('/api/pedido', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
