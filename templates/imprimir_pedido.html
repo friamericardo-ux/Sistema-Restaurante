@@ -247,12 +247,13 @@
     <span>R$ {{ "%.2f"|format(total) }}</span>
   </div>
 
-  {% if forma_pagamento is defined and forma_pagamento %}
+  {% set pgto_label = {'pix': 'PIX', 'dinheiro': 'Dinheiro', 'credito': 'Cartão de Crédito', 'debito': 'Cartão de Débito', 'cartao': 'Cartão'} %}
+  {% if forma_pagamento %}
   <hr class="sep">
   <div class="pagamento">
     <div class="linha-kv">
       <span class="chave">Pagamento</span>
-      <span>{{ forma_pagamento }}</span>
+      <span>{{ pgto_label.get(forma_pagamento | lower, forma_pagamento) }}</span>
     </div>
     {% if troco is defined and troco and troco > 0 %}
     <div class="linha-kv">

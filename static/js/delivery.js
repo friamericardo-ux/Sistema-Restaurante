@@ -66,22 +66,20 @@ function criarCard(pedido) {
 async function cancelarPedido(pedido_id) {
     if (!confirm('Cancelar este pedido?')) return;
 
-    const card = document.getElementById(`pedido-${pedido_id}`);
-    if (card) card.remove();
-    delete pedidosAtuais[pedido_id];
-
     try {
         const res = await fetch(`/pedido/${pedido_id}/cancelar`, { method: 'POST' });
         const data = await res.json();
         if (data.sucesso) {
+            const card = document.getElementById(`pedido-${pedido_id}`);
+            if (card) card.remove();
+            delete pedidosAtuais[pedido_id];
             mostrarToast('🚫 Pedido cancelado.');
+            await buscarPedidos();
         } else {
             mostrarToast('❌ Erro: ' + (data.erro || 'Falha ao cancelar'));
-            await buscarPedidos(); // restaura se falhou
         }
     } catch (e) {
         mostrarToast('❌ Erro de conexão ao cancelar');
-        await buscarPedidos();
     }
 }
 

@@ -565,7 +565,7 @@ def criar_pedido():
     cliente_telefone = dados.get("telefone")
     cliente_endereco = dados.get("endereco")
     itens = dados.get("itens", [])
-    forma_pagamento = dados.get("pagamento", "")
+    forma_pagamento = (dados.get("pagamento") or "").strip().lower()
     troco = dados.get("troco", 0)
     taxa_entrega = 5.00
 
@@ -684,7 +684,7 @@ def listar_pedidos_delivery():
         SELECT id, cliente_nome, cliente_telefone, cliente_endereco,
                itens, total, status, criado_em
         FROM pedidos_delivery
-        WHERE status != 'entregue'
+        WHERE status NOT IN ('entregue', 'cancelado')
         ORDER BY criado_em DESC
     """)
 
