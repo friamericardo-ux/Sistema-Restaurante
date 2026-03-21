@@ -53,7 +53,7 @@
           Cardápio
         </a>
       </li>
-      {% if session.get('role') == 'admin' %}
+      {% if session.get('role') in ('admin', 'superadmin', 'super_admin') %}
       <li>
         <a href="/caixa">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -207,7 +207,7 @@
       <span class="arrow">↗</span>
     </a>
 
-    {% if session.get('role') == 'admin' %}
+    {% if session.get('role') in ('admin', 'superadmin', 'super_admin') %}
     <a href="/caixa" class="quick-card qa-caixa">
       <div class="qicon" style="background:var(--yellow-dim)">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f5c518" stroke-width="2">
@@ -223,7 +223,7 @@
 
   </div>
 
-  {% if session.get('role') == 'admin' %}
+  {% if session.get('role') in ('admin', 'superadmin', 'super_admin') %}
   <!-- Linha 2 — só admin vê -->
   <div class="quick-grid row2">
 
