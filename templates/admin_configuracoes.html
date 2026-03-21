@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Configurações</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_configuracoes.css') }}">
+</head>
+<body>
+
+  <!-- CABEÇALHO -->
+  <div class="header">
+    <h1>🍽️ Comanda Digital</h1>
+    <nav class="nav-links">
+      <a href="/dashboard">Painel</a>
+      <a href="/admin/produtos">Produtos</a>
+      <a href="/admin/adicionais">Adicionais</a>
+      <a href="/admin/usuarios">Usuários</a>
+      <a href="/admin/configuracoes" class="active">Configurações</a>
+      <a href="/logout">Sair</a>
+    </nav>
+  </div>
+
+  <div class="container">
+
+    <h2 class="page-title">⚙️ Configurações do Estabelecimento</h2>
+
+    {% if sucesso %}
+    <div class="alert alert-sucesso">✅ {{ sucesso }}</div>
+    {% endif %}
+    {% if erro %}
+    <div class="alert alert-erro">❌ {{ erro }}</div>
+    {% endif %}
+
+    <form method="POST" action="/admin/configuracoes">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <!-- IDENTIDADE -->
+      <div class="card-config">
+        <div class="card-config-titulo">🏪 Identidade</div>
+        <div class="form-group">
+          <label>Nome do Restaurante</label>
+          <input type="text" name="nome_restaurante" value="{{ configs.nome_restaurante }}" placeholder="Ex: Burger House">
+        </div>
+      </div>
+
+      <!-- CONTATO -->
+      <div class="card-config">
+        <div class="card-config-titulo">📞 Contato</div>
+        <div class="form-group">
+          <label>WhatsApp do Restaurante</label>
+          <input type="text" id="whatsapp_restaurante" name="whatsapp_restaurante"
+                 value="{{ configs.whatsapp_restaurante }}"
+                 placeholder="5567993487509" maxlength="20">
+          <div class="field-hint" id="whatsapp-preview"></div>
+        </div>
+      </div>
+
+      <!-- ENTREGA -->
+      <div class="card-config">
+        <div class="card-config-titulo">🛵 Entrega</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Taxa Fixa de Entrega (R$)</label>
+            <input type="number" name="taxa_entrega" step="0.01" min="0"
+                   value="{{ configs.taxa_entrega }}" placeholder="5.00">
+          </div>
+          <div class="form-group">
+            <label>Frete por KM (R$)</label>
+            <input type="number" name="frete_por_km" step="0.01" min="0"
+                   value="{{ configs.frete_por_km }}" placeholder="2.00">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Google Maps API Key</label>
+          <input type="text" name="google_maps_key" value="{{ configs.google_maps_key }}" placeholder="AIza...">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Latitude do Restaurante</label>
+            <input type="text" name="restaurante_lat" value="{{ configs.restaurante_lat }}" placeholder="-20.4697">
+          </div>
+          <div class="form-group">
+            <label>Longitude do Restaurante</label>
+            <input type="text" name="restaurante_lng" value="{{ configs.restaurante_lng }}" placeholder="-54.6201">
+          </div>
+        </div>
+      </div>
+
+      <!-- HORÁRIO -->
+      <div class="card-config">
+        <div class="card-config-titulo">🕐 Horário de Funcionamento</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Abertura</label>
+            <input type="time" name="horario_abertura" value="{{ configs.horario_abertura }}">
+          </div>
+          <div class="form-group">
+            <label>Fechamento</label>
+            <input type="time" name="horario_fechamento" value="{{ configs.horario_fechamento }}">
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTROLE DE ACESSO -->
+      <div class="card-config">
+        <div class="card-config-titulo">🔐 Controle de Acesso</div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label" id="toggle-label">
+              {% if configs.restaurante_ativo == "1" %}
+                <span class="status-ativo">✅ Restaurante Ativo</span>
+              {% else %}
+                <span class="status-bloqueado">🔒 Restaurante Bloqueado</span>
+              {% endif %}
+            </div>
+            <div class="field-hint">Quando bloqueado, o cardápio fica inacessível para os clientes.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-ativo" {{ 'checked' if configs.restaurante_ativo == '1' else '' }}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <input type="hidden" name="restaurante_ativo" id="restaurante_ativo_hidden"
+               value="{{ configs.restaurante_ativo }}">
+      </div>
+
+      <button type="submit" class="btn-salvar">💾 Salvar Configurações</button>
+    </form>
+
+  </div>
+
+  <script src="{{ url_for('static', filename='js/admin_configuracoes.js') }}"></script>
+</body>
+</html>

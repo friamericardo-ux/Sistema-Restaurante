@@ -1,5 +1,34 @@
 // Carrinho.js — Delivery
 
+let taxaEntrega = 5.00; // fallback
+let configsRestaurante = { whatsapp: '5567993487509' };
+
+async function carregarConfigs() {
+  try {
+    const res = await fetch('/api/configuracoes');
+    const data = await res.json();
+    if (data.sucesso) {
+      taxaEntrega = parseFloat(data.taxa_entrega) || 5.00;
+      configsRestaurante.whatsapp = data.whatsapp_restaurante || configsRestaurante.whatsapp;
+      const el = document.getElementById('cart-entrega');
+      if (el) el.textContent = 'R$ ' + taxaEntrega.toFixed(2).replace('.', ',');
+      atualizarTotal();
+    }
+  } catch (e) {
+    taxaEntrega = 5.00;
+  }
+}
+
+function atualizarTotal() {
+  const itens = lerCarrinho();
+  if (!itens.length) return;
+  const subtotal = itens.reduce((s, i) => s + parseFloat(i.preco) * parseInt(i.quantidade), 0);
+  const elSub = document.getElementById('cart-subtotal');
+  const elTotal = document.getElementById('cart-total');
+  if (elSub) elSub.textContent = `R$ ${subtotal.toFixed(2)}`;
+  if (elTotal) elTotal.textContent = `R$ ${(subtotal + taxaEntrega).toFixed(2)}`;
+}
+
 function lerCarrinho() {
   const carrinho = localStorage.getItem('comanda_carrinho');
   return carrinho ? JSON.parse(carrinho) : [];
@@ -18,7 +47,7 @@ function renderizarCarrinho() {
   if (!itens.length) {
     cartItems.innerHTML = '<div class="cart-empty">Carrinho vazio</div>';
     document.getElementById('cart-subtotal').textContent = 'R$ 0,00';
-    document.getElementById('cart-entrega').textContent = 'R$ 5,00';
+    document.getElementById('cart-entrega').textContent = 'R$ ' + taxaEntrega.toFixed(2).replace('.', ',');
     document.getElementById('cart-total').textContent = 'R$ 0,00';
     return;
   }
@@ -43,8 +72,8 @@ function renderizarCarrinho() {
   }).join('');
 
   document.getElementById('cart-subtotal').textContent = `R$ ${subtotal.toFixed(2)}`;
-  document.getElementById('cart-entrega').textContent = 'R$ 5,00';
-  document.getElementById('cart-total').textContent = `R$ ${(subtotal + 5).toFixed(2)}`;
+  document.getElementById('cart-entrega').textContent = 'R$ ' + taxaEntrega.toFixed(2).replace('.', ',');
+  document.getElementById('cart-total').textContent = `R$ ${(subtotal + taxaEntrega).toFixed(2)}`;
 }
 
 function mudarQtd(idx, delta) {
@@ -71,7 +100,7 @@ function finalizarPedido() {
     const precisaTroco = document.getElementById('troco-sim')?.checked;
     if (precisaTroco) {
       const valorPago = parseFloat(document.getElementById('troco').value);
-      const totalPedido = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0) + 5;
+      const totalPedido = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0) + taxaEntrega;
       if (!isNaN(valorPago) && valorPago > 0) {
         const trocoDar = valorPago - totalPedido;
         troco = valorPago;
@@ -108,7 +137,7 @@ function finalizarPedido() {
       }).catch(() => {});
 
       const subtotal = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0);
-      const total = subtotal + 5;
+      const total = subtotal + taxaEntrega;
       const pagTexto = pagamento === 'cartao' ? '💳 Cartão'
         : `💵 Dinheiro`;
       const linhaItens = itens.map(i => {
@@ -124,13 +153,14 @@ function finalizarPedido() {
         (observacao ? `📝 *Observação:* ${observacao}\n` : '') +
         `\n📋 *Itens:*\n${linhaItens}\n\n` +
         `💰 *Subtotal:* R$ ${subtotal.toFixed(2)}\n` +
-        `🚚 *Entrega:* R$ 5,00\n` +
+        `🚚 *Entrega:* R$ ${taxaEntrega.toFixed(2)}\n` +
         `💵 *Total:* R$ ${total.toFixed(2)}\n` +
         `💳 *Pagamento:* ${pagTexto}\n` +
         (trocoTexto ? `💵 *Troco:* ${trocoTexto}\n` : '') +
         `\nPedido ID: ${data.pedido_id}`;
 
-      const numero = '5567993487509';
+      const numero = (typeof configsRestaurante !== 'undefined' && configsRestaurante.whatsapp)
+        ? configsRestaurante.whatsapp : '5567993487509';
       document.getElementById('form-box').style.display = 'none';
       document.getElementById('cart-box').style.display = 'none';
       document.getElementById('sucesso-box').style.display = 'block';
@@ -168,7 +198,7 @@ function limparPedido() {
   document.getElementById('form-box').style.display = 'block';
   document.getElementById('cart-items').innerHTML = '<div class="cart-empty">Carrinho vazio</div>';
   document.getElementById('cart-subtotal').textContent = 'R$ 0,00';
-  document.getElementById('cart-entrega').textContent = 'R$ 5,00';
+  document.getElementById('cart-entrega').textContent = 'R$ ' + taxaEntrega.toFixed(2).replace('.', ',');
   document.getElementById('cart-total').textContent = 'R$ 0,00';
 }
 
@@ -179,6 +209,7 @@ function toast(msg) {
   setTimeout(() => { el.style.display = 'none'; }, 2000);
 }
 window.onload = function () {
+  carregarConfigs();
   renderizarCarrinho();
   // Atualiza badge
   const itens = lerCarrinho();

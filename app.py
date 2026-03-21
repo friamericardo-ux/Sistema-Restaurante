@@ -148,6 +148,70 @@ def _garantir_clientes_cache():
 _garantir_clientes_cache()
 
 
+# NOVO — Tabela de configurações do estabelecimento
+def _garantir_configuracoes():
+    db = get_connection()
+    cursor = db.cursor()
+    if is_mysql():
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS configuracoes (
+                chave VARCHAR(100) PRIMARY KEY,
+                valor TEXT,
+                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+    else:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS configuracoes (
+                chave TEXT PRIMARY KEY,
+                valor TEXT,
+                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    db.commit()
+    db.close()
+
+_garantir_configuracoes()
+
+
+# NOVO — Helpers de configuração
+def get_config(chave, fallback=None):
+    """Lê uma configuração do banco. Usa fallback se não encontrar."""
+    try:
+        db = get_connection()
+        cursor = db.cursor()
+        if is_mysql():
+            cursor.execute("SELECT valor FROM configuracoes WHERE chave = %s", (chave,))
+        else:
+            cursor.execute("SELECT valor FROM configuracoes WHERE chave = ?", (chave,))
+        row = cursor.fetchone()
+        db.close()
+        if row:
+            return row[0]
+    except Exception:
+        pass
+    return fallback
+
+
+def set_config(chave, valor):
+    """Salva ou atualiza uma configuração no banco."""
+    db = get_connection()
+    cursor = db.cursor()
+    if is_mysql():
+        cursor.execute("""
+            INSERT INTO configuracoes (chave, valor)
+            VALUES (%s, %s)
+            ON DUPLICATE KEY UPDATE valor = %s, atualizado_em = CURRENT_TIMESTAMP
+        """, (chave, valor, valor))
+    else:
+        cursor.execute("""
+            INSERT INTO configuracoes (chave, valor) VALUES (?, ?)
+            ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor
+        """, (chave, valor))
+    db.commit()
+    db.close()
+
+
 def _get_sessao_inicio(cursor):
     """Retorna o datetime de início da sessão atual do caixa como string."""
     cursor.execute("""
@@ -530,6 +594,9 @@ def force_close_mesa(mesa_id):
 @app.route("/cardapio")
 def cardapio_cliente():
     """Página do cardápio para clientes"""
+    # MODIFICADO — bloqueio por inadimplência
+    if get_config("restaurante_ativo", "1") == "0":
+        return render_template("restaurante_inativo.html")
     return render_template("cardapio_cliente.html")
 @app.route("/api/cardapio")
 def api_cardapio():
@@ -567,7 +634,7 @@ def criar_pedido():
     itens = dados.get("itens", [])
     forma_pagamento = (dados.get("pagamento") or "").strip().lower()
     troco = dados.get("troco", 0)
-    taxa_entrega = 5.00
+    taxa_entrega = float(get_config("taxa_entrega", Config.TAXA_ENTREGA))  # MODIFICADO — taxa dinâmica
 
     if not itens or not cliente_nome:
         return jsonify({"sucesso": False, "erro": "Dados incompletos!"})
@@ -654,13 +721,70 @@ def whatsapp_pedido():
     
     # Usa o serviço para formatar e gerar link
     mensagem = WhatsAppService.formatar_mensagem_pedido(pedido, itens)
-    link = WhatsAppService.gerar_link_whatsapp(mensagem)
+    # MODIFICADO — número dinâmico do banco
+    numero = get_config("whatsapp_restaurante", Config.WHATSAPP_RESTAURANTE)
+    link = WhatsAppService.gerar_link_whatsapp(mensagem, numero_destino=numero)
     
     return jsonify({
         "sucesso": True, 
         "link": link,
         "resumo": mensagem
     })
+
+# ========================
+# NOVO — CONFIGURAÇÕES DO ESTABELECIMENTO
+# ========================
+
+@app.route("/api/configuracoes")
+def api_configuracoes():
+    """Retorna configs públicas para o frontend do cliente."""
+    nome_fallback = Config.RESTAURANTE_NOME if hasattr(Config, 'RESTAURANTE_NOME') else "Restaurante"
+    return jsonify({
+        "sucesso": True,
+        "nome_restaurante": get_config("nome_restaurante", nome_fallback),
+        "taxa_entrega": float(get_config("taxa_entrega", Config.TAXA_ENTREGA)),
+        "frete_por_km": float(get_config("frete_por_km", Config.FRETE_POR_KM)),
+        "restaurante_lat": float(get_config("restaurante_lat", Config.RESTAURANTE_LAT)),
+        "restaurante_lng": float(get_config("restaurante_lng", Config.RESTAURANTE_LNG)),
+        "restaurante_ativo": get_config("restaurante_ativo", "1"),
+        "google_maps_key": get_config("google_maps_key", Config.GOOGLE_MAPS_KEY),
+        "whatsapp_restaurante": get_config("whatsapp_restaurante", Config.WHATSAPP_RESTAURANTE),
+    })
+
+
+@app.route("/admin/configuracoes", methods=["GET", "POST"])
+@admin_required
+def admin_configuracoes():
+    sucesso = None
+    erro = None
+    if request.method == "POST":
+        campos = [
+            "nome_restaurante", "whatsapp_restaurante",
+            "taxa_entrega", "frete_por_km",
+            "restaurante_lat", "restaurante_lng",
+            "horario_abertura", "horario_fechamento",
+            "google_maps_key", "restaurante_ativo"
+        ]
+        for campo in campos:
+            valor = request.form.get(campo, "").strip()
+            if valor != "":
+                set_config(campo, valor)
+        sucesso = "Configurações salvas com sucesso!"
+
+    configs = {
+        "nome_restaurante": get_config("nome_restaurante", ""),
+        "whatsapp_restaurante": get_config("whatsapp_restaurante", Config.WHATSAPP_RESTAURANTE),
+        "taxa_entrega": get_config("taxa_entrega", str(Config.TAXA_ENTREGA)),
+        "frete_por_km": get_config("frete_por_km", str(Config.FRETE_POR_KM)),
+        "restaurante_lat": get_config("restaurante_lat", str(Config.RESTAURANTE_LAT)),
+        "restaurante_lng": get_config("restaurante_lng", str(Config.RESTAURANTE_LNG)),
+        "horario_abertura": get_config("horario_abertura", "18:00"),
+        "horario_fechamento": get_config("horario_fechamento", "23:00"),
+        "google_maps_key": get_config("google_maps_key", Config.GOOGLE_MAPS_KEY),
+        "restaurante_ativo": get_config("restaurante_ativo", "1"),
+    }
+    return render_template("admin_configuracoes.html", configs=configs, sucesso=sucesso, erro=erro)
+
 
 # ========================
 # ROTAS DO PAINEL DELIVERY
