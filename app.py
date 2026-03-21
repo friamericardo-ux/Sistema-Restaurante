@@ -417,6 +417,8 @@ def index():
         return render_template('atendente.html')
     elif role == 'caixa':
         return render_template('caixa.html')
+    elif role in ('superadmin', 'super_admin'):
+        return redirect(url_for('superadmin_pin'))
     else:
         return redirect(url_for('login_web'))
 
