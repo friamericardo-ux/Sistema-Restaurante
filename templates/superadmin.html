@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Admin — Licenças</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/superadmin.css') }}">
+</head>
+<body>
+
+  <header class="sa-header">
+    <div class="sa-logo">⚡ Super Admin</div>
+    <div class="sa-header-right">
+      <span class="sa-user">{{ session.get('username') }}</span>
+      <a href="/logout" class="btn-sair">Sair</a>
+    </div>
+  </header>
+
+  <main class="sa-main">
+
+    <div class="sa-page-header">
+      <h1>Gestão de Licenças</h1>
+      <p>Controle de acesso dos restaurantes cadastrados no sistema.</p>
+    </div>
+
+    <div class="sa-table-wrap">
+      <table class="sa-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Restaurante / Usuário</th>
+            <th>Plano</th>
+            <th>Vencimento</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in clientes %}
+          <tr>
+            <td class="sa-id">{{ c.id }}</td>
+            <td class="sa-username">{{ c.username }}</td>
+            <td><span class="badge-role">{{ c.role }}</span></td>
+            <td class="sa-vencimento">
+              {% if c.vencimento %}
+                {{ c.vencimento }}
+              {% else %}
+                <span class="sem-data">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if c.dias_restantes is none %}
+                <span class="badge-status badge-sem">⚪ Sem licença</span>
+              {% elif c.dias_restantes < 0 %}
+                <span class="badge-status badge-vencido">🔴 Vencido</span>
+              {% elif c.dias_restantes < 7 %}
+                <span class="badge-status badge-alerta">🟡 Vencendo — {{ c.dias_restantes }}d</span>
+              {% else %}
+                <span class="badge-status badge-ativo">🟢 Ativo — {{ c.dias_restantes }}d</span>
+              {% endif %}
+            </td>
+            <td class="sa-acoes">
+              <button class="btn-renovar btn-30" onclick="renovar({{ c.id }}, 30)">+30 dias</button>
+              <button class="btn-renovar btn-60" onclick="renovar({{ c.id }}, 60)">+60 dias</button>
+              <button class="btn-bloquear" onclick="bloquear({{ c.id }}, '{{ c.username }}')">Bloquear</button>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="sa-vazio">Nenhum restaurante cadastrado.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <script src="{{ url_for('static', filename='js/superadmin.js') }}"></script>
+</body>
+</html>

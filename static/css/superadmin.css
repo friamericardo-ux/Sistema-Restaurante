@@ -1,0 +1,184 @@
+/* superadmin.css */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0d0d0d;
+  color: #e0e0e0;
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+}
+
+/* HEADER */
+.sa-header {
+  background: #141414;
+  border-bottom: 1px solid #1f1f1f;
+  padding: 0 32px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sa-logo {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ff7a2f;
+  letter-spacing: -0.01em;
+}
+
+.sa-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sa-user {
+  font-size: 0.88rem;
+  color: #888;
+}
+
+.btn-sair {
+  background: #1e1e1e;
+  color: #ccc;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.btn-sair:hover { background: #2a2a2a; }
+
+/* MAIN */
+.sa-main {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.sa-page-header {
+  margin-bottom: 32px;
+}
+
+.sa-page-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.sa-page-header p {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* TABELA */
+.sa-table-wrap {
+  background: #141414;
+  border: 1px solid #1f1f1f;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.sa-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.sa-table thead tr {
+  border-bottom: 1px solid #1f1f1f;
+}
+
+.sa-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sa-table tbody tr {
+  border-bottom: 1px solid #1a1a1a;
+  transition: background 0.15s;
+}
+
+.sa-table tbody tr:last-child { border-bottom: none; }
+.sa-table tbody tr:hover { background: #191919; }
+
+.sa-table td {
+  padding: 14px 16px;
+  vertical-align: middle;
+}
+
+.sa-id { color: #444; font-size: 0.8rem; }
+
+.sa-username {
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.sa-vencimento { color: #888; font-size: 0.88rem; }
+
+.sem-data { color: #333; }
+
+.sa-vazio {
+  text-align: center;
+  color: #444;
+  padding: 40px;
+}
+
+/* BADGES ROLE */
+.badge-role {
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  color: #888;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+/* BADGES STATUS */
+.badge-status {
+  display: inline-block;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badge-ativo  { background: #1a3a1a; color: #66bb6a; }
+.badge-alerta { background: #3a2e00; color: #f5c518; }
+.badge-vencido{ background: #3a1010; color: #ef5350; }
+.badge-sem    { background: #1e1e1e; color: #666; }
+
+/* BOTÕES DE AÇÃO */
+.sa-acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-renovar, .btn-bloquear {
+  border: none;
+  border-radius: 7px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.2s;
+}
+
+.btn-renovar:hover, .btn-bloquear:hover { opacity: 0.8; }
+
+.btn-30 { background: #ff7a2f; color: #fff; }
+.btn-60 { background: #4a9eff; color: #fff; }
+.btn-bloquear { background: #3a1010; color: #ef5350; border: 1px solid #5a1a1a; }

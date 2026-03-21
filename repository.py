@@ -33,6 +33,17 @@ class UserRepository:
                     role TEXT DEFAULT 'admin'
                 )
             """)
+        # Migração: adiciona licenca_vencimento se não existir
+        if is_mysql():
+            cursor.execute("""
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS licenca_vencimento DATE DEFAULT NULL
+            """)
+        else:
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN licenca_vencimento TEXT DEFAULT NULL")
+            except Exception:
+                pass
         conn.commit()
 
     def create_admin(self):
@@ -111,6 +122,71 @@ class UserRepository:
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+        conn.close()
+        return True
+
+    def list_admins(self):
+        """Lista todos os usuários com role != superadmin (para o painel superadmin)."""
+        self.init_user_table()
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        if is_mysql():
+            cursor.execute("""
+                SELECT id, username, role, licenca_vencimento
+                FROM users
+                WHERE role != 'superadmin' AND role != 'super_admin'
+                ORDER BY id
+            """)
+        else:
+            cursor.execute("""
+                SELECT id, username, role, licenca_vencimento
+                FROM users
+                WHERE role != 'superadmin' AND role != 'super_admin'
+                ORDER BY id
+            """)
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+
+    def renovar_licenca(self, user_id: int, dias: int) -> bool:
+        """Renova a licença somando X dias. Se vencida, conta a partir de hoje."""
+        from datetime import date, timedelta
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        if is_mysql():
+            cursor.execute("SELECT licenca_vencimento FROM users WHERE id = %s", (user_id,))
+        else:
+            cursor.execute("SELECT licenca_vencimento FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return False
+        vencimento_atual = row[0]
+        hoje = date.today()
+        if vencimento_atual:
+            venc = vencimento_atual if isinstance(vencimento_atual, date) else date.fromisoformat(str(vencimento_atual))
+            nova_data = venc + timedelta(days=dias) if venc > hoje else hoje + timedelta(days=dias)
+        else:
+            nova_data = hoje + timedelta(days=dias)
+        if is_mysql():
+            cursor.execute("UPDATE users SET licenca_vencimento = %s WHERE id = %s", (nova_data, user_id))
+        else:
+            cursor.execute("UPDATE users SET licenca_vencimento = ? WHERE id = ?", (str(nova_data), user_id))
+        conn.commit()
+        conn.close()
+        return True
+
+    def bloquear_licenca(self, user_id: int) -> bool:
+        """Define vencimento como ontem (bloqueia imediatamente)."""
+        from datetime import date, timedelta
+        ontem = date.today() - timedelta(days=1)
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        if is_mysql():
+            cursor.execute("UPDATE users SET licenca_vencimento = %s WHERE id = %s", (ontem, user_id))
+        else:
+            cursor.execute("UPDATE users SET licenca_vencimento = ? WHERE id = ?", (str(ontem), user_id))
         conn.commit()
         conn.close()
         return True

@@ -253,6 +253,39 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# NOVO — decorator exclusivo do superadmin
+def superadmin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if session.get('role') not in ('superadmin', 'super_admin'):
+            return redirect(url_for('login_web'))
+        return f(*args, **kwargs)
+    return decorated
+
+
+# NOVO — verifica se o admin tem licença válida
+def licenca_ativa(username: str) -> bool:
+    """Verifica se o admin tem licença válida. Superadmin sempre passa."""
+    from datetime import date
+    repo = UserRepository()
+    user = repo.get_user_by_username(username)
+    if not user:
+        return False
+    if user.role in ('superadmin', 'super_admin'):
+        return True
+    db = get_connection()
+    cursor = db.cursor()
+    if is_mysql():
+        cursor.execute("SELECT licenca_vencimento FROM users WHERE id = %s", (user.id,))
+    else:
+        cursor.execute("SELECT licenca_vencimento FROM users WHERE id = ?", (user.id,))
+    row = cursor.fetchone()
+    db.close()
+    if not row or not row[0]:
+        return True  # sem data = sem restrição ainda
+    vencimento = row[0] if isinstance(row[0], date) else date.fromisoformat(str(row[0]))
+    return vencimento >= date.today()
+
 
 # ROTAS DE AUTENTICAÇÃO
 
@@ -597,6 +630,17 @@ def cardapio_cliente():
     # MODIFICADO — bloqueio por inadimplência
     if get_config("restaurante_ativo", "1") == "0":
         return render_template("restaurante_inativo.html")
+    # NOVO — bloqueio por licença vencida
+    repo = UserRepository()
+    admins = repo.list_admins()
+    if admins:
+        from datetime import date
+        for admin in admins:
+            vencimento = admin[3]
+            if vencimento:
+                venc_date = vencimento if isinstance(vencimento, date) else date.fromisoformat(str(vencimento))
+                if venc_date < date.today():
+                    return render_template("restaurante_inativo.html")
     return render_template("cardapio_cliente.html")
 @app.route("/api/cardapio")
 def api_cardapio():
@@ -730,6 +774,53 @@ def whatsapp_pedido():
         "link": link,
         "resumo": mensagem
     })
+
+# ========================
+# NOVO — PAINEL SUPERADMIN (LICENÇAS)
+# ========================
+
+@app.route("/superadmin")
+@superadmin_required
+def painel_superadmin():
+    from datetime import date
+    repo = UserRepository()
+    admins = repo.list_admins()
+    clientes = []
+    for a in admins:
+        user_id, username, role, vencimento = a
+        if vencimento:
+            venc_date = vencimento if isinstance(vencimento, date) else date.fromisoformat(str(vencimento))
+            dias_restantes = (venc_date - date.today()).days
+        else:
+            venc_date = None
+            dias_restantes = None
+        clientes.append({
+            "id": user_id,
+            "username": username,
+            "role": role,
+            "vencimento": str(venc_date) if venc_date else None,
+            "dias_restantes": dias_restantes
+        })
+    return render_template("superadmin.html", clientes=clientes)
+
+
+@app.route("/superadmin/renovar/<int:user_id>/<int:dias>", methods=["POST"])
+@csrf.exempt
+@superadmin_required
+def superadmin_renovar(user_id, dias):
+    repo = UserRepository()
+    repo.renovar_licenca(user_id, dias)
+    return jsonify({"sucesso": True})
+
+
+@app.route("/superadmin/bloquear/<int:user_id>", methods=["POST"])
+@csrf.exempt
+@superadmin_required
+def superadmin_bloquear(user_id):
+    repo = UserRepository()
+    repo.bloquear_licenca(user_id)
+    return jsonify({"sucesso": True})
+
 
 # ========================
 # NOVO — CONFIGURAÇÕES DO ESTABELECIMENTO

@@ -38,6 +38,7 @@
     <form method="POST" action="/admin/configuracoes">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
+      {% if session['role'] == 'superadmin' %}
       <!-- IDENTIDADE -->
       <div class="card-config">
         <div class="card-config-titulo">🏪 Identidade</div>
@@ -58,6 +59,7 @@
           <div class="field-hint" id="whatsapp-preview"></div>
         </div>
       </div>
+      {% endif %}
 
       <!-- ENTREGA -->
       <div class="card-config">
@@ -74,6 +76,7 @@
                    value="{{ configs.frete_por_km }}" placeholder="2.00">
           </div>
         </div>
+        {% if session['role'] == 'superadmin' %}
         <div class="form-group">
           <label>Google Maps API Key</label>
           <input type="text" name="google_maps_key" value="{{ configs.google_maps_key }}" placeholder="AIza...">
@@ -88,6 +91,7 @@
             <input type="text" name="restaurante_lng" value="{{ configs.restaurante_lng }}" placeholder="-54.6201">
           </div>
         </div>
+        {% endif %}
       </div>
 
       <!-- HORÁRIO -->
@@ -105,6 +109,7 @@
         </div>
       </div>
 
+      {% if session['role'] == 'superadmin' %}
       <!-- CONTROLE DE ACESSO -->
       <div class="card-config">
         <div class="card-config-titulo">🔐 Controle de Acesso</div>
@@ -127,6 +132,7 @@
         <input type="hidden" name="restaurante_ativo" id="restaurante_ativo_hidden"
                value="{{ configs.restaurante_ativo }}">
       </div>
+      {% endif %}
 
       <button type="submit" class="btn-salvar">💾 Salvar Configurações</button>
     </form>
