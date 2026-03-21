@@ -919,6 +919,16 @@ def api_configuracoes():
     })
 
 
+@app.route("/admin/toggle-status", methods=["POST"])
+@admin_required
+def admin_toggle_status():
+    """Toggle rápido para abrir/fechar o estabelecimento."""
+    atual = get_config("restaurante_ativo", "1")
+    novo = "0" if atual == "1" else "1"
+    set_config("restaurante_ativo", novo)
+    return jsonify({"restaurante_ativo": novo})
+
+
 @app.route("/admin/configuracoes", methods=["GET", "POST"])
 @admin_required
 def admin_configuracoes():

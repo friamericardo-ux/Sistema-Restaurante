@@ -41,32 +41,64 @@ if (whatsappInput) {
 }
 
 
-// --- Toggle ativo/bloqueado ---
-const toggleAtivo = document.getElementById('toggle-ativo');
-const hiddenAtivo = document.getElementById('restaurante_ativo_hidden');
-const toggleLabel = document.getElementById('toggle-label');
+// --- Toggle abrir/fechar estabelecimento ---
+const btnToggle = document.getElementById('btn-toggle-status');
+const statusBadge = document.getElementById('status-badge');
+const avisoWhatsapp = document.getElementById('aviso-whatsapp');
+const nomeRestaurante = document.querySelector('input[name="nome_restaurante"]');
 
-function atualizarToggleLabel() {
-  if (toggleAtivo.checked) {
-    toggleLabel.innerHTML = '<span class="status-ativo">✅ Restaurante Ativo</span>';
-    hiddenAtivo.value = '1';
+function atualizarStatusUI(ativo) {
+  const aberto = ativo === '1';
+
+  statusBadge.innerHTML = aberto
+    ? '<span class="badge-aberto">🟢 Aberto — recebendo pedidos</span>'
+    : '<span class="badge-fechado">🔴 Fechado — não recebe pedidos</span>';
+
+  btnToggle.textContent = aberto ? '🔒 Fechar Estabelecimento' : '🔓 Abrir Estabelecimento';
+  btnToggle.className = 'btn-toggle-status ' + (aberto ? 'btn-fechar' : 'btn-abrir');
+  btnToggle.dataset.ativo = ativo;
+
+  if (!aberto) {
+    const nome = (nomeRestaurante ? nomeRestaurante.value.trim() : '') || 'o restaurante';
+    const msg = encodeURIComponent(
+      `Olá! Informamos que ${nome} está fechado no momento e não está recebendo pedidos. Em breve voltamos! 🙏`
+    );
+    const linkEl = document.getElementById('link-whatsapp-fechado');
+    if (linkEl) linkEl.href = `https://api.whatsapp.com/send?text=${msg}`;
+    avisoWhatsapp.classList.remove('hidden');
   } else {
-    toggleLabel.innerHTML = '<span class="status-bloqueado">🔒 Restaurante Bloqueado</span>';
-    hiddenAtivo.value = '0';
+    avisoWhatsapp.classList.add('hidden');
   }
 }
 
-if (toggleAtivo) {
-  toggleAtivo.addEventListener('change', function () {
-    if (!this.checked) {
-      const confirmar = confirm(
-        'Tem certeza? O cardápio ficará inacessível para os clientes.'
-      );
-      if (!confirmar) {
-        this.checked = true;
-        return;
-      }
+if (btnToggle) {
+  btnToggle.addEventListener('click', function () {
+    const ativo = this.dataset.ativo;
+    const fechando = ativo === '1';
+
+    if (fechando) {
+      const confirmar = confirm('Fechar o estabelecimento agora? Os clientes não poderão fazer pedidos.');
+      if (!confirmar) return;
     }
-    atualizarToggleLabel();
+
+    btnToggle.disabled = true;
+    btnToggle.textContent = 'Aguarde...';
+
+    fetch('/admin/toggle-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrf_token]') ? document.querySelector('[name=csrf_token]').value : '' },
+    })
+      .then(r => r.json())
+      .then(data => {
+        atualizarStatusUI(data.restaurante_ativo);
+      })
+      .catch(() => {
+        alert('Erro ao alterar o status. Tente novamente.');
+        btnToggle.disabled = false;
+        atualizarStatusUI(ativo);
+      })
+      .finally(() => {
+        btnToggle.disabled = false;
+      });
   });
 }

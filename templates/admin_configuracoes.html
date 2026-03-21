@@ -76,22 +76,6 @@
                    value="{{ configs.frete_por_km }}" placeholder="2.00">
           </div>
         </div>
-        {% if session['role'] == 'superadmin' %}
-        <div class="form-group">
-          <label>Google Maps API Key</label>
-          <input type="text" name="google_maps_key" value="{{ configs.google_maps_key }}" placeholder="AIza...">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Latitude do Restaurante</label>
-            <input type="text" name="restaurante_lat" value="{{ configs.restaurante_lat }}" placeholder="-20.4697">
-          </div>
-          <div class="form-group">
-            <label>Longitude do Restaurante</label>
-            <input type="text" name="restaurante_lng" value="{{ configs.restaurante_lng }}" placeholder="-54.6201">
-          </div>
-        </div>
-        {% endif %}
       </div>
 
       <!-- HORÁRIO -->
@@ -109,33 +93,46 @@
         </div>
       </div>
 
-      {% if session['role'] == 'superadmin' %}
-      <!-- CONTROLE DE ACESSO -->
-      <div class="card-config">
-        <div class="card-config-titulo">🔐 Controle de Acesso</div>
-        <div class="toggle-row">
-          <div>
-            <div class="toggle-label" id="toggle-label">
-              {% if configs.restaurante_ativo == "1" %}
-                <span class="status-ativo">✅ Restaurante Ativo</span>
-              {% else %}
-                <span class="status-bloqueado">🔒 Restaurante Bloqueado</span>
-              {% endif %}
-            </div>
-            <div class="field-hint">Quando bloqueado, o cardápio fica inacessível para os clientes.</div>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" id="toggle-ativo" {{ 'checked' if configs.restaurante_ativo == '1' else '' }}>
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <input type="hidden" name="restaurante_ativo" id="restaurante_ativo_hidden"
-               value="{{ configs.restaurante_ativo }}">
-      </div>
-      {% endif %}
-
       <button type="submit" class="btn-salvar">💾 Salvar Configurações</button>
     </form>
+
+    <!-- STATUS DO ESTABELECIMENTO (fora do form, toggle instantâneo) -->
+    <div class="card-config card-status" id="card-status">
+      <div class="card-config-titulo">🚦 Status do Estabelecimento</div>
+      <div class="status-body">
+        <div class="status-info">
+          <div class="status-badge" id="status-badge">
+            {% if configs.restaurante_ativo == "1" %}
+              <span class="badge-aberto">🟢 Aberto — recebendo pedidos</span>
+            {% else %}
+              <span class="badge-fechado">🔴 Fechado — não recebe pedidos</span>
+            {% endif %}
+          </div>
+          <p class="status-dica">Fechar o estabelecimento bloqueia novos pedidos imediatamente.</p>
+        </div>
+        <button type="button" id="btn-toggle-status"
+                class="btn-toggle-status {{ 'btn-fechar' if configs.restaurante_ativo == '1' else 'btn-abrir' }}"
+                data-ativo="{{ configs.restaurante_ativo }}">
+          {% if configs.restaurante_ativo == "1" %}
+            🔒 Fechar Estabelecimento
+          {% else %}
+            🔓 Abrir Estabelecimento
+          {% endif %}
+        </button>
+      </div>
+
+      <!-- Link WhatsApp (só aparece quando fechado) -->
+      <div id="aviso-whatsapp" class="{{ '' if configs.restaurante_ativo == '0' else 'hidden' }}">
+        <div class="whatsapp-aviso">
+          <span>📣 Avisar clientes pelo WhatsApp:</span>
+          <a id="link-whatsapp-fechado"
+             href="https://api.whatsapp.com/send?text={{ 'Olá! Informamos que o ' ~ configs.nome_restaurante ~ ' está fechado no momento e não está recebendo pedidos. Em breve voltamos! 🙏' | urlencode }}"
+             target="_blank" class="btn-whatsapp">
+            💬 Enviar "Estamos fechados"
+          </a>
+        </div>
+      </div>
+    </div>
 
   </div>
 

@@ -164,6 +164,90 @@
   transform: translateX(26px);
 }
 
+/* Card de status do estabelecimento */
+.status-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.status-badge {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.badge-aberto  { color: #66bb6a; }
+.badge-fechado { color: #ef5350; }
+
+.status-dica {
+  font-size: 0.82rem;
+  color: #666;
+  margin: 0;
+}
+
+.btn-toggle-status {
+  padding: 12px 22px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, opacity 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-fechar {
+  background: #ef5350;
+  color: #fff;
+}
+.btn-fechar:hover { background: #c62828; }
+
+.btn-abrir {
+  background: #66bb6a;
+  color: #fff;
+}
+.btn-abrir:hover { background: #388e3c; }
+
+.btn-toggle-status:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Aviso WhatsApp */
+.hidden { display: none !important; }
+
+.whatsapp-aviso {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #2a2a2a;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.btn-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #25d366;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+.btn-whatsapp:hover { background: #1ebe5d; }
+
 /* Botão salvar */
 .btn-salvar {
   display: block;
