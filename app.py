@@ -303,6 +303,8 @@ def login_web():
             session['user_id'] = user.id
             session['username'] = user.username
             session['role'] = user.role
+            if user.role in ('superadmin', 'super_admin'):
+                return redirect('/superadmin')
             return redirect(url_for('index'))
         else:
             logging.warning(f"Login falhou para '{username}' de {request.remote_addr}")
