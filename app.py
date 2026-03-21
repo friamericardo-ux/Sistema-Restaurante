@@ -69,6 +69,9 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 def extensao_valida(filename):
     return os.path.splitext(filename)[1].lower() in EXTENSOES_PERMITIDAS
 
+# PIN de segurança extra para o superadmin
+SUPERADMIN_PIN = os.getenv('SUPERADMIN_PIN', '2026super')
+
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
@@ -96,6 +99,58 @@ def _garantir_fechamentos_caixa():
     db.close()
 
 _garantir_fechamentos_caixa()
+
+
+@app.before_request
+def verificar_licenca_global():
+    from datetime import date
+
+    rotas_liberadas = {
+        'login_web', 'logout', 'static',
+        'cardapio_cliente', 'api_cardapio', 'api_adicionais',
+        'criar_pedido', 'api_configuracoes',
+        'superadmin_pin', 'superadmin_pin_post',
+    }
+
+    if request.endpoint is None:
+        return
+    if request.endpoint in rotas_liberadas:
+        return
+
+    if session.get('role') in ('superadmin', 'super_admin'):
+        return
+
+    if not session.get('user_id'):
+        return
+
+    try:
+        db = get_connection()
+        cursor = db.cursor()
+        if is_mysql():
+            cursor.execute("""
+                SELECT u.licenca_vencimento
+                FROM users u
+                WHERE u.role = 'admin'
+                ORDER BY u.id LIMIT 1
+            """)
+        else:
+            cursor.execute("""
+                SELECT licenca_vencimento
+                FROM users
+                WHERE role = 'admin'
+                ORDER BY id LIMIT 1
+            """)
+        row = cursor.fetchone()
+        db.close()
+
+        if row and row[0]:
+            venc = row[0] if isinstance(row[0], date) else date.fromisoformat(str(row[0]))
+            if venc < date.today():
+                session.clear()
+                return render_template('licenca_vencida.html'), 403
+    except Exception:
+        pass
+
 
 
 def _garantir_caixa_sessoes():
@@ -259,6 +314,8 @@ def superadmin_required(f):
     def decorated(*args, **kwargs):
         if session.get('role') not in ('superadmin', 'super_admin'):
             return redirect(url_for('login_web'))
+        if not session.get('superadmin_pin_ok'):
+            return redirect(url_for('superadmin_pin'))
         return f(*args, **kwargs)
     return decorated
 
@@ -629,20 +686,8 @@ def force_close_mesa(mesa_id):
 @app.route("/cardapio")
 def cardapio_cliente():
     """Página do cardápio para clientes"""
-    # MODIFICADO — bloqueio por inadimplência
     if get_config("restaurante_ativo", "1") == "0":
         return render_template("restaurante_inativo.html")
-    # NOVO — bloqueio por licença vencida
-    repo = UserRepository()
-    admins = repo.list_admins()
-    if admins:
-        from datetime import date
-        for admin in admins:
-            vencimento = admin[3]
-            if vencimento:
-                venc_date = vencimento if isinstance(vencimento, date) else date.fromisoformat(str(vencimento))
-                if venc_date < date.today():
-                    return render_template("restaurante_inativo.html")
     return render_template("cardapio_cliente.html")
 @app.route("/api/cardapio")
 def api_cardapio():
@@ -776,6 +821,31 @@ def whatsapp_pedido():
         "link": link,
         "resumo": mensagem
     })
+
+# ========================
+# NOVO — PIN DO SUPERADMIN
+# ========================
+
+@app.route('/superadmin/pin', methods=['GET'])
+def superadmin_pin():
+    if session.get('role') not in ('superadmin', 'super_admin'):
+        return redirect(url_for('login_web'))
+    if session.get('superadmin_pin_ok'):
+        return redirect('/superadmin')
+    return render_template('superadmin_pin.html', erro=None)
+
+
+@app.route('/superadmin/pin', methods=['POST'])
+@csrf.exempt
+def superadmin_pin_post():
+    if session.get('role') not in ('superadmin', 'super_admin'):
+        return redirect(url_for('login_web'))
+    pin = request.form.get('pin', '').strip()
+    if pin == SUPERADMIN_PIN:
+        session['superadmin_pin_ok'] = True
+        return redirect('/superadmin')
+    return render_template('superadmin_pin.html', erro='PIN incorreto!')
+
 
 # ========================
 # NOVO — PAINEL SUPERADMIN (LICENÇAS)

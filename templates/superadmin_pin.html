@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Verificação de Segurança</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #0f0f0f; color: #fff; display: flex; align-items: center;
+               justify-content: center; height: 100vh; font-family: sans-serif; }
+        .box { background: #1a1a1a; border-radius: 16px; padding: 48px 40px;
+               width: 100%; max-width: 380px; text-align: center; }
+        .icon { font-size: 3.5rem; margin-bottom: 16px; }
+        h1 { font-size: 1.5rem; margin-bottom: 8px; color: #fff; }
+        .sub { color: #777; font-size: 0.9rem; margin-bottom: 32px; }
+        input[type="password"] {
+            width: 100%; padding: 14px 16px; background: #252525; border: 1px solid #333;
+            border-radius: 10px; color: #fff; font-size: 1rem; outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="password"]:focus { border-color: #ff7a2f; }
+        button {
+            margin-top: 16px; width: 100%; padding: 14px; background: #ff7a2f;
+            border: none; border-radius: 10px; color: #fff; font-size: 1rem;
+            font-weight: 600; cursor: pointer; transition: background 0.2s;
+        }
+        button:hover { background: #e56b28; }
+        .erro { margin-top: 16px; color: #ff4444; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="icon">🔐</div>
+        <h1>Verificação de Segurança</h1>
+        <p class="sub">Digite o PIN para acessar o painel</p>
+        <form method="POST" action="/superadmin/pin">
+            <input type="password" name="pin" placeholder="PIN" maxlength="20" autofocus>
+            <button type="submit">Entrar</button>
+        </form>
+        {% if erro %}
+        <p class="erro">{{ erro }}</p>
+        {% endif %}
+    </div>
+</body>
+</html>
