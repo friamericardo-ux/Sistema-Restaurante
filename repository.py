@@ -35,16 +35,17 @@ class UserRepository:
             """)
         # Migração: adiciona licenca_vencimento se não existir
         if is_mysql():
-            cursor.execute("""
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS licenca_vencimento DATE DEFAULT NULL
-            """)
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN licenca_vencimento DATE DEFAULT NULL")
+                conn.commit()
+            except Exception:
+                pass  # coluna já existe
         else:
             try:
                 cursor.execute("ALTER TABLE users ADD COLUMN licenca_vencimento TEXT DEFAULT NULL")
+                conn.commit()
             except Exception:
-                pass
-        conn.commit()
+                pass  # coluna já existe
 
     def create_admin(self):
         self.init_user_table()
