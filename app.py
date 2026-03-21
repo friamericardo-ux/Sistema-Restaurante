@@ -1071,7 +1071,8 @@ def imprimir_pedido(id):
         forma_pagamento=pedido[7],
         troco=pedido[8],
         status=pedido[9],
-        criado_em=pedido[10]
+        criado_em=pedido[10],
+        nome_restaurante=get_config("nome_restaurante", "Comanda Digital")
     )
 
 # ========== MIGRAÇÃO DO BANCO ==========
