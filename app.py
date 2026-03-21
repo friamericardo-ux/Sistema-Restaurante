@@ -348,6 +348,7 @@ def licenca_ativa(username: str) -> bool:
 # ROTAS DE AUTENTICAÇÃO
 
 @app.route("/login", methods=['GET', 'POST'])
+@csrf.exempt
 @limiter.limit("5 per minute")
 def login_web():
     if request.method == 'POST':
