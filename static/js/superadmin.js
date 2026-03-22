@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (nomeInput && slugPreview) {
         nomeInput.addEventListener('input', function () {
             const slug = gerarSlug(this.value);
-            slugPreview.textContent = slug ? '/' + slug + '/cardapio' : '';
+            slugPreview.textContent = slug ? '/cardapio/' + slug : '';
         });
     }
 });

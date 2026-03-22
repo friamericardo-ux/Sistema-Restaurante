@@ -1028,7 +1028,7 @@ def superadmin_criar_restaurante():
     db.commit()
     db.close()
 
-    return jsonify({"sucesso": True, "slug": slug, "url": f"/{slug}/cardapio"})
+    return jsonify({"sucesso": True, "slug": slug, "url": f"/cardapio/{slug}"})
 
 
 # ========================
@@ -1829,7 +1829,7 @@ def carrinho_cliente():
 # ROTAS MULTI-TENANT
 # ========================
 
-@app.route("/<slug>/cardapio")
+@app.route("/cardapio/<slug>")
 def cardapio_por_slug(slug):
     from data.db import get_connection
     db = get_connection()
@@ -1846,7 +1846,7 @@ def cardapio_por_slug(slug):
         restaurante_id=restaurante_id,
         whatsapp_restaurante=get_config('whatsapp_restaurante', '5500000000000', restaurante_id))
 
-@app.route("/<slug>/api/cardapio")
+@app.route("/cardapio/<slug>/api/cardapio")
 def api_cardapio_por_slug(slug):
     from data.db import get_connection
     db = get_connection()
@@ -1876,7 +1876,7 @@ def api_cardapio_por_slug(slug):
         })
     return jsonify({"sucesso": True, "produtos": resultado})
 
-@app.route("/<slug>/api/adicionais")
+@app.route("/cardapio/<slug>/api/adicionais")
 def api_adicionais_por_slug(slug):
     from data.db import get_connection
     db = get_connection()
@@ -1904,7 +1904,7 @@ def api_adicionais_por_slug(slug):
     resultado = [{"id": a[0], "nome": a[1], "preco": a[2]} for a in adicionais]
     return jsonify({"sucesso": True, "adicionais": resultado})
 
-@app.route("/<slug>/carrinho")
+@app.route("/cardapio/<slug>/carrinho")
 def carrinho_por_slug(slug):
     from data.db import get_connection
     db = get_connection()
@@ -1916,7 +1916,7 @@ def carrinho_por_slug(slug):
         abort(404)
     return render_template("carrinho_cliente.html", slug=slug)
 
-@app.route("/<slug>/api/pedido", methods=["POST"])
+@app.route("/cardapio/<slug>/api/pedido", methods=["POST"])
 @csrf.exempt
 def criar_pedido_por_slug(slug):
     from data.db import get_connection

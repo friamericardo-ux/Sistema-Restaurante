@@ -1,10 +1,10 @@
 // ════ CONFIGURAÇÃO ════════════════════════════════════════════
 
 const _parts = window.location.pathname.split('/').filter(Boolean);
-// URL /<slug>/cardapio → parts = ['slug', 'cardapio'] → SLUG = 'slug'
+// URL /cardapio/<slug> → parts = ['cardapio', 'slug'] → SLUG = 'slug'
 // URL /cardapio        → parts = ['cardapio']          → SLUG = null
-const SLUG = (_parts.length >= 2 && _parts[1] === 'cardapio') ? _parts[0] : null;
-const API_BASE = SLUG ? `/${SLUG}` : '';
+const SLUG = (_parts[0] === 'cardapio' && _parts.length >= 2) ? _parts[1] : null;
+const API_BASE = SLUG ? `/cardapio/${SLUG}` : '';
 
 let cats = [];
 
