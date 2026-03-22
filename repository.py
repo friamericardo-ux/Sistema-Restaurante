@@ -69,17 +69,18 @@ class UserRepository:
         cursor.execute("SELECT id FROM users LIMIT 1")
         return cursor.fetchone() is not None
 
-    def create_custom_admin(self, username: str, password: str, role: str = 'atendente') -> bool:
+    def create_custom_admin(self, username: str, password: str, restaurante_id: int, role: str = 'atendente') -> bool:
         self.init_user_table()
+        ph = "%s" if is_mysql() else "?"
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+        cursor.execute(f"SELECT id FROM users WHERE username = {ph}", (username,))
         if cursor.fetchone():
             return False
         password_hash = SecurityService.hash_password(password)
         cursor.execute(
-            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-            (username, password_hash, role)
+            f"INSERT INTO users (username, password_hash, role, restaurante_id) VALUES ({ph}, {ph}, {ph}, {ph})",
+            (username, password_hash, role, restaurante_id)
         )
         conn.commit()
         return True
@@ -108,21 +109,33 @@ class UserRepository:
         conn.commit()
         conn.close()
 
-    def list_users(self):
+    def list_users(self, restaurante_id: int):
         self.init_user_table()
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, role FROM users ORDER BY id")
+        ph = "%s" if is_mysql() else "?"
+        cursor.execute(
+            f"SELECT id, username, role FROM users WHERE restaurante_id = {ph} AND role != 'superadmin' ORDER BY id",
+            (restaurante_id,)
+        )
         rows = cursor.fetchall()
         conn.close()
         return rows
 
-    def delete_user(self, user_id: int, current_user_id: int) -> bool:
+    def delete_user(self, user_id: int, current_user_id: int, restaurante_id: int) -> bool:
         if user_id == current_user_id:
             return False
+        ph = "%s" if is_mysql() else "?"
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        cursor.execute(
+            f"SELECT id FROM users WHERE id = {ph} AND restaurante_id = {ph} AND role != 'superadmin'",
+            (user_id, restaurante_id)
+        )
+        if not cursor.fetchone():
+            conn.close()
+            return False
+        cursor.execute(f"DELETE FROM users WHERE id = {ph}", (user_id,))
         conn.commit()
         conn.close()
         return True
@@ -195,75 +208,81 @@ class UserRepository:
 
 # ========== PRODUTOS ==========
 
-def listar_produtos():
+def listar_produtos(restaurante_id):
+    ph = "%s" if is_mysql() else "?"
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM produtos WHERE ativo = 1")
+    cursor.execute(f"SELECT * FROM produtos WHERE ativo = 1 AND restaurante_id = {ph}", (restaurante_id,))
     rows = cursor.fetchall()
     conn.close()
     return rows
 
-def adicionar_produto(nome, preco, categoria, emoji, foto=None, descricao=None):
+def adicionar_produto(nome, preco, categoria, emoji, restaurante_id, foto=None, descricao=None):
+    ph = "%s" if is_mysql() else "?"
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO produtos (nome, preco, categoria, emoji, foto, descricao) VALUES (?, ?, ?, ?, ?, ?)",
-        (nome, preco, categoria, emoji, foto, descricao)
+        f"INSERT INTO produtos (nome, preco, categoria, emoji, foto, descricao, restaurante_id) VALUES ({ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph})",
+        (nome, preco, categoria, emoji, foto, descricao, restaurante_id)
     )
     conn.commit()
     conn.close()
 
-def editar_produto(id, nome, preco, categoria, emoji, foto=None):
+def editar_produto(id, nome, preco, categoria, emoji, restaurante_id, foto=None):
+    ph = "%s" if is_mysql() else "?"
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE produtos SET nome=?, preco=?, categoria=?, emoji=?, foto=? WHERE id=?",
-        (nome, preco, categoria, emoji, foto, id)
+        f"UPDATE produtos SET nome={ph}, preco={ph}, categoria={ph}, emoji={ph}, foto={ph} WHERE id={ph} AND restaurante_id={ph}",
+        (nome, preco, categoria, emoji, foto, id, restaurante_id)
     )
     conn.commit()
     conn.close()
 
-def desativar_produto(id):
+def desativar_produto(id, restaurante_id):
+    ph = "%s" if is_mysql() else "?"
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE produtos SET ativo = 0 WHERE id = ?", (id,))
+    cursor.execute(f"UPDATE produtos SET ativo = 0 WHERE id = {ph} AND restaurante_id = {ph}", (id, restaurante_id))
     conn.commit()
     conn.close()
 
 
 # ========== ADICIONAIS ==========
 
-def listar_adicionais(categoria=None):
+def listar_adicionais(restaurante_id, categoria=None):
     """
     Lista adicionais ativos.
     Se categoria informada, retorna só os vinculados àquela categoria.
     """
+    ph = "%s" if is_mysql() else "?"
     conn = get_connection()
     cursor = conn.cursor()
     if categoria:
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT a.id, a.nome, a.preco
             FROM adicionais a
             INNER JOIN adicional_categoria ac ON a.id = ac.adicional_id
-            WHERE a.ativo = 1 AND ac.categoria = ?
-        """, (categoria,))
+            WHERE a.ativo = 1 AND a.restaurante_id = {ph} AND ac.categoria = {ph}
+        """, (restaurante_id, categoria))
     else:
-        cursor.execute("SELECT id, nome, preco FROM adicionais WHERE ativo = 1")
+        cursor.execute(f"SELECT id, nome, preco FROM adicionais WHERE ativo = 1 AND restaurante_id = {ph}", (restaurante_id,))
     rows = cursor.fetchall()
     conn.close()
     return rows
 
-def listar_adicionais_com_categorias():
+def listar_adicionais_com_categorias(restaurante_id):
     """Lista todos os adicionais com suas categorias vinculadas (para o painel admin)."""
+    ph = "%s" if is_mysql() else "?"
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, nome, preco, ativo FROM adicionais ORDER BY nome")
+    cursor.execute(f"SELECT id, nome, preco, ativo FROM adicionais WHERE restaurante_id = {ph} ORDER BY nome", (restaurante_id,))
     adicionais = cursor.fetchall()
 
     resultado = []
     for a in adicionais:
         cursor.execute(
-            "SELECT categoria FROM adicional_categoria WHERE adicional_id = ?", (a[0],)
+            f"SELECT categoria FROM adicional_categoria WHERE adicional_id = {ph}", (a[0],)
         )
         categorias = [row[0] for row in cursor.fetchall()]
         resultado.append({
@@ -276,56 +295,60 @@ def listar_adicionais_com_categorias():
     conn.close()
     return resultado
 
-def adicionar_adicional(nome, preco, categorias: list):
+def adicionar_adicional(nome, preco, categorias: list, restaurante_id):
     """
     Cadastra um adicional e vincula às categorias informadas.
     categorias: lista de strings, ex: ['Lanches', 'Porções']
     """
+    ph = "%s" if is_mysql() else "?"
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO adicionais (nome, preco) VALUES (?, ?)",
-        (nome, preco)
+        f"INSERT INTO adicionais (nome, preco, restaurante_id) VALUES ({ph}, {ph}, {ph})",
+        (nome, preco, restaurante_id)
     )
     adicional_id = cursor.lastrowid
     for cat in categorias:
         cursor.execute(
-            "INSERT INTO adicional_categoria (adicional_id, categoria) VALUES (?, ?)",
+            f"INSERT INTO adicional_categoria (adicional_id, categoria) VALUES ({ph}, {ph})",
             (adicional_id, cat)
         )
     conn.commit()
     conn.close()
     return adicional_id
 
-def editar_adicional(id, nome, preco, categorias: list):
+def editar_adicional(id, nome, preco, categorias: list, restaurante_id):
     """Atualiza nome/preço e recadastra as categorias vinculadas."""
+    ph = "%s" if is_mysql() else "?"
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE adicionais SET nome=?, preco=? WHERE id=?",
-        (nome, preco, id)
+        f"UPDATE adicionais SET nome={ph}, preco={ph} WHERE id={ph} AND restaurante_id={ph}",
+        (nome, preco, id, restaurante_id)
     )
-    cursor.execute("DELETE FROM adicional_categoria WHERE adicional_id = ?", (id,))
+    cursor.execute(f"DELETE FROM adicional_categoria WHERE adicional_id = {ph}", (id,))
     for cat in categorias:
         cursor.execute(
-            "INSERT INTO adicional_categoria (adicional_id, categoria) VALUES (?, ?)",
+            f"INSERT INTO adicional_categoria (adicional_id, categoria) VALUES ({ph}, {ph})",
             (id, cat)
         )
     conn.commit()
     conn.close()
 
-def desativar_adicional(id):
+def desativar_adicional(id, restaurante_id):
+    ph = "%s" if is_mysql() else "?"
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE adicionais SET ativo = 0 WHERE id = ?", (id,))
+    cursor.execute(f"UPDATE adicionais SET ativo = 0 WHERE id = {ph} AND restaurante_id = {ph}", (id, restaurante_id))
     conn.commit()
     conn.close()
 
-def listar_categorias_produtos():
+def listar_categorias_produtos(restaurante_id):
     """Retorna lista de categorias únicas dos produtos ativos."""
+    ph = "%s" if is_mysql() else "?"
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT DISTINCT categoria FROM produtos WHERE ativo = 1 ORDER BY categoria")
+    cursor.execute(f"SELECT DISTINCT categoria FROM produtos WHERE ativo = 1 AND restaurante_id = {ph} ORDER BY categoria", (restaurante_id,))
     rows = cursor.fetchall()
     conn.close()
     return [row[0] for row in rows]
