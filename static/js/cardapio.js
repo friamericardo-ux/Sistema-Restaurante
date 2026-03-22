@@ -1,7 +1,7 @@
 // ════ CONFIGURAÇÃO ════════════════════════════════════════════
 
-const SLUG = window.location.pathname.split('/')[2] || null;
-const API_BASE = SLUG ? `/r/${SLUG}` : '';
+const SLUG = window.location.pathname.split('/')[1] || null;
+const API_BASE = SLUG ? `/${SLUG}` : '';
 
 let cats = [];
 

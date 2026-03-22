@@ -51,7 +51,8 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>Restaurante / Usuário</th>
+            <th>Restaurante</th>
+            <th>Cardápio</th>
             <th>Plano</th>
             <th>Vencimento</th>
             <th>Status</th>
@@ -62,7 +63,13 @@
           {% for c in clientes %}
           <tr>
             <td class="sa-id">{{ c.id }}</td>
-            <td class="sa-username">{{ c.username }}</td>
+            <td class="sa-username">
+              <strong>{{ c.nome_restaurante }}</strong><br>
+              <small style="color:#888">user: {{ c.username }}</small>
+            </td>
+            <td>
+              <a href="/{{ c.slug }}/cardapio" target="_blank" style="color:#2ecc71;font-size:0.85rem">/{{ c.slug }}/cardapio</a>
+            </td>
             <td><span class="badge-role">{{ c.role }}</span></td>
             <td class="sa-vencimento">
               {% if c.vencimento %}
@@ -90,7 +97,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="6" class="sa-vazio">Nenhum restaurante cadastrado.</td>
+            <td colspan="7" class="sa-vazio">Nenhum restaurante cadastrado.</td>
           </tr>
           {% endfor %}
         </tbody>

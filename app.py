@@ -922,7 +922,7 @@ def painel_superadmin():
     except Exception:
         pass
     cursor.execute("""
-        SELECT u.id, u.username, u.role, u.licenca_vencimento
+        SELECT u.id, u.username, u.role, u.licenca_vencimento, r.slug, r.nome
         FROM restaurantes r
         JOIN users u ON u.restaurante_id = r.id AND u.role = 'admin'
         ORDER BY r.id
@@ -931,7 +931,7 @@ def painel_superadmin():
     db.close()
     clientes = []
     for a in admins:
-        user_id, username, role, vencimento = a
+        user_id, username, role, vencimento, slug, nome_restaurante = a
         if vencimento:
             venc_date = vencimento if isinstance(vencimento, date) else date.fromisoformat(str(vencimento))
             dias_restantes = (venc_date - date.today()).days
@@ -943,7 +943,9 @@ def painel_superadmin():
             "username": username,
             "role": role,
             "vencimento": str(venc_date) if venc_date else None,
-            "dias_restantes": dias_restantes
+            "dias_restantes": dias_restantes,
+            "slug": slug,
+            "nome_restaurante": nome_restaurante
         })
     return render_template("superadmin.html", clientes=clientes)
 
@@ -1026,7 +1028,7 @@ def superadmin_criar_restaurante():
     db.commit()
     db.close()
 
-    return jsonify({"sucesso": True, "slug": slug, "url": f"/r/{slug}"})
+    return jsonify({"sucesso": True, "slug": slug, "url": f"/{slug}/cardapio"})
 
 
 # ========================
@@ -1827,8 +1829,7 @@ def carrinho_cliente():
 # ROTAS MULTI-TENANT
 # ========================
 
-@app.route("/r/<slug>")
-@app.route("/r/<slug>/cardapio")
+@app.route("/<slug>/cardapio")
 def cardapio_por_slug(slug):
     from data.db import get_connection
     db = get_connection()
@@ -1845,7 +1846,7 @@ def cardapio_por_slug(slug):
         restaurante_id=restaurante_id,
         whatsapp_restaurante=get_config('whatsapp_restaurante', '5500000000000', restaurante_id))
 
-@app.route("/r/<slug>/api/cardapio")
+@app.route("/<slug>/api/cardapio")
 def api_cardapio_por_slug(slug):
     from data.db import get_connection
     db = get_connection()
@@ -1875,7 +1876,7 @@ def api_cardapio_por_slug(slug):
         })
     return jsonify({"sucesso": True, "produtos": resultado})
 
-@app.route("/r/<slug>/api/adicionais")
+@app.route("/<slug>/api/adicionais")
 def api_adicionais_por_slug(slug):
     from data.db import get_connection
     db = get_connection()
@@ -1903,7 +1904,7 @@ def api_adicionais_por_slug(slug):
     resultado = [{"id": a[0], "nome": a[1], "preco": a[2]} for a in adicionais]
     return jsonify({"sucesso": True, "adicionais": resultado})
 
-@app.route("/r/<slug>/carrinho")
+@app.route("/<slug>/carrinho")
 def carrinho_por_slug(slug):
     from data.db import get_connection
     db = get_connection()
@@ -1915,7 +1916,7 @@ def carrinho_por_slug(slug):
         abort(404)
     return render_template("carrinho_cliente.html", slug=slug)
 
-@app.route("/r/<slug>/api/pedido", methods=["POST"])
+@app.route("/<slug>/api/pedido", methods=["POST"])
 @csrf.exempt
 def criar_pedido_por_slug(slug):
     from data.db import get_connection
