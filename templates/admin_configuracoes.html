@@ -38,7 +38,6 @@
     <form method="POST" action="/admin/configuracoes">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-      {% if session['role'] == 'superadmin' %}
       <!-- IDENTIDADE -->
       <div class="card-config">
         <div class="card-config-titulo">🏪 Identidade</div>
@@ -59,7 +58,6 @@
           <div class="field-hint" id="whatsapp-preview"></div>
         </div>
       </div>
-      {% endif %}
 
       <!-- ENTREGA -->
       <div class="card-config">
