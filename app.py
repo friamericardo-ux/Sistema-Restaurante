@@ -1669,6 +1669,115 @@ def calcular_frete():
 def carrinho_cliente():
     return render_template("carrinho_cliente.html")
 
+# ========================
+# ROTAS MULTI-TENANT
+# ========================
+
+@app.route("/r/<slug>")
+@app.route("/r/<slug>/cardapio")
+def cardapio_por_slug(slug):
+    from data.db import get_connection
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, nome, ativo FROM restaurantes WHERE slug = %s", (slug,))
+    row = cursor.fetchone()
+    db.close()
+    if not row:
+        abort(404)
+    restaurante_id, nome, ativo = row[0], row[1], row[2]
+    if not ativo:
+        return render_template("restaurante_inativo.html")
+    return render_template("cardapio_cliente.html", slug=slug, restaurante_nome=nome)
+
+@app.route("/r/<slug>/api/cardapio")
+def api_cardapio_por_slug(slug):
+    from data.db import get_connection
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT id FROM restaurantes WHERE slug = %s AND ativo = 1", (slug,))
+    row = cursor.fetchone()
+    if not row:
+        db.close()
+        return jsonify({"sucesso": False, "erro": "Restaurante não encontrado"}), 404
+    restaurante_id = row[0]
+    cursor.execute("""
+        SELECT id, nome, preco, categoria, emoji, ativo, foto, descricao
+        FROM produtos WHERE restaurante_id = %s AND ativo = 1
+    """, (restaurante_id,))
+    produtos = cursor.fetchall()
+    db.close()
+    resultado = []
+    for p in produtos:
+        resultado.append({
+            "id": p[0],
+            "nome": p[1],
+            "preco": p[2],
+            "categoria": p[3],
+            "emoji": p[4],
+            "foto": p[6] if len(p) > 6 else None,
+            "descricao": p[7] if len(p) > 7 else ""
+        })
+    return jsonify({"sucesso": True, "produtos": resultado})
+
+@app.route("/r/<slug>/api/adicionais")
+def api_adicionais_por_slug(slug):
+    from data.db import get_connection
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT id FROM restaurantes WHERE slug = %s AND ativo = 1", (slug,))
+    row = cursor.fetchone()
+    if not row:
+        db.close()
+        return jsonify({"sucesso": False, "erro": "Restaurante não encontrado"}), 404
+    restaurante_id = row[0]
+    categoria = request.args.get('categoria', None)
+    if categoria:
+        cursor.execute("""
+            SELECT a.id, a.nome, a.preco FROM adicionais a
+            JOIN adicional_categoria ac ON a.id = ac.adicional_id
+            WHERE a.restaurante_id = %s AND a.ativo = 1 AND ac.categoria = %s
+        """, (restaurante_id, categoria))
+    else:
+        cursor.execute("""
+            SELECT id, nome, preco FROM adicionais
+            WHERE restaurante_id = %s AND ativo = 1
+        """, (restaurante_id,))
+    adicionais = cursor.fetchall()
+    db.close()
+    resultado = [{"id": a[0], "nome": a[1], "preco": a[2]} for a in adicionais]
+    return jsonify({"sucesso": True, "adicionais": resultado})
+
+@app.route("/r/<slug>/carrinho")
+def carrinho_por_slug(slug):
+    from data.db import get_connection
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT id FROM restaurantes WHERE slug = %s AND ativo = 1", (slug,))
+    row = cursor.fetchone()
+    db.close()
+    if not row:
+        abort(404)
+    return render_template("carrinho_cliente.html", slug=slug)
+
+@app.route("/r/<slug>/api/pedido", methods=["POST"])
+@csrf.exempt
+def criar_pedido_por_slug(slug):
+    from data.db import get_connection
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT id FROM restaurantes WHERE slug = %s AND ativo = 1", (slug,))
+    row = cursor.fetchone()
+    if not row:
+        db.close()
+        return jsonify({"sucesso": False, "erro": "Restaurante não encontrado"}), 404
+    restaurante_id = row[0]
+    db.close()
+    # Reutiliza a lógica existente de criar_pedido injetando restaurante_id
+    dados = request.get_json()
+    dados['restaurante_id'] = restaurante_id
+    request._cached_json = (dados, dados)
+    return criar_pedido()
+
 @app.route('/admin/adicionais')
 @admin_required
 def admin_adicionais():
