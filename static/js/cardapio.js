@@ -1,6 +1,7 @@
 // ════ CONFIGURAÇÃO ════════════════════════════════════════════
 
-const WHATSAPP = '5567993487509';
+const SLUG = window.location.pathname.split('/')[2] || null;
+const API_BASE = SLUG ? `/r/${SLUG}` : '';
 
 let cats = [];
 
@@ -263,7 +264,7 @@ async function finalizarPedido(){
 
   // Salva no banco antes de abrir WhatsApp
   try {
-    await fetch('/api/pedido', {
+    await fetch(`${API_BASE}/api/pedido`, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
@@ -303,7 +304,8 @@ async function finalizarPedido(){
   if(pgtoSel==='dinheiro'&&troco) msg+=`\n🔄 *Troco para:* R$ ${troco}`;
   msg+=`\n\n_Pedido enviado pelo Comanda Digital_`;
 
-  const url=`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
+  const whatsapp = document.getElementById('whatsappRestaurante').value;
+  const url=`https://wa.me/${whatsapp}?text=${encodeURIComponent(msg)}`;
   window.open(url,'_blank');
 }
 
@@ -314,7 +316,7 @@ document.getElementById('buscaInput').addEventListener('input',function(){
 
 async function init() {
   try {
-    const res = await fetch('/api/cardapio');
+    const res = await fetch(`${API_BASE}/api/cardapio`);
     const data = await res.json();
 
     const grupos = {};
@@ -337,7 +339,7 @@ async function init() {
     const categoriasUnicas = Object.keys(grupos);
     const adsMap = {};
     await Promise.all(categoriasUnicas.map(async cat => {
-      const r = await fetch(`/api/adicionais?categoria=${encodeURIComponent(cat)}`);
+      const r = await fetch(`${API_BASE}/api/adicionais?categoria=${encodeURIComponent(cat)}`);
       const d = await r.json();
       adsMap[cat] = d.adicionais || [];
     }));

@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/cardapio.css') }}">
 </head>
 <body>
+<input type="hidden" id="whatsappRestaurante" value="{{ get_config('whatsapp_restaurante', '5500000000000', restaurante_id) }}">
 
 <!-- ══ TELA CARDÁPIO ══ -->
 <div id="telaCardapio" class="tela ativa">
