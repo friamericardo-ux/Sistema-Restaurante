@@ -270,13 +270,14 @@ def set_config(chave, valor, restaurante_id=1):
     db.close()
 
 
-def _get_sessao_inicio(cursor):
+def _get_sessao_inicio(cursor, restaurante_id=1):
     """Retorna o datetime de início da sessão atual do caixa como string."""
     cursor.execute("""
         SELECT aberto_em FROM caixa_sessoes
         WHERE DATE(aberto_em, 'localtime') = DATE('now', 'localtime')
+        AND restaurante_id = ?
         ORDER BY aberto_em DESC LIMIT 1
-    """)
+    """, (restaurante_id,))
     row = cursor.fetchone()
     if row:
         try:
@@ -440,25 +441,28 @@ def dashboard_resumo():
     db = get_connection()
     db.row_factory = sqlite3.Row
     cursor = db.cursor()
+    rid = session.get('restaurante_id', 1)
 
     # Mesas abertas
-    cursor.execute("SELECT COUNT(*) as total FROM mesas")
+    cursor.execute("SELECT COUNT(*) as total FROM mesas WHERE restaurante_id = ?", (rid,))
     mesas_abertas = cursor.fetchone()["total"]
 
     # Pedidos delivery por status
     cursor.execute("""
         SELECT status, COUNT(*) as total FROM pedidos_delivery
         WHERE status != 'entregue'
+        AND restaurante_id = ?
         GROUP BY status
-    """)
+    """, (rid,))
     pedidos_por_status = {row["status"]: row["total"] for row in cursor.fetchall()}
 
     # Verificar se caixa foi fechado hoje
     cursor.execute("""
         SELECT id FROM caixa_fechamentos
         WHERE data = DATE('now', 'localtime')
+        AND restaurante_id = ?
         LIMIT 1
-    """)
+    """, (rid,))
     caixa_fechado = cursor.fetchone() is not None
 
     if caixa_fechado:
@@ -470,7 +474,8 @@ def dashboard_resumo():
             SELECT COUNT(*) as total
             FROM pedidos_delivery
             WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime')
-        """)
+            AND restaurante_id = ?
+        """, (rid,))
         pedidos_hoje = cursor.fetchone()["total"]
 
         # Faturamento hoje (apenas pedidos entregues)
@@ -479,7 +484,8 @@ def dashboard_resumo():
             FROM pedidos_delivery
             WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime')
             AND status = 'entregue'
-        """)
+            AND restaurante_id = ?
+        """, (rid,))
         faturamento_hoje = cursor.fetchone()["faturamento"]
 
     db.close()
@@ -499,15 +505,16 @@ def listar_mesas():
     db = get_connection()
     db.row_factory = sqlite3.Row
     cursor = db.cursor()
+    rid = session.get('restaurante_id', 1)
 
-    cursor.execute("SELECT id, numero, total FROM mesas")
+    cursor.execute("SELECT id, numero, total FROM mesas WHERE restaurante_id = ?", (rid,))
     mesas_db = cursor.fetchall()
 
     mesas = []
     for mesa in mesas_db:
         cursor.execute(
-            "SELECT id, nome, preco, quantidade, observacao FROM itens WHERE mesa_id = ?",
-            (mesa["id"],)
+            "SELECT id, nome, preco, quantidade, observacao FROM itens WHERE mesa_id = ? AND restaurante_id = ?",
+            (mesa["id"], rid)
         )
         itens = [dict(i) for i in cursor.fetchall()]
 
@@ -527,18 +534,19 @@ def listar_mesas():
 def abrir_mesa():
     dados = request.get_json()
     num = str(dados.get("numero"))
+    rid = session.get('restaurante_id', 1)
 
     db = get_connection()
     cursor = db.cursor()
 
-    cursor.execute("SELECT numero FROM mesas WHERE numero = ?", (num,))
+    cursor.execute("SELECT numero FROM mesas WHERE numero = ? AND restaurante_id = ?", (num, rid))
     if cursor.fetchone():
         db.close()
         return jsonify({"sucesso": False, "erro": "Mesa já aberta!"})
 
     cursor.execute(
-        "INSERT INTO mesas (numero, total) VALUES (?, ?)",
-        (num, 0.0)
+        "INSERT INTO mesas (numero, total, restaurante_id) VALUES (?, ?, ?)",
+        (num, 0.0, rid)
     )
     db.commit()
     db.close()
@@ -551,11 +559,12 @@ def abrir_mesa():
 def adicionar_item():
     dados = request.get_json()
     num = str(dados.get("numero"))
+    rid = session.get('restaurante_id', 1)
 
     db = get_connection()
     cursor = db.cursor()
 
-    cursor.execute("SELECT id FROM mesas WHERE numero = ?", (num,))
+    cursor.execute("SELECT id FROM mesas WHERE numero = ? AND restaurante_id = ?", (num, rid))
     mesa = cursor.fetchone()
     if not mesa:
         db.close()
@@ -568,18 +577,18 @@ def adicionar_item():
     observacao = dados.get("observacao", "")
 
     cursor.execute("""
-        INSERT INTO itens (mesa_id, nome, preco, quantidade, observacao)
-        VALUES (?, ?, ?, ?, ?)
-    """, (mesa_id, nome, preco, quantidade, observacao))
+        INSERT INTO itens (mesa_id, nome, preco, quantidade, observacao, restaurante_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (mesa_id, nome, preco, quantidade, observacao, rid))
 
     cursor.execute("""
-        SELECT SUM(preco * quantidade) FROM itens WHERE mesa_id = ?
-    """, (mesa_id,))
+        SELECT SUM(preco * quantidade) FROM itens WHERE mesa_id = ? AND restaurante_id = ?
+    """, (mesa_id, rid))
     total = cursor.fetchone()[0] or 0
 
     cursor.execute(
-        "UPDATE mesas SET total = ? WHERE id = ?",
-        (total, mesa_id)
+        "UPDATE mesas SET total = ? WHERE id = ? AND restaurante_id = ?",
+        (total, mesa_id, rid)
     )
 
     db.commit()
@@ -593,11 +602,12 @@ def adicionar_item():
 def remover_item():
     dados = request.get_json()
     item_id = int(dados.get("id"))
+    rid = session.get('restaurante_id', 1)
 
     db = get_connection()
     cursor = db.cursor()
 
-    cursor.execute("SELECT mesa_id FROM itens WHERE id = ?", (item_id,))
+    cursor.execute("SELECT mesa_id FROM itens WHERE id = ? AND restaurante_id = ?", (item_id, rid))
     row = cursor.fetchone()
     if not row:
         db.close()
@@ -605,16 +615,16 @@ def remover_item():
 
     mesa_id = row[0]
 
-    cursor.execute("DELETE FROM itens WHERE id = ?", (item_id,))
+    cursor.execute("DELETE FROM itens WHERE id = ? AND restaurante_id = ?", (item_id, rid))
 
     cursor.execute("""
-        SELECT SUM(preco * quantidade) FROM itens WHERE mesa_id = ?
-    """, (mesa_id,))
+        SELECT SUM(preco * quantidade) FROM itens WHERE mesa_id = ? AND restaurante_id = ?
+    """, (mesa_id, rid))
     total = cursor.fetchone()[0] or 0
 
     cursor.execute(
-        "UPDATE mesas SET total = ? WHERE id = ?",
-        (total, mesa_id)
+        "UPDATE mesas SET total = ? WHERE id = ? AND restaurante_id = ?",
+        (total, mesa_id, rid)
     )
 
     db.commit()
@@ -628,11 +638,12 @@ def remover_item():
 def fechar_mesa():
     dados = request.get_json()
     num = str(dados.get("numero"))
+    rid = session.get('restaurante_id', 1)
 
     db = get_connection()
     cursor = db.cursor()
 
-    cursor.execute("SELECT id FROM mesas WHERE numero = ?", (num,))
+    cursor.execute("SELECT id FROM mesas WHERE numero = ? AND restaurante_id = ?", (num, rid))
     mesa = cursor.fetchone()
     if not mesa:
         db.close()
@@ -641,18 +652,18 @@ def fechar_mesa():
     mesa_id = mesa[0]
 
     # Salvar histórico da mesa antes de deletar
-    cursor.execute("SELECT numero, total FROM mesas WHERE id = ?", (mesa_id,))
+    cursor.execute("SELECT numero, total FROM mesas WHERE id = ? AND restaurante_id = ?", (mesa_id, rid))
     mesa_info = cursor.fetchone()
-    cursor.execute("SELECT nome, preco, quantidade, observacao FROM itens WHERE mesa_id = ?", (mesa_id,))
+    cursor.execute("SELECT nome, preco, quantidade, observacao FROM itens WHERE mesa_id = ? AND restaurante_id = ?", (mesa_id, rid))
     itens_mesa = cursor.fetchall()
     itens_json = json.dumps([{"nome": i[0], "preco": i[1], "quantidade": i[2], "observacao": i[3]} for i in itens_mesa], ensure_ascii=False)
     cursor.execute(
-        "INSERT INTO historico_mesas (mesa_numero, total, itens) VALUES (?, ?, ?)",
-        (mesa_info[0], mesa_info[1], itens_json)
+        "INSERT INTO historico_mesas (mesa_numero, total, itens, restaurante_id) VALUES (?, ?, ?, ?)",
+        (mesa_info[0], mesa_info[1], itens_json, rid)
     )
 
-    cursor.execute("DELETE FROM itens WHERE mesa_id = ?", (mesa_id,))
-    cursor.execute("DELETE FROM mesas WHERE id = ?", (mesa_id,))
+    cursor.execute("DELETE FROM itens WHERE mesa_id = ? AND restaurante_id = ?", (mesa_id, rid))
+    cursor.execute("DELETE FROM mesas WHERE id = ? AND restaurante_id = ?", (mesa_id, rid))
 
     db.commit()
     db.close()
@@ -663,15 +674,16 @@ def fechar_mesa():
 @login_required
 def force_close_mesa(mesa_id):
     """Fecha forçado de mesa corrompida — sem validações, direto no banco."""
+    rid = session.get('restaurante_id', 1)
     db = get_connection()
     cursor = db.cursor()
-    cursor.execute("SELECT id, numero FROM mesas WHERE id = ?", (mesa_id,))
+    cursor.execute("SELECT id, numero FROM mesas WHERE id = ? AND restaurante_id = ?", (mesa_id, rid))
     mesa = cursor.fetchone()
     if not mesa:
         db.close()
         return jsonify({"sucesso": False, "erro": f"Mesa ID {mesa_id} não encontrada."})
-    cursor.execute("DELETE FROM itens WHERE mesa_id = ?", (mesa_id,))
-    cursor.execute("DELETE FROM mesas WHERE id = ?", (mesa_id,))
+    cursor.execute("DELETE FROM itens WHERE mesa_id = ? AND restaurante_id = ?", (mesa_id, rid))
+    cursor.execute("DELETE FROM mesas WHERE id = ? AND restaurante_id = ?", (mesa_id, rid))
     db.commit()
     db.close()
     return jsonify({"sucesso": True, "mensagem": f"Mesa ID {mesa_id} (número {mesa[1]}) fechada forçadamente."})
@@ -730,6 +742,7 @@ def criar_pedido():
     itens = dados.get("itens", [])
     forma_pagamento = (dados.get("pagamento") or "").strip().lower()
     troco = dados.get("troco", 0)
+    restaurante_id = dados.get("restaurante_id", 1)
     taxa_entrega = float(get_config("taxa_entrega", Config.TAXA_ENTREGA))  # MODIFICADO — taxa dinâmica
 
     if not itens or not cliente_nome:
@@ -744,8 +757,8 @@ def criar_pedido():
     cursor = db.cursor()
     cursor.execute("""
         INSERT INTO pedidos_delivery
-        (cliente_nome, cliente_telefone, cliente_endereco, itens, taxa_entrega, total, forma_pagamento, troco, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (cliente_nome, cliente_telefone, cliente_endereco, itens, taxa_entrega, total, forma_pagamento, troco, status, restaurante_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         cliente_nome,
         cliente_telefone,
@@ -755,7 +768,8 @@ def criar_pedido():
         total,
         forma_pagamento,
         troco,
-        'novo'
+        'novo',
+        restaurante_id
     ))
     
     pedido_id = cursor.lastrowid
@@ -805,7 +819,7 @@ def whatsapp_pedido():
     db.row_factory = sqlite3.Row
     cursor = db.cursor()
     
-    cursor.execute("SELECT * FROM pedidos_delivery WHERE id = ?", (pedido_id,))
+    cursor.execute("SELECT * FROM pedidos_delivery WHERE id = ? AND restaurante_id = ?", (pedido_id, session.get('restaurante_id', 1)))
     pedido = dict(cursor.fetchone())
     db.close()
     
@@ -1058,14 +1072,16 @@ def listar_pedidos_delivery():
     db = get_connection()
     db.row_factory = sqlite3.Row
     cursor = db.cursor()
+    rid = session.get('restaurante_id', 1)
 
     cursor.execute("""
         SELECT id, cliente_nome, cliente_telefone, cliente_endereco,
                itens, total, status, criado_em
         FROM pedidos_delivery
         WHERE status NOT IN ('entregue', 'cancelado')
+        AND restaurante_id = ?
         ORDER BY criado_em DESC
-    """)
+    """, (rid,))
 
     pedidos = []
     for row in cursor.fetchall():
@@ -1092,8 +1108,8 @@ def atualizar_status_pedido():
     db = get_connection()
     cursor = db.cursor()
     cursor.execute(
-        "UPDATE pedidos_delivery SET status = ? WHERE id = ?",
-        (novo_status, pedido_id)
+        "UPDATE pedidos_delivery SET status = ? WHERE id = ? AND restaurante_id = ?",
+        (novo_status, pedido_id, session.get('restaurante_id', 1))
     )
     db.commit()
     db.close()
@@ -1108,8 +1124,8 @@ def cancelar_pedido(id):
     db = get_connection()
     cursor = db.cursor()
     cursor.execute(
-        "UPDATE pedidos_delivery SET status = 'cancelado' WHERE id = ? AND status = 'novo'",
-        (id,)
+        "UPDATE pedidos_delivery SET status = 'cancelado' WHERE id = ? AND status = 'novo' AND restaurante_id = ?",
+        (id, session.get('restaurante_id', 1))
     )
     alterado = cursor.rowcount
     db.commit()
@@ -1127,8 +1143,8 @@ def imprimir_pedido(id):
     db = get_connection()
     cursor = db.cursor()
     cursor.execute(
-        "SELECT id, cliente_nome, cliente_telefone, cliente_endereco, itens, taxa_entrega, total, forma_pagamento, troco, status, criado_em FROM pedidos_delivery WHERE id = ?",
-        (id,)
+        "SELECT id, cliente_nome, cliente_telefone, cliente_endereco, itens, taxa_entrega, total, forma_pagamento, troco, status, criado_em FROM pedidos_delivery WHERE id = ? AND restaurante_id = ?",
+        (id, session.get('restaurante_id', 1))
     )
     pedido = cursor.fetchone()
     db.close()
@@ -1343,14 +1359,16 @@ def caixa_resumo():
     db = get_connection()
     db.row_factory = sqlite3.Row
     cursor = db.cursor()
+    rid = session.get('restaurante_id', 1)
 
     # Verificar se caixa já foi fechado hoje
     cursor.execute("""
         SELECT id, fechado_em, fechado_por
         FROM caixa_fechamentos
         WHERE data = DATE('now', 'localtime')
+        AND restaurante_id = ?
         ORDER BY fechado_em DESC LIMIT 1
-    """)
+    """, (rid,))
     fechamento = cursor.fetchone()
 
     if fechamento is not None:
@@ -1372,7 +1390,7 @@ def caixa_resumo():
         })
 
     # Obter início da sessão atual
-    sessao_inicio = _get_sessao_inicio(cursor)
+    sessao_inicio = _get_sessao_inicio(cursor, rid)
 
     # Faturamento delivery (pedidos entregues nesta sessão)
     cursor.execute("""
@@ -1381,7 +1399,8 @@ def caixa_resumo():
         FROM pedidos_delivery
         WHERE criado_em >= ?
         AND status = 'entregue'
-    """, (sessao_inicio,))
+        AND restaurante_id = ?
+    """, (sessao_inicio, rid))
     delivery = cursor.fetchone()
 
     # Faturamento mesas (fechadas nesta sessão)
@@ -1389,7 +1408,8 @@ def caixa_resumo():
         SELECT COUNT(*) as qtd, COALESCE(SUM(total), 0) as total
         FROM historico_mesas
         WHERE fechado_em >= ?
-    """, (sessao_inicio,))
+        AND restaurante_id = ?
+    """, (sessao_inicio, rid))
     mesas = cursor.fetchone()
 
     db.close()
@@ -1415,8 +1435,9 @@ def caixa_movimentacoes():
     db = get_connection()
     db.row_factory = sqlite3.Row
     cursor = db.cursor()
+    rid = session.get('restaurante_id', 1)
 
-    sessao_inicio = _get_sessao_inicio(cursor)
+    sessao_inicio = _get_sessao_inicio(cursor, rid)
     movimentacoes = []
 
     # Pedidos delivery entregues nesta sessão
@@ -1425,8 +1446,9 @@ def caixa_movimentacoes():
         FROM pedidos_delivery
         WHERE criado_em >= ?
         AND status = 'entregue'
+        AND restaurante_id = ?
         ORDER BY criado_em DESC
-    """, (sessao_inicio,))
+    """, (sessao_inicio, rid))
     for row in cursor.fetchall():
         movimentacoes.append({
             "tipo": "delivery",
@@ -1440,8 +1462,9 @@ def caixa_movimentacoes():
         SELECT id, mesa_numero, total, fechado_em
         FROM historico_mesas
         WHERE fechado_em >= ?
+        AND restaurante_id = ?
         ORDER BY fechado_em DESC
-    """, (sessao_inicio,))
+    """, (sessao_inicio, rid))
     for row in cursor.fetchall():
         movimentacoes.append({
             "tipo": "mesa",
@@ -1465,18 +1488,20 @@ def fechar_caixa():
     db = get_connection()
     db.row_factory = sqlite3.Row
     cursor = db.cursor()
+    rid = session.get('restaurante_id', 1)
 
     # Verificar se já foi fechado hoje
     cursor.execute("""
         SELECT id FROM caixa_fechamentos
         WHERE data = DATE('now', 'localtime')
-    """)
+        AND restaurante_id = ?
+    """, (rid,))
     if cursor.fetchone():
         db.close()
         return jsonify({"sucesso": False, "erro": "Caixa já foi fechado hoje!"})
 
     # Buscar totais da sessão atual
-    sessao_inicio = _get_sessao_inicio(cursor)
+    sessao_inicio = _get_sessao_inicio(cursor, rid)
 
     cursor.execute("""
         SELECT COUNT(*) as qtd, COALESCE(SUM(total), 0) as total,
@@ -1484,14 +1509,16 @@ def fechar_caixa():
         FROM pedidos_delivery
         WHERE criado_em >= ?
         AND status = 'entregue'
-    """, (sessao_inicio,))
+        AND restaurante_id = ?
+    """, (sessao_inicio, rid))
     delivery = cursor.fetchone()
 
     cursor.execute("""
         SELECT COUNT(*) as qtd, COALESCE(SUM(total), 0) as total
         FROM historico_mesas
         WHERE fechado_em >= ?
-    """, (sessao_inicio,))
+        AND restaurante_id = ?
+    """, (sessao_inicio, rid))
     mesas = cursor.fetchone()
 
     total_delivery = delivery["total"]
@@ -1502,9 +1529,9 @@ def fechar_caixa():
 
     cursor.execute("""
         INSERT INTO caixa_fechamentos
-        (data, total_delivery, total_mesas, total_geral, qtd_pedidos_delivery, qtd_mesas, fechado_por)
-        VALUES (DATE('now', 'localtime'), ?, ?, ?, ?, ?, ?)
-    """, (total_delivery, total_mesas, total_geral, delivery["qtd"], mesas["qtd"], usuario))
+        (data, total_delivery, total_mesas, total_geral, qtd_pedidos_delivery, qtd_mesas, fechado_por, restaurante_id)
+        VALUES (DATE('now', 'localtime'), ?, ?, ?, ?, ?, ?, ?)
+    """, (total_delivery, total_mesas, total_geral, delivery["qtd"], mesas["qtd"], usuario, rid))
 
     # Criar tabela fechamentos_caixa se não existir e salvar resumo do dia
     cursor.execute("""
@@ -1520,9 +1547,9 @@ def fechar_caixa():
     """)
     cursor.execute("""
         INSERT INTO fechamentos_caixa
-        (data, total_faturado, total_pedidos, total_entregas, valor_entregas)
-        VALUES (DATE('now', 'localtime'), ?, ?, ?, ?)
-    """, (total_geral, delivery["qtd"] + mesas["qtd"], delivery["qtd"], total_delivery))
+        (data, total_faturado, total_pedidos, total_entregas, valor_entregas, restaurante_id)
+        VALUES (DATE('now', 'localtime'), ?, ?, ?, ?, ?)
+    """, (total_geral, delivery["qtd"] + mesas["qtd"], delivery["qtd"], total_delivery, rid))
 
     # Zerar pedidos entregues desta sessão
     cursor.execute("""
@@ -1530,7 +1557,8 @@ def fechar_caixa():
         SET status = 'fechado'
         WHERE criado_em >= ?
         AND status = 'entregue'
-    """, (sessao_inicio,))
+        AND restaurante_id = ?
+    """, (sessao_inicio, rid))
 
     db.commit()
     db.close()
@@ -1549,6 +1577,7 @@ def caixa_historico():
     """Retorna fechamentos da tabela fechamentos_caixa filtrados por mês/ano"""
     mes = request.args.get("mes", "01").zfill(2)
     ano = request.args.get("ano", "2026")
+    rid = session.get('restaurante_id', 1)
 
     db = get_connection()
     db.row_factory = sqlite3.Row
@@ -1558,8 +1587,9 @@ def caixa_historico():
         SELECT data, total_faturado, total_pedidos, total_entregas, valor_entregas
         FROM fechamentos_caixa
         WHERE MONTH(data) = ? AND YEAR(data) = ?
+        AND restaurante_id = ?
         ORDER BY data ASC
-    """, (mes, ano))
+    """, (mes, ano, rid))
 
     fechamentos = [dict(row) for row in cursor.fetchall()]
     db.close()
@@ -1586,14 +1616,16 @@ def caixa_historico():
 @admin_required
 def abrir_caixa():
     """Reabre o caixa removendo o registro de fechamento e inicia nova sessão"""
+    rid = session.get('restaurante_id', 1)
     db = get_connection()
     cursor = db.cursor()
     cursor.execute("""
         DELETE FROM caixa_fechamentos
         WHERE data = DATE('now', 'localtime')
-    """)
+        AND restaurante_id = ?
+    """, (rid,))
     # Registrar início da nova sessão
-    cursor.execute("INSERT INTO caixa_sessoes (aberto_em) VALUES (CURRENT_TIMESTAMP)")
+    cursor.execute("INSERT INTO caixa_sessoes (aberto_em, restaurante_id) VALUES (CURRENT_TIMESTAMP, ?)", (rid,))
     db.commit()
     db.close()
     return jsonify({"sucesso": True})
@@ -1606,8 +1638,9 @@ def caixa_grafico():
     db = get_connection()
     db.row_factory = sqlite3.Row
     cursor = db.cursor()
+    rid = session.get('restaurante_id', 1)
 
-    sessao_inicio = _get_sessao_inicio(cursor)
+    sessao_inicio = _get_sessao_inicio(cursor, rid)
     horas = {}
     for h in range(24):
         horas[h] = 0.0
@@ -1619,8 +1652,9 @@ def caixa_grafico():
         FROM pedidos_delivery
         WHERE criado_em >= ?
         AND status = 'entregue'
+        AND restaurante_id = ?
         GROUP BY hora
-    """, (sessao_inicio,))
+    """, (sessao_inicio, rid))
     for row in cursor.fetchall():
         horas[row["hora"]] += row["total"]
 
@@ -1630,8 +1664,9 @@ def caixa_grafico():
                COALESCE(SUM(total), 0) as total
         FROM historico_mesas
         WHERE fechado_em >= ?
+        AND restaurante_id = ?
         GROUP BY hora
-    """, (sessao_inicio,))
+    """, (sessao_inicio, rid))
     for row in cursor.fetchall():
         horas[row["hora"]] += row["total"]
 
@@ -1648,6 +1683,7 @@ def caixa_balanco():
     """Retorna balanço mensal agrupado por dia"""
     mes = request.args.get("mes", "01").zfill(2)
     ano = request.args.get("ano", "2026")
+    rid = session.get('restaurante_id', 1)
 
     db = get_connection()
     db.row_factory = sqlite3.Row
@@ -1659,8 +1695,9 @@ def caixa_balanco():
                qtd_pedidos_delivery, qtd_mesas, fechado_por
         FROM caixa_fechamentos
         WHERE MONTH(data) = ? AND YEAR(data) = ?
+        AND restaurante_id = ?
         ORDER BY data ASC
-    """, (mes, ano))
+    """, (mes, ano, rid))
 
     dias = [dict(row) for row in cursor.fetchall()]
 
