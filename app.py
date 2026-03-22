@@ -233,15 +233,15 @@ _garantir_configuracoes()
 
 
 # NOVO — Helpers de configuração
-def get_config(chave, fallback=None):
+def get_config(chave, fallback=None, restaurante_id=1):
     """Lê uma configuração do banco. Usa fallback se não encontrar."""
     try:
         db = get_connection()
         cursor = db.cursor()
         if is_mysql():
-            cursor.execute("SELECT valor FROM configuracoes WHERE chave = %s", (chave,))
+            cursor.execute("SELECT valor FROM configuracoes WHERE chave = %s AND restaurante_id = %s", (chave, restaurante_id))
         else:
-            cursor.execute("SELECT valor FROM configuracoes WHERE chave = ?", (chave,))
+            cursor.execute("SELECT valor FROM configuracoes WHERE chave = ? AND restaurante_id = ?", (chave, restaurante_id))
         row = cursor.fetchone()
         db.close()
         if row:
@@ -251,21 +251,21 @@ def get_config(chave, fallback=None):
     return fallback
 
 
-def set_config(chave, valor):
+def set_config(chave, valor, restaurante_id=1):
     """Salva ou atualiza uma configuração no banco."""
     db = get_connection()
     cursor = db.cursor()
     if is_mysql():
         cursor.execute("""
-            INSERT INTO configuracoes (chave, valor)
-            VALUES (%s, %s)
+            INSERT INTO configuracoes (chave, valor, restaurante_id)
+            VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE valor = %s, atualizado_em = CURRENT_TIMESTAMP
-        """, (chave, valor, valor))
+        """, (chave, valor, restaurante_id, valor))
     else:
         cursor.execute("""
-            INSERT INTO configuracoes (chave, valor) VALUES (?, ?)
-            ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor
-        """, (chave, valor))
+            INSERT INTO configuracoes (chave, valor, restaurante_id) VALUES (?, ?, ?)
+            ON CONFLICT(chave, restaurante_id) DO UPDATE SET valor = excluded.valor
+        """, (chave, valor, restaurante_id))
     db.commit()
     db.close()
 
@@ -1001,9 +1001,9 @@ def api_configuracoes():
 @admin_required
 def admin_toggle_status():
     """Toggle rápido para abrir/fechar o estabelecimento."""
-    atual = get_config("restaurante_ativo", "1")
+    atual = get_config("restaurante_ativo", "1", restaurante_id=session['restaurante_id'])
     novo = "0" if atual == "1" else "1"
-    set_config("restaurante_ativo", novo)
+    set_config("restaurante_ativo", novo, restaurante_id=session['restaurante_id'])
     return jsonify({"restaurante_ativo": novo})
 
 
@@ -1023,20 +1023,20 @@ def admin_configuracoes():
         for campo in campos:
             valor = request.form.get(campo, "").strip()
             if valor != "":
-                set_config(campo, valor)
+                set_config(campo, valor, restaurante_id=session['restaurante_id'])
         sucesso = "Configurações salvas com sucesso!"
 
     configs = {
-        "nome_restaurante": get_config("nome_restaurante", ""),
-        "whatsapp_restaurante": get_config("whatsapp_restaurante", Config.WHATSAPP_RESTAURANTE),
-        "taxa_entrega": get_config("taxa_entrega", str(Config.TAXA_ENTREGA)),
-        "frete_por_km": get_config("frete_por_km", str(Config.FRETE_POR_KM)),
-        "restaurante_lat": get_config("restaurante_lat", str(Config.RESTAURANTE_LAT)),
-        "restaurante_lng": get_config("restaurante_lng", str(Config.RESTAURANTE_LNG)),
-        "horario_abertura": get_config("horario_abertura", "18:00"),
-        "horario_fechamento": get_config("horario_fechamento", "23:00"),
-        "google_maps_key": get_config("google_maps_key", Config.GOOGLE_MAPS_KEY),
-        "restaurante_ativo": get_config("restaurante_ativo", "1"),
+        "nome_restaurante": get_config("nome_restaurante", "", restaurante_id=session['restaurante_id']),
+        "whatsapp_restaurante": get_config("whatsapp_restaurante", Config.WHATSAPP_RESTAURANTE, restaurante_id=session['restaurante_id']),
+        "taxa_entrega": get_config("taxa_entrega", str(Config.TAXA_ENTREGA), restaurante_id=session['restaurante_id']),
+        "frete_por_km": get_config("frete_por_km", str(Config.FRETE_POR_KM), restaurante_id=session['restaurante_id']),
+        "restaurante_lat": get_config("restaurante_lat", str(Config.RESTAURANTE_LAT), restaurante_id=session['restaurante_id']),
+        "restaurante_lng": get_config("restaurante_lng", str(Config.RESTAURANTE_LNG), restaurante_id=session['restaurante_id']),
+        "horario_abertura": get_config("horario_abertura", "18:00", restaurante_id=session['restaurante_id']),
+        "horario_fechamento": get_config("horario_fechamento", "23:00", restaurante_id=session['restaurante_id']),
+        "google_maps_key": get_config("google_maps_key", Config.GOOGLE_MAPS_KEY, restaurante_id=session['restaurante_id']),
+        "restaurante_ativo": get_config("restaurante_ativo", "1", restaurante_id=session['restaurante_id']),
     }
     return render_template("admin_configuracoes.html", configs=configs, sucesso=sucesso, erro=erro)
 
