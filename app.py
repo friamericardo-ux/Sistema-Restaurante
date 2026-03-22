@@ -211,22 +211,57 @@ def _garantir_configuracoes():
     db = get_connection()
     cursor = db.cursor()
     if is_mysql():
+        # Cria tabela com schema correto se não existir
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS configuracoes (
-                chave VARCHAR(100) PRIMARY KEY,
+                chave VARCHAR(100) NOT NULL,
                 valor TEXT,
-                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                restaurante_id INT NOT NULL DEFAULT 1,
+                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (chave, restaurante_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
+        db.commit()
+        # Migração: adiciona restaurante_id se a tabela já existia sem ela
+        cursor.execute("SHOW COLUMNS FROM configuracoes LIKE 'restaurante_id'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE configuracoes ADD COLUMN restaurante_id INT NOT NULL DEFAULT 1")
+            db.commit()
+        # Migração: corrige PRIMARY KEY se ainda for só (chave)
+        try:
+            cursor.execute("ALTER TABLE configuracoes DROP PRIMARY KEY")
+            cursor.execute("ALTER TABLE configuracoes ADD PRIMARY KEY (chave, restaurante_id)")
+            db.commit()
+        except Exception:
+            pass  # PK já está correta
     else:
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS configuracoes (
-                chave TEXT PRIMARY KEY,
-                valor TEXT,
-                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-    db.commit()
+        # SQLite: recria a tabela se não tiver restaurante_id (preserva dados como restaurante_id=1)
+        cursor.execute("PRAGMA table_info(configuracoes)")
+        colunas = [row[1] for row in cursor.fetchall()]
+        if not colunas:
+            cursor.execute("""
+                CREATE TABLE configuracoes (
+                    chave TEXT NOT NULL,
+                    valor TEXT,
+                    restaurante_id INTEGER NOT NULL DEFAULT 1,
+                    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (chave, restaurante_id)
+                )
+            """)
+        elif 'restaurante_id' not in colunas:
+            cursor.execute("""
+                CREATE TABLE configuracoes_nova (
+                    chave TEXT NOT NULL,
+                    valor TEXT,
+                    restaurante_id INTEGER NOT NULL DEFAULT 1,
+                    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (chave, restaurante_id)
+                )
+            """)
+            cursor.execute("INSERT INTO configuracoes_nova (chave, valor, atualizado_em) SELECT chave, valor, atualizado_em FROM configuracoes")
+            cursor.execute("DROP TABLE configuracoes")
+            cursor.execute("ALTER TABLE configuracoes_nova RENAME TO configuracoes")
+        db.commit()
     db.close()
 
 _garantir_configuracoes()
