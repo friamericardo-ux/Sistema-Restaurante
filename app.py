@@ -1754,18 +1754,7 @@ def salvar_cliente():
     db.close()
     return jsonify({"sucesso": True})
 
-@app.route('/dev/tabelas')
-def dev_tabelas():
-    db = get_db()
-    cursor = db.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT TABLE_NAME, GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) as colunas
-        FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE()
-        GROUP BY TABLE_NAME
-        ORDER BY TABLE_NAME
-    """)
-    return jsonify(cursor.fetchall())
+
 
 @app.route('/dev/tabelas')
 def dev_tabelas():
