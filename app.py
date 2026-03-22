@@ -870,8 +870,8 @@ def whatsapp_pedido():
     
     # Usa o serviço para formatar e gerar link
     mensagem = WhatsAppService.formatar_mensagem_pedido(pedido, itens)
-    # MODIFICADO — número dinâmico do banco
-    numero = get_config("whatsapp_restaurante", Config.WHATSAPP_RESTAURANTE)
+    restaurante_id = pedido.get("restaurante_id") or session.get('restaurante_id', 1)
+    numero = get_config("whatsapp_restaurante", Config.WHATSAPP_RESTAURANTE, restaurante_id=restaurante_id)
     link = WhatsAppService.gerar_link_whatsapp(mensagem, numero_destino=numero)
     
     return jsonify({
