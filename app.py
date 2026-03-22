@@ -859,8 +859,22 @@ def superadmin_pin_post():
 @superadmin_required
 def painel_superadmin():
     from datetime import date
-    repo = UserRepository()
-    admins = repo.list_admins()
+    db = get_connection()
+    cursor = db.cursor()
+    # Garantir coluna restaurante_id em users
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN restaurante_id INT DEFAULT NULL")
+        db.commit()
+    except Exception:
+        pass
+    cursor.execute("""
+        SELECT u.id, u.username, u.role, u.licenca_vencimento
+        FROM restaurantes r
+        JOIN users u ON u.restaurante_id = r.id AND u.role = 'admin'
+        ORDER BY r.id
+    """)
+    admins = cursor.fetchall()
+    db.close()
     clientes = []
     for a in admins:
         user_id, username, role, vencimento = a
@@ -896,6 +910,69 @@ def superadmin_bloquear(user_id):
     repo = UserRepository()
     repo.bloquear_licenca(user_id)
     return jsonify({"sucesso": True})
+
+
+@app.route("/superadmin/criar-restaurante", methods=["POST"])
+@csrf.exempt
+@superadmin_required
+def superadmin_criar_restaurante():
+    import unicodedata, re
+    data = request.get_json()
+    nome = (data.get('nome') or '').strip()
+    username = (data.get('username') or '').strip()
+    senha = (data.get('senha') or '').strip()
+
+    if not nome or not username or not senha:
+        return jsonify({"sucesso": False, "erro": "Preencha todos os campos."}), 400
+
+    # Gerar slug a partir do nome
+    slug = unicodedata.normalize('NFD', nome)
+    slug = ''.join(c for c in slug if unicodedata.category(c) != 'Mn')
+    slug = slug.lower()
+    slug = re.sub(r'[^a-z0-9\s-]', '', slug)
+    slug = re.sub(r'\s+', '-', slug.strip())
+    slug = re.sub(r'-+', '-', slug)
+
+    db = get_connection()
+    cursor = db.cursor()
+
+    # Garantir coluna restaurante_id em users
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN restaurante_id INT DEFAULT NULL")
+        db.commit()
+    except Exception:
+        pass
+
+    # Verificar se slug já existe
+    cursor.execute("SELECT id FROM restaurantes WHERE slug = %s", (slug,))
+    if cursor.fetchone():
+        db.close()
+        return jsonify({"sucesso": False, "erro": f"Slug '{slug}' já está em uso."}), 409
+
+    # Verificar se username já existe
+    cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
+    if cursor.fetchone():
+        db.close()
+        return jsonify({"sucesso": False, "erro": f"Usuário '{username}' já existe."}), 409
+
+    # Inserir restaurante
+    cursor.execute(
+        "INSERT INTO restaurantes (slug, nome, ativo) VALUES (%s, %s, 1)",
+        (slug, nome)
+    )
+    db.commit()
+    restaurante_id = cursor.lastrowid
+
+    # Criar usuário admin vinculado ao restaurante
+    password_hash = SecurityService.hash_password(senha)
+    cursor.execute(
+        "INSERT INTO users (username, password_hash, role, restaurante_id) VALUES (%s, %s, 'admin', %s)",
+        (username, password_hash, restaurante_id)
+    )
+    db.commit()
+    db.close()
+
+    return jsonify({"sucesso": True, "slug": slug, "url": f"/r/{slug}"})
 
 
 # ========================

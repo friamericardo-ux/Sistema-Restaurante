@@ -25,6 +25,27 @@
       <p>Controle de acesso dos restaurantes cadastrados no sistema.</p>
     </div>
 
+    <div class="sa-novo-restaurante">
+      <h2>Novo Restaurante</h2>
+      <div class="sa-form-row">
+        <div class="sa-form-group">
+          <label for="novo-nome">Nome do Restaurante</label>
+          <input type="text" id="novo-nome" placeholder="Ex: Burger House Centro" autocomplete="off">
+          <span class="sa-slug-preview" id="slug-preview"></span>
+        </div>
+        <div class="sa-form-group">
+          <label for="novo-username">Usuário Admin</label>
+          <input type="text" id="novo-username" placeholder="Ex: burgerhousecentro" autocomplete="off">
+        </div>
+        <div class="sa-form-group">
+          <label for="novo-senha">Senha</label>
+          <input type="password" id="novo-senha" placeholder="Senha do admin" autocomplete="new-password">
+        </div>
+        <button class="btn-criar-restaurante" onclick="criarRestaurante()">Criar Restaurante</button>
+      </div>
+      <p class="sa-criar-msg" id="criar-msg"></p>
+    </div>
+
     <div class="sa-table-wrap">
       <table class="sa-table">
         <thead>
