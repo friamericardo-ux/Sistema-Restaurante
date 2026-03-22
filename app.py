@@ -449,15 +449,14 @@ def home():
 def index():
     role = session.get('role')
     restaurante_slug = None
-    rid = session.get('restaurante_id')
-    if rid:
-        db = get_connection()
-        cursor = db.cursor()
-        cursor.execute("SELECT slug FROM restaurantes WHERE id = %s", (rid,))
-        row = cursor.fetchone()
-        db.close()
-        if row:
-            restaurante_slug = row[0]
+    rid = session.get('restaurante_id') or 1
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT slug FROM restaurantes WHERE id = %s", (rid,))
+    row = cursor.fetchone()
+    db.close()
+    if row:
+        restaurante_slug = row[0]
     if role == 'admin':
         return render_template('dashboard.html', restaurante_slug=restaurante_slug)
     elif role == 'atendente':
