@@ -86,16 +86,17 @@ class UserRepository:
         return True
 
     def get_user_by_username(self, username: str) -> Optional[User]:
+        ph = "%s" if is_mysql() else "?"
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, username, password_hash, role FROM users WHERE username = ?",
+            f"SELECT id, username, password_hash, role, restaurante_id FROM users WHERE username = {ph}",
             (username,)
         )
         row = cursor.fetchone()
         conn.close()
         if row:
-            return User(id=row[0], username=row[1], password_hash=row[2], role=row[3])
+            return User(id=row[0], username=row[1], password_hash=row[2], role=row[3], restaurante_id=row[4])
         return None
 
     def update_password(self, user_id: int, new_password: str) -> None:

@@ -364,6 +364,7 @@ def login_web():
             session['user_id'] = user.id
             session['username'] = user.username
             session['role'] = user.role
+            session['restaurante_id'] = user.restaurante_id
             return redirect(url_for('index'))
         else:
             logging.warning(f"Login falhou para '{username}' de {request.remote_addr}")
@@ -696,7 +697,7 @@ def cardapio_cliente():
 @app.route("/api/cardapio")
 def api_cardapio():
     """Retorna os produtos do cardápio"""
-    produtos = listar_produtos()
+    produtos = listar_produtos(session['restaurante_id'])
     resultado = []
     for p in produtos:
         resultado.append({
@@ -706,14 +707,14 @@ def api_cardapio():
             "categoria": p[3],
             "emoji": p[4],
             "foto": p[6] if len(p) > 6 else None,
-            "descricao": p[7] if len(p) > 7 else ""
+            "descricao": p[7] if len(p) > 7 else "",    
         })
     return jsonify({"sucesso": True, "produtos": resultado})
 
 @app.route("/api/adicionais")
 def api_adicionais():
     categoria = request.args.get('categoria', None)
-    adicionais = listar_adicionais(categoria=categoria)
+    adicionais = listar_adicionais(session['restaurante_id'], categoria=categoria)
     resultado = [{"id": a[0], "nome": a[1], "preco": a[2]} for a in adicionais]
     return jsonify({"sucesso": True, "adicionais": resultado})
 
@@ -1196,7 +1197,7 @@ def migrar_banco():
 @app.route('/admin/produtos')
 @admin_required
 def admin_produtos():
-    produtos = listar_produtos()
+    produtos = listar_produtos(session['restaurante_id'])
     return render_template('admin_produtos.html', produtos=produtos)
 
 @app.route('/admin/produtos/adicionar', methods=['POST'])
@@ -1228,7 +1229,7 @@ def adicionar_produto_route():
             foto = nome_seguro
 
     descricao = request.form.get('descricao', '').strip() or None
-    adicionar_produto(nome, preco, categoria, emoji, foto, descricao)
+    adicionar_produto(nome, preco, categoria, emoji, session['restaurante_id'], foto, descricao)
     return redirect('/admin/produtos')
 
 @app.route('/admin/produtos/editar/<int:id>', methods=['POST'])
@@ -1250,13 +1251,13 @@ def editar_produto_route(id):
             arquivo.save(caminho_salvar)
             foto = nome_seguro
 
-    editar_produto(id, nome, preco, categoria, emoji, foto)
+    editar_produto(id, nome, preco, categoria, emoji, session['restaurante_id'], foto)
     return redirect('/admin/produtos')
 
 @app.route('/admin/produtos/desativar/<int:id>')
 @admin_required
 def desativar_produto_route(id):
-    desativar_produto(id)
+    desativar_produto(id, session['restaurante_id'])
     return redirect('/admin/produtos')
 
 
@@ -1310,19 +1311,19 @@ def gerenciar_usuarios():
             erro = 'A senha deve ter pelo menos 6 caracteres.'
         elif password != confirmar:
             erro = 'As senhas não coincidem.'
-        elif not repo.create_custom_admin(username, password, role):
+        elif not repo.create_custom_admin(username, password, session['restaurante_id'], role):
             erro = f'O usuário "{username}" já existe.'
         else:
             sucesso = f'Usuário "{username}" criado com sucesso!'
 
-    usuarios = repo.list_users()
+    usuarios = repo.list_users(session['restaurante_id'])
     return render_template('admin_usuarios.html', usuarios=usuarios, erro=erro, sucesso=sucesso)
 
 @app.route('/admin/usuarios/remover/<int:user_id>', methods=['POST'])   
 @admin_required
 def remover_usuario(user_id):
     repo = UserRepository()
-    repo.delete_user(user_id, session['user_id'])
+    repo.delete_user(user_id, session['user_id'], session['restaurante_id'])
     return redirect('/admin/usuarios')
 
 
@@ -1858,8 +1859,8 @@ def criar_pedido_por_slug(slug):
 @app.route('/admin/adicionais')
 @admin_required
 def admin_adicionais():
-    adicionais = listar_adicionais_com_categorias()
-    categorias = listar_categorias_produtos()
+    adicionais = listar_adicionais_com_categorias(session['restaurante_id'])
+    categorias = listar_categorias_produtos(session['restaurante_id'])
     return render_template('admin_adicionais.html', adicionais=adicionais, categorias=categorias)
 
 @app.route('/admin/adicionais/adicionar', methods=['POST'])
@@ -1869,7 +1870,7 @@ def adicionar_adicional_route():
     preco = float(request.form['preco'])
     categorias = request.form.getlist('categorias')
     if nome and preco >= 0 and categorias:
-        adicionar_adicional(nome, preco, categorias)
+        adicionar_adicional(nome, preco, categorias, session['restaurante_id'])
     return redirect('/admin/adicionais')
 
 @app.route('/admin/adicionais/editar/<int:id>', methods=['POST'])
@@ -1878,18 +1879,18 @@ def editar_adicional_route(id):
     nome = request.form['nome'].strip()
     preco = float(request.form['preco'])
     categorias = request.form.getlist('categorias')
-    editar_adicional(id, nome, preco, categorias)
+    editar_adicional(id, nome, preco, categorias, session['restaurante_id'])
     return redirect('/admin/adicionais')
 
 @app.route('/admin/adicionais/desativar/<int:id>', methods=['POST'])
 @admin_required
 def desativar_adicional_route(id):
-    desativar_adicional(id)
+    desativar_adicional(id, session['restaurante_id'])
     return redirect('/admin/adicionais')
 
 @app.route('/api/categorias')
 def api_categorias():
-    categorias = listar_categorias_produtos()
+    categorias = listar_categorias_produtos(session['restaurante_id'])
     return jsonify({"sucesso": True, "categorias": categorias})
 
 

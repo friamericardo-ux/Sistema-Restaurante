@@ -6,3 +6,4 @@ class User:
     username: str
     password_hash: str
     role: str = "admin"
+    restaurante_id: int = None
