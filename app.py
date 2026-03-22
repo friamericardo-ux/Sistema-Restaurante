@@ -1767,6 +1767,21 @@ def dev_tabelas():
     """)
     return jsonify(cursor.fetchall())
 
+@app.route('/dev/tabelas')
+def dev_tabelas():
+    from data.db import get_connection
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute("""
+        SELECT TABLE_NAME, GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) as colunas
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+        GROUP BY TABLE_NAME
+        ORDER BY TABLE_NAME
+    """)
+    rows = cursor.fetchall()
+    return jsonify([{"tabela": r[0], "colunas": r[1]} for r in rows])
+
 if __name__ == "__main__":
     repo = UserRepository()
     repo.init_user_table()
