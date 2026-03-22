@@ -60,9 +60,9 @@ def run_migrations(get_connection, is_mysql):
         conn.commit()
 
         if is_mysql:
-            cursor.execute("INSERT INTO schema_migrations (filename) VALUES (%s)", (filename,))
+            cursor.execute("INSERT IGNORE INTO schema_migrations (filename) VALUES (%s)", (filename,))
         else:
-            cursor.execute("INSERT INTO schema_migrations (filename) VALUES (?)", (filename,))
+            cursor.execute("INSERT OR IGNORE INTO schema_migrations (filename) VALUES (?)", (filename,))
         conn.commit()
         print(f"[migrations] OK {filename} executada com sucesso")
 
