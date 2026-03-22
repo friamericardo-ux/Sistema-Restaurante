@@ -412,3 +412,13 @@ def fechar_mesa(mesa_id):
     conn.execute("UPDATE mesas SET total = 0 WHERE id = ?", (mesa_id,))
     conn.commit()
     conn.close()
+
+
+# ========================
+# MIGRATIONS
+# ========================
+def _run_migrations():
+    from data.migrations import run_migrations
+    run_migrations(get_connection, is_mysql())
+
+_run_migrations()
