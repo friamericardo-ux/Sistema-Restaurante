@@ -705,7 +705,10 @@ def cardapio_cliente():
     """Página do cardápio para clientes"""
     if get_config("restaurante_ativo", "1") == "0":
         return render_template("restaurante_inativo.html")
-    return render_template("cardapio_cliente.html")
+    return render_template("cardapio_cliente.html",
+        slug=None,
+        restaurante_nome=get_config('nome_restaurante', 'Restaurante', 1),
+        restaurante_id=1)
 @app.route("/api/cardapio")
 def api_cardapio():
     """Retorna os produtos do cardápio"""
