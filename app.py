@@ -708,7 +708,8 @@ def cardapio_cliente():
     return render_template("cardapio_cliente.html",
         slug=None,
         restaurante_nome=get_config('nome_restaurante', 'Restaurante', 1),
-        restaurante_id=1)
+        restaurante_id=1,
+        whatsapp_restaurante=get_config('whatsapp_restaurante', '5500000000000', 1))
 @app.route("/api/cardapio")
 def api_cardapio():
     """Retorna os produtos do cardápio"""
@@ -1805,7 +1806,9 @@ def cardapio_por_slug(slug):
     restaurante_id, nome, ativo = row[0], row[1], row[2]
     if not ativo:
         return render_template("restaurante_inativo.html")
-    return render_template("cardapio_cliente.html", slug=slug, restaurante_nome=nome)
+    return render_template("cardapio_cliente.html", slug=slug, restaurante_nome=nome,
+        restaurante_id=restaurante_id,
+        whatsapp_restaurante=get_config('whatsapp_restaurante', '5500000000000', restaurante_id))
 
 @app.route("/r/<slug>/api/cardapio")
 def api_cardapio_por_slug(slug):
