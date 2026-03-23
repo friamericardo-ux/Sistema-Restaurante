@@ -81,6 +81,8 @@ async function onPlaceSelected() {
 
     if (data.sucesso) {
       freteCalculado = data.frete;
+      window._freteCalculado = data.frete;
+      window.taxaEntrega = data.frete;
       const freteInfo = document.getElementById('frete-info');
       freteInfo.style.display = 'block';
       freteInfo.innerHTML = `
@@ -99,22 +101,26 @@ async function onPlaceSelected() {
 
 // ── Atualiza frete no carrinho ──
 function atualizarFreteNoCarrinho(frete) {
-  // Atualiza o display da taxa de entrega
-  const taxaElements = document.querySelectorAll('.cart-total-linha span');
-  for (let i = 0; i < taxaElements.length; i++) {
-    if (taxaElements[i].textContent.includes('R$ 5,00') ||
-        taxaElements[i].textContent.includes('Entrega') ||
-        taxaElements[i].previousElementSibling?.textContent?.includes('Entrega')) {
-      // Encontrou o span de valor da entrega
-      if (taxaElements[i].textContent.match(/R\$/)) {
-        taxaElements[i].textContent = 'R$ ' + frete.toFixed(2).replace('.', ',');
-      }
-    }
-  }
+  window._freteCalculado = frete;
+  window.taxaEntrega = frete;
 
-  // Atualiza o total
-  if (typeof carrinho !== 'undefined' && typeof renderizarCarrinho === 'function') {
-    renderizarCarrinho();
+  // Atualiza display de entrega
+  const elEntrega = document.getElementById('cart-entrega');
+  if (elEntrega) elEntrega.textContent = 'R$ ' + frete.toFixed(2).replace('.', ',');
+
+  // Recalcula total
+  if (typeof atualizarTotal === 'function') {
+    atualizarTotal();
+  } else {
+    // fallback manual
+    const elTotal = document.getElementById('cart-total');
+    const elSub = document.getElementById('cart-subtotal');
+    if (elTotal && elSub) {
+      const subtotal = parseFloat(
+        elSub.textContent.replace('R$', '').replace(',', '.').trim()
+      ) || 0;
+      elTotal.textContent = 'R$ ' + (subtotal + frete).toFixed(2).replace('.', ',');
+    }
   }
 }
 
