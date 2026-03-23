@@ -1079,8 +1079,7 @@ def admin_configuracoes():
     if request.method == "POST":
         campos = [
             "nome_restaurante", "whatsapp_restaurante",
-            "frete_por_km",
-            "restaurante_lat", "restaurante_lng",
+            "frete_por_km", "endereco_restaurante",
             "horario_abertura", "horario_fechamento",
             "google_maps_key", "restaurante_ativo"
         ]
@@ -1088,6 +1087,24 @@ def admin_configuracoes():
             valor = request.form.get(campo, "").strip()
             if valor != "":
                 set_config(campo, valor, restaurante_id=session['restaurante_id'])
+
+        endereco = request.form.get("endereco_restaurante", "").strip()
+        if endereco:
+            try:
+                import requests as req
+                google_key = get_config("google_maps_key", Config.GOOGLE_MAPS_KEY)
+                geo_url = "https://maps.googleapis.com/maps/api/geocode/json"
+                geo_resp = req.get(geo_url, params={"address": endereco, "key": google_key})
+                geo_data = geo_resp.json()
+                if geo_data["status"] == "OK":
+                    location = geo_data["results"][0]["geometry"]["location"]
+                    set_config("restaurante_lat", str(location["lat"]),
+                              restaurante_id=session['restaurante_id'])
+                    set_config("restaurante_lng", str(location["lng"]),
+                              restaurante_id=session['restaurante_id'])
+            except Exception:
+                pass  # mantém lat/lng anteriores se falhar
+
         sucesso = "Configurações salvas com sucesso!"
 
     configs = {
@@ -1100,6 +1117,7 @@ def admin_configuracoes():
         "horario_fechamento": get_config("horario_fechamento", "23:00", restaurante_id=session['restaurante_id']),
         "google_maps_key": get_config("google_maps_key", Config.GOOGLE_MAPS_KEY, restaurante_id=session['restaurante_id']),
         "restaurante_ativo": get_config("restaurante_ativo", "1", restaurante_id=session['restaurante_id']),
+        "endereco_restaurante": get_config("endereco_restaurante", ""),
     }
     return render_template("admin_configuracoes.html", configs=configs, sucesso=sucesso, erro=erro)
 
@@ -1800,14 +1818,17 @@ def calcular_frete():
     dados = request.get_json()
     cliente_lat = dados.get("lat")
     cliente_lng = dados.get("lng")
+    endereco_destino = dados.get("endereco_destino")
 
-    if cliente_lat is None or cliente_lng is None:
+    if endereco_destino is None and (cliente_lat is None or cliente_lng is None):
         return jsonify({"sucesso": False, "erro": "Coordenadas não informadas!"})
 
     frete_por_km = float(get_config("frete_por_km", Config.FRETE_POR_KM))
     google_maps_key = get_config("google_maps_key", Config.GOOGLE_MAPS_KEY)
     rest_lat = float(get_config("restaurante_lat", Config.RESTAURANTE_LAT))
     rest_lng = float(get_config("restaurante_lng", Config.RESTAURANTE_LNG))
+
+    destinations = endereco_destino if endereco_destino else f"{cliente_lat},{cliente_lng}"
 
     distancia_km = None
 
@@ -1817,7 +1838,7 @@ def calcular_frete():
             "https://maps.googleapis.com/maps/api/distancematrix/json",
             params={
                 "origins": f"{rest_lat},{rest_lng}",
-                "destinations": f"{cliente_lat},{cliente_lng}",
+                "destinations": destinations,
                 "key": google_maps_key
             },
             timeout=5
@@ -1828,8 +1849,8 @@ def calcular_frete():
     except Exception:
         pass
 
-    # Fallback Haversine
-    if distancia_km is None:
+    # Fallback Haversine (apenas quando lat/lng disponíveis)
+    if distancia_km is None and cliente_lat is not None and cliente_lng is not None:
         R = 6371
         dlat = math.radians(cliente_lat - rest_lat)
         dlng = math.radians(cliente_lng - rest_lng)
@@ -1839,6 +1860,9 @@ def calcular_frete():
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
         distancia_km = R * c
 
+    if distancia_km is None:
+        return jsonify({"sucesso": False, "erro": "Não foi possível calcular a distância!"})
+
     frete = round(distancia_km * frete_por_km, 2)
 
     return jsonify({"sucesso": True, "frete": frete, "distancia_km": round(distancia_km, 2)})
@@ -1846,7 +1870,8 @@ def calcular_frete():
 
 @app.route("/carrinho")
 def carrinho_cliente():
-    return render_template("carrinho_cliente.html")
+    google_maps_key = get_config("google_maps_key", Config.GOOGLE_MAPS_KEY)
+    return render_template("carrinho_cliente.html", google_maps_key=google_maps_key)
 
 # ========================
 # ROTAS MULTI-TENANT

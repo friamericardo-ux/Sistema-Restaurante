@@ -122,6 +122,7 @@ function finalizarPedido() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       nome, telefone, endereco, observacao, pagamento, troco,
+      taxa_entrega: window._freteCalculado || 0,
       itens: itens.map(i => ({
         nome: i.nome, preco: i.preco,
         quantidade: i.quantidade,

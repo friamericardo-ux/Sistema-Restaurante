@@ -38,7 +38,10 @@
     </div>
     <div class="form-group">
       <label for="endereco">Endereço</label>
-      <input type="text" id="endereco" name="endereco" required>
+      <input type="text" id="endereco" name="endereco"
+             placeholder="Rua, número, bairro, cidade"
+             autocomplete="off" required>
+      <div id="endereco-sugestoes" style="display:none;"></div>
     </div>
     <div class="form-group">
       <label for="observacao">Observação</label>
@@ -75,6 +78,68 @@
       </div>
       </div><!-- fecha troco-section -->
       <button class="btn-finalizar" id="btn-finalizar" onclick="finalizarPedido()">✅ Finalizar Pedido</button>
+      <script>
+const inputEndereco = document.getElementById('endereco');
+const sugestoesDiv = document.getElementById('endereco-sugestoes');
+let autocompleteService, sessionToken;
+
+function initAutocomplete() {
+  autocompleteService = new google.maps.places.AutocompleteService();
+  sessionToken = new google.maps.places.AutocompleteSessionToken();
+
+  inputEndereco.addEventListener('input', function() {
+    const valor = this.value;
+    if (valor.length < 3) {
+      sugestoesDiv.style.display = 'none';
+      return;
+    }
+    autocompleteService.getPlacePredictions(
+      { input: valor, sessionToken,
+        componentRestrictions: { country: 'br' } },
+      function(predictions, status) {
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
+          sugestoesDiv.style.display = 'none';
+          return;
+        }
+        sugestoesDiv.innerHTML = '';
+        predictions.forEach(function(p) {
+          const item = document.createElement('div');
+          item.className = 'endereco-sugestao-item';
+          item.textContent = p.description;
+          item.addEventListener('click', function() {
+            inputEndereco.value = p.description;
+            sugestoesDiv.style.display = 'none';
+            calcularFrete(p.description);
+          });
+          sugestoesDiv.appendChild(item);
+        });
+        sugestoesDiv.style.display = 'block';
+      }
+    );
+  });
+
+  document.addEventListener('click', function(e) {
+    if (e.target !== inputEndereco) sugestoesDiv.style.display = 'none';
+  });
+}
+
+function calcularFrete(enderecoCliente) {
+  fetch('/api/maps/calcular-frete', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({endereco_destino: enderecoCliente})
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.sucesso) {
+      document.getElementById('cart-entrega').textContent =
+        'R$ ' + data.frete.toFixed(2).replace('.', ',');
+      window._freteCalculado = data.frete;
+      atualizarTotal();
+    }
+  });
+}
+      </script>
       </div><!-- fecha form-box -->
       <div class="sucesso-box" id="sucesso-box" style="display:none;">
         <div class="sucesso-icon">🎉</div>
@@ -86,4 +151,5 @@
     </div>
     <div class="toast" id="toast"></div>
     <script src="/static/js/carrinho.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&libraries=places&callback=initAutocomplete" async defer></script>
     {% endblock %}
