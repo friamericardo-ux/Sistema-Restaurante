@@ -98,6 +98,7 @@ function finalizarPedido() {
   const endereco = document.getElementById('endereco').value.trim();
   const observacao = document.getElementById('observacao').value.trim();
   const pagamento = document.querySelector('input[name="pagamento"]:checked')?.value;
+  const freteAtual = parseFloat(window._freteCalculado) || parseFloat(window.taxaEntrega) || 0;
 
   let troco = 0;
   let trocoTexto = '';
@@ -105,7 +106,7 @@ function finalizarPedido() {
     const precisaTroco = document.getElementById('troco-sim')?.checked;
     if (precisaTroco) {
       const valorPago = parseFloat(document.getElementById('troco').value);
-      const totalPedido = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0) +  (parseFloat(window._freteCalculado) || 0);
+      const totalPedido = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0) + freteAtual;
       if (!isNaN(valorPago) && valorPago > 0) {
         const trocoDar = valorPago - totalPedido;
         troco = valorPago;
@@ -131,7 +132,7 @@ function finalizarPedido() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       nome, telefone, endereco, observacao, pagamento, troco,
-      taxa_entrega: parseFloat(window._freteCalculado) || 0,
+      taxa_entrega: freteAtual,
       itens: itens.map(i => ({
         nome: i.nome, preco: i.preco,
         quantidade: i.quantidade,
@@ -147,7 +148,6 @@ function finalizarPedido() {
       }).catch(() => {});
 
       const subtotal = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0);
-      const freteAtual = parseFloat(window._freteCalculado) || 0;
       const total = subtotal + freteAtual;
       const pagTexto = pagamento === 'cartao' ? '💳 Cartão'
         : `💵 Dinheiro`;

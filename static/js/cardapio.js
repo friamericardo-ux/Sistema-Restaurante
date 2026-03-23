@@ -244,7 +244,7 @@ function renderResumo(){
   const total=calcTotalCarrinho();
   document.getElementById('carrResumo').innerHTML=`
     <div class="resumo-linha"><span>Subtotal</span><span>${fmt(total)}</span></div>
-    <div class="resumo-linha"><span>Entrega</span><span>A combinar</span></div>
+    <div class="resumo-linha"><span>Entrega</span><span>${window._freteCalculado > 0 ? 'R$ ' + parseFloat(window._freteCalculado).toFixed(2) : 'A combinar'}</span></div>
     <div class="resumo-total"><span>Total</span><span>${fmt(total)}</span></div>`;
 }
 
