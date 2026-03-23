@@ -121,6 +121,11 @@ function initAutocomplete() {
   document.addEventListener('click', function(e) {
     if (e.target !== inputEndereco) sugestoesDiv.style.display = 'none';
   });
+
+  inputEndereco.addEventListener('blur', function() {
+    const val = this.value.trim();
+    if (val && window._freteCalculado == null) calcularFrete(val);
+  });
 }
 
 function calcularFrete(enderecoCliente) {

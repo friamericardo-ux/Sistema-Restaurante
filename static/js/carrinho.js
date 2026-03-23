@@ -11,7 +11,7 @@ async function carregarConfigs() {
       taxaEntrega = parseFloat(window._freteCalculado) || 0;
       configsRestaurante.whatsapp = data.whatsapp_restaurante || configsRestaurante.whatsapp;
       const el = document.getElementById('cart-entrega');
-      if (el) el.textContent = window._freteCalculado ?
+      if (el) el.textContent = window._freteCalculado != null ?
         'R$ ' + parseFloat(window._freteCalculado).toFixed(2).replace('.', ',') :
         'Calculando...';
       atualizarTotal();
@@ -75,7 +75,7 @@ function renderizarCarrinho() {
   }).join('');
 
   document.getElementById('cart-subtotal').textContent = `R$ ${subtotal.toFixed(2)}`;
-  document.getElementById('cart-entrega').textContent = window._freteCalculado ?
+  document.getElementById('cart-entrega').textContent = window._freteCalculado != null ?
     'R$ ' + parseFloat(window._freteCalculado).toFixed(2).replace('.', ',') :
     'Calculando...';
   document.getElementById('cart-total').textContent = `R$ ${(subtotal + (parseFloat(window._freteCalculado) || 0)).toFixed(2)}`;
@@ -122,7 +122,7 @@ function finalizarPedido() {
   if (!nome || !telefone || !endereco || !pagamento)
     return toast('Preencha todos os campos obrigatórios');
 
-  if (!window._freteCalculado && endereco) {
+  if (window._freteCalculado == null && endereco) {
     return toast('Aguarde o cálculo do frete ou selecione um endereço válido');
   }
 
@@ -246,6 +246,7 @@ window.onload = function () {
           document.getElementById('nome').value = data.nome || '';
           document.getElementById('endereco').value = data.endereco || '';
           document.getElementById('msg-autopreenchido').style.display = 'block';
+          if (data.endereco && typeof calcularFrete === 'function') calcularFrete(data.endereco);
         } else {
           document.getElementById('msg-autopreenchido').style.display = 'none';
         }
