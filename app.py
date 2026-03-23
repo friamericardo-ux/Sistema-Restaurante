@@ -791,7 +791,7 @@ def criar_pedido():
     forma_pagamento = (dados.get("pagamento") or "").strip().lower()
     troco = dados.get("troco", 0)
     restaurante_id = dados.get("restaurante_id", 1)
-    taxa_entrega = float(get_config("taxa_entrega", Config.TAXA_ENTREGA))  # MODIFICADO — taxa dinâmica
+    taxa_entrega = float(dados.get("taxa_entrega", 0))
 
     if not itens or not cliente_nome:
         return jsonify({"sucesso": False, "erro": "Dados incompletos!"})
@@ -825,7 +825,7 @@ def criar_pedido():
     db.close()
     
     # Gera resumo do pedido
-    resumo = gerar_resumo_pedido(pedido_id, cliente_nome, itens, total)
+    resumo = gerar_resumo_pedido(pedido_id, cliente_nome, itens, total, taxa_entrega)
     
     return jsonify({
         "sucesso": True,
@@ -833,7 +833,7 @@ def criar_pedido():
         "resumo": resumo
     })
 
-def gerar_resumo_pedido(pedido_id, cliente, itens, total):
+def gerar_resumo_pedido(pedido_id, cliente, itens, total, taxa_entrega=0):
     """Gera o resumo formatado do pedido"""
     resumo = f"""
 🍔 PEDIDO #{pedido_id}
@@ -848,7 +848,7 @@ def gerar_resumo_pedido(pedido_id, cliente, itens, total):
         resumo += f"  • {qtd}x {nome} - R$ {preco:.2f}\n"
     
     resumo += f"""
-🛵 Taxa de entrega: R$ 5,00
+🛵 Taxa de entrega: R$ {taxa_entrega:.2f}
 💰 TOTAL: R$ {total:.2f}
 
 ⏱️ Tempo estimado: 40 a 50 minutos
@@ -1079,7 +1079,7 @@ def admin_configuracoes():
     if request.method == "POST":
         campos = [
             "nome_restaurante", "whatsapp_restaurante",
-            "taxa_entrega", "frete_por_km",
+            "frete_por_km",
             "restaurante_lat", "restaurante_lng",
             "horario_abertura", "horario_fechamento",
             "google_maps_key", "restaurante_ativo"
@@ -1093,7 +1093,6 @@ def admin_configuracoes():
     configs = {
         "nome_restaurante": get_config("nome_restaurante", "", restaurante_id=session['restaurante_id']),
         "whatsapp_restaurante": get_config("whatsapp_restaurante", Config.WHATSAPP_RESTAURANTE, restaurante_id=session['restaurante_id']),
-        "taxa_entrega": get_config("taxa_entrega", str(Config.TAXA_ENTREGA), restaurante_id=session['restaurante_id']),
         "frete_por_km": get_config("frete_por_km", str(Config.FRETE_POR_KM), restaurante_id=session['restaurante_id']),
         "restaurante_lat": get_config("restaurante_lat", str(Config.RESTAURANTE_LAT), restaurante_id=session['restaurante_id']),
         "restaurante_lng": get_config("restaurante_lng", str(Config.RESTAURANTE_LNG), restaurante_id=session['restaurante_id']),
@@ -1794,8 +1793,9 @@ def maps_config():
 @app.route("/api/maps/calcular-frete", methods=["POST"])
 @csrf.exempt
 def calcular_frete():
-    """Calcula frete baseado na distância (Haversine)"""
+    """Calcula frete via Distance Matrix API com fallback Haversine"""
     import math
+    import requests as http_requests
 
     dados = request.get_json()
     cliente_lat = dados.get("lat")
@@ -1804,30 +1804,44 @@ def calcular_frete():
     if cliente_lat is None or cliente_lng is None:
         return jsonify({"sucesso": False, "erro": "Coordenadas não informadas!"})
 
-    rest_lat = Config.RESTAURANTE_LAT
-    rest_lng = Config.RESTAURANTE_LNG
+    frete_por_km = float(get_config("frete_por_km", Config.FRETE_POR_KM))
+    google_maps_key = get_config("google_maps_key", Config.GOOGLE_MAPS_KEY)
+    rest_lat = float(get_config("restaurante_lat", Config.RESTAURANTE_LAT))
+    rest_lng = float(get_config("restaurante_lng", Config.RESTAURANTE_LNG))
 
-    # Fórmula de Haversine
-    R = 6371  # Raio da Terra em km
-    dlat = math.radians(cliente_lat - rest_lat)
-    dlng = math.radians(cliente_lng - rest_lng)
-    a = (math.sin(dlat / 2) ** 2 +
-         math.cos(math.radians(rest_lat)) * math.cos(math.radians(cliente_lat)) *
-         math.sin(dlng / 2) ** 2)
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    distancia_km = R * c
+    distancia_km = None
 
-    frete = round(distancia_km * Config.FRETE_POR_KM, 2)
+    # Tenta Distance Matrix API
+    try:
+        resp = http_requests.get(
+            "https://maps.googleapis.com/maps/api/distancematrix/json",
+            params={
+                "origins": f"{rest_lat},{rest_lng}",
+                "destinations": f"{cliente_lat},{cliente_lng}",
+                "key": google_maps_key
+            },
+            timeout=5
+        )
+        resultado = resp.json()
+        if resultado.get("status") == "OK":
+            distancia_km = resultado["rows"][0]["elements"][0]["distance"]["value"] / 1000
+    except Exception:
+        pass
 
-    # Frete mínimo
-    if frete < Config.FRETE_POR_KM:
-        frete = Config.FRETE_POR_KM
+    # Fallback Haversine
+    if distancia_km is None:
+        R = 6371
+        dlat = math.radians(cliente_lat - rest_lat)
+        dlng = math.radians(cliente_lng - rest_lng)
+        a = (math.sin(dlat / 2) ** 2 +
+             math.cos(math.radians(rest_lat)) * math.cos(math.radians(cliente_lat)) *
+             math.sin(dlng / 2) ** 2)
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        distancia_km = R * c
 
-    return jsonify({
-        "sucesso": True,
-        "distancia_km": round(distancia_km, 2),
-        "frete": frete
-    })
+    frete = round(distancia_km * frete_por_km, 2)
+
+    return jsonify({"sucesso": True, "frete": frete, "distancia_km": round(distancia_km, 2)})
 
 
 @app.route("/carrinho")
