@@ -1,6 +1,6 @@
 // Carrinho.js — Delivery
 
-let taxaEntrega = 5.00; // fallback
+let taxaEntrega = 0;
 let configsRestaurante = { whatsapp: '5567993487509' };
 
 async function carregarConfigs() {
@@ -8,10 +8,12 @@ async function carregarConfigs() {
     const res = await fetch('/api/configuracoes');
     const data = await res.json();
     if (data.sucesso) {
-      taxaEntrega = parseFloat(data.taxa_entrega) || 5.00;
+      taxaEntrega = parseFloat(window._freteCalculado) || 0;
       configsRestaurante.whatsapp = data.whatsapp_restaurante || configsRestaurante.whatsapp;
       const el = document.getElementById('cart-entrega');
-      if (el) el.textContent = 'R$ ' + taxaEntrega.toFixed(2).replace('.', ',');
+      if (el) el.textContent = window._freteCalculado ?
+        'R$ ' + parseFloat(window._freteCalculado).toFixed(2).replace('.', ',') :
+        'Calculando...';
       atualizarTotal();
     }
   } catch (e) {
@@ -26,7 +28,8 @@ function atualizarTotal() {
   const elSub = document.getElementById('cart-subtotal');
   const elTotal = document.getElementById('cart-total');
   if (elSub) elSub.textContent = `R$ ${subtotal.toFixed(2)}`;
-  if (elTotal) elTotal.textContent = `R$ ${(subtotal + taxaEntrega).toFixed(2)}`;
+  const freteAtual = parseFloat(window._freteCalculado) || 0;
+  if (elTotal) elTotal.textContent = `R$ ${(subtotal + freteAtual).toFixed(2)}`;
 }
 
 function lerCarrinho() {
@@ -116,13 +119,17 @@ function finalizarPedido() {
   if (!nome || !telefone || !endereco || !pagamento)
     return toast('Preencha todos os campos obrigatórios');
 
+  if (!window._freteCalculado && endereco) {
+    return toast('Aguarde o cálculo do frete ou selecione um endereço válido');
+  }
+
   console.log('forma_pagamento:', pagamento, 'troco:', troco);
   fetch('/api/pedido', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       nome, telefone, endereco, observacao, pagamento, troco,
-      taxa_entrega: window._freteCalculado || 0,
+      taxa_entrega: parseFloat(window._freteCalculado) || 0,
       itens: itens.map(i => ({
         nome: i.nome, preco: i.preco,
         quantidade: i.quantidade,
@@ -138,7 +145,8 @@ function finalizarPedido() {
       }).catch(() => {});
 
       const subtotal = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0);
-      const total = subtotal + taxaEntrega;
+      const freteAtual = parseFloat(window._freteCalculado) || 0;
+      const total = subtotal + freteAtual;
       const pagTexto = pagamento === 'cartao' ? '💳 Cartão'
         : `💵 Dinheiro`;
       const linhaItens = itens.map(i => {
@@ -154,7 +162,7 @@ function finalizarPedido() {
         (observacao ? `📝 *Observação:* ${observacao}\n` : '') +
         `\n📋 *Itens:*\n${linhaItens}\n\n` +
         `💰 *Subtotal:* R$ ${subtotal.toFixed(2)}\n` +
-        `🚚 *Entrega:* R$ ${taxaEntrega.toFixed(2)}\n` +
+        `🚚 *Entrega:* R$ ${freteAtual.toFixed(2)}\n` +
         `💵 *Total:* R$ ${total.toFixed(2)}\n` +
         `💳 *Pagamento:* ${pagTexto}\n` +
         (trocoTexto ? `💵 *Troco:* ${trocoTexto}\n` : '') +
