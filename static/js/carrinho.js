@@ -17,7 +17,7 @@ async function carregarConfigs() {
       atualizarTotal();
     }
   } catch (e) {
-    taxaEntrega = 5.00;
+    
   }
 }
 
@@ -50,7 +50,7 @@ function renderizarCarrinho() {
   if (!itens.length) {
     cartItems.innerHTML = '<div class="cart-empty">Carrinho vazio</div>';
     document.getElementById('cart-subtotal').textContent = 'R$ 0,00';
-    document.getElementById('cart-entrega').textContent = 'R$ ' + taxaEntrega.toFixed(2).replace('.', ',');
+    document.getElementById('cart-entrega').textContent = `a calcular...`;
     document.getElementById('cart-total').textContent = 'R$ 0,00';
     return;
   }
@@ -75,8 +75,10 @@ function renderizarCarrinho() {
   }).join('');
 
   document.getElementById('cart-subtotal').textContent = `R$ ${subtotal.toFixed(2)}`;
-  document.getElementById('cart-entrega').textContent = 'R$ ' + taxaEntrega.toFixed(2).replace('.', ',');
-  document.getElementById('cart-total').textContent = `R$ ${(subtotal + taxaEntrega).toFixed(2)}`;
+  document.getElementById('cart-entrega').textContent = window._freteCalculado ?
+    'R$ ' + parseFloat(window._freteCalculado).toFixed(2).replace('.', ',') :
+    'Calculando...';
+  document.getElementById('cart-total').textContent = `R$ ${(subtotal + (parseFloat(window._freteCalculado) || 0)).toFixed(2)}`;
 }
 
 function mudarQtd(idx, delta) {
@@ -103,7 +105,7 @@ function finalizarPedido() {
     const precisaTroco = document.getElementById('troco-sim')?.checked;
     if (precisaTroco) {
       const valorPago = parseFloat(document.getElementById('troco').value);
-      const totalPedido = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0) + taxaEntrega;
+      const totalPedido = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0) +  (parseFloat(window._freteCalculado) || 0);
       if (!isNaN(valorPago) && valorPago > 0) {
         const trocoDar = valorPago - totalPedido;
         troco = valorPago;
