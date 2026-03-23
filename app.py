@@ -1117,7 +1117,7 @@ def admin_configuracoes():
         "horario_fechamento": get_config("horario_fechamento", "23:00", restaurante_id=session['restaurante_id']),
         "google_maps_key": get_config("google_maps_key", Config.GOOGLE_MAPS_KEY, restaurante_id=session['restaurante_id']),
         "restaurante_ativo": get_config("restaurante_ativo", "1", restaurante_id=session['restaurante_id']),
-        "endereco_restaurante": get_config("endereco_restaurante", ""),
+        "endereco_restaurante": get_config("endereco_restaurante", "", restaurante_id=session['restaurante_id']),
     }
     return render_template("admin_configuracoes.html", configs=configs, sucesso=sucesso, erro=erro)
 
