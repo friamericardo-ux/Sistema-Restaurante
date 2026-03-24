@@ -150,7 +150,25 @@
 
 <script src="{{ url_for('static', filename='js/cardapio.js') }}"></script>
 <script>
-function initAutocomplete() {}
+window.initAutocomplete = function initAutocomplete() {
+    const input = document.getElementById('cEnd');
+    if (!input) return;
+    const autocomplete = new google.maps.places.Autocomplete(input, {
+        componentRestrictions: { country: 'br' },
+        fields: ['geometry', 'formatted_address']
+    });
+    autocomplete.addListener('place_changed', function() {
+        const place = autocomplete.getPlace();
+        if (!place.geometry) return;
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        window._enderecoLat = lat;
+        window._enderecoLng = lng;
+        if (typeof calcularFrete === 'function') {
+            calcularFrete(lat, lng);
+        }
+    });
+};
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&libraries=places&callback=initAutocomplete" async defer></script>
 </body>
