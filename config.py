@@ -22,7 +22,7 @@ class Config:
     DB_PATH = os.getenv('DATABASE_URL', 'data/database.db')
 
     # Google Maps API
-    GOOGLE_MAPS_KEY = os.getenv('GOOGLE_MAPS_KEY', '')
+    GOOGLE_MAPS_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '')
     RESTAURANTE_LAT = float(os.getenv('RESTAURANTE_LAT', '-20.4697'))
     RESTAURANTE_LNG = float(os.getenv('RESTAURANTE_LNG', '-54.6201'))
     FRETE_POR_KM = float(os.getenv('FRETE_POR_KM', '2.00'))

@@ -1962,7 +1962,8 @@ def carrinho_por_slug(slug):
     db.close()
     if not row:
         abort(404)
-    return render_template("carrinho_cliente.html", slug=slug)
+    google_maps_key = get_config("google_maps_key", Config.GOOGLE_MAPS_KEY)
+    return render_template("carrinho_cliente.html", slug=slug, google_maps_key=google_maps_key)
 
 @app.route("/cardapio/<slug>/api/pedido", methods=["POST"])
 @csrf.exempt
