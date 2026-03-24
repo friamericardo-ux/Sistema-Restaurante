@@ -83,7 +83,7 @@ const inputEndereco = document.getElementById('endereco');
 const sugestoesDiv = document.getElementById('endereco-sugestoes');
 let autocompleteService, sessionToken;
 
-function initAutocomplete() {
+window.initAutocomplete = function initAutocomplete() {
   autocompleteService = new google.maps.places.AutocompleteService();
   sessionToken = new google.maps.places.AutocompleteSessionToken();
 
@@ -126,7 +126,7 @@ function initAutocomplete() {
     const val = this.value.trim();
     if (val && window._freteCalculado == null) calcularFrete(val);
   });
-}
+};
 
 function calcularFrete(enderecoCliente) {
   fetch('/api/maps/calcular-frete', {
