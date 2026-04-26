@@ -402,7 +402,7 @@ def login_web():
             session['username'] = user.username
             session['role'] = user.role
             session['restaurante_id'] = user.restaurante_id
-            return redirect(url_for('index'))
+            return redirect(url_for('dashboard'))
         else:
             logging.warning(f"Login falhou para '{username}' de {request.remote_addr}")
             return render_template('login.html', erro='Usuário ou senha inválidos!')
