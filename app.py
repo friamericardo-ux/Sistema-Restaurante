@@ -113,7 +113,7 @@ def verificar_licenca_global():
         'cardapio_cliente', 'api_cardapio', 'api_adicionais',
         'criar_pedido', 'api_configuracoes',
         'superadmin_pin', 'superadmin_pin_post',
-        'index', 'dashboard',
+        'index', 
     }
 
     if request.endpoint is None:
