@@ -396,7 +396,9 @@ def login_web():
         
         repo = UserRepository()
         user = repo.get_user_by_username(username)
-        
+        logging.warning(f"[DEBUG] login_web user: {user}")
+        if user:
+            logging.warning(f"[DEBUG] login_web user.password_hash: {user.password_hash}")
         if user and SecurityService.verify_password(password, user.password_hash):
             session['user_id'] = user.id
             session['username'] = user.username
