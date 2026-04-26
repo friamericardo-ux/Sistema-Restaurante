@@ -113,7 +113,7 @@ def verificar_licenca_global():
         'cardapio_cliente', 'api_cardapio', 'api_adicionais',
         'criar_pedido', 'api_configuracoes',
         'superadmin_pin', 'superadmin_pin_post',
-        'index', 
+        
     }
 
     if request.endpoint is None:
@@ -402,7 +402,7 @@ def login_web():
             session['username'] = user.username
             session['role'] = user.role
             session['restaurante_id'] = user.restaurante_id
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('index'))
         else:
             logging.warning(f"Login falhou para '{username}' de {request.remote_addr}")
             return render_template('login.html', erro='Usuário ou senha inválidos!')
