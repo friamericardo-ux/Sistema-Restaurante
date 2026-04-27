@@ -1526,10 +1526,10 @@ def abrir_caixa():
     rid = session.get('restaurante_id', 1)
     db = get_connection()
     cursor = db.cursor()
-    cursor.execute("""
+    cursor.execute(f"""
         DELETE FROM caixa_fechamentos
-        WHERE data = DATE('now', 'localtime')
-        AND restaurante_id = ?
+        WHERE {"DATE(criado_em) = CURDATE()" if is_mysql() else "DATE(criado_em, 'localtime') = DATE('now', 'localtime')"}
+        AND restaurante_id = {ph}
     """, (rid,))
     # Registrar início da nova sessão
     cursor.execute("INSERT INTO caixa_sessoes (aberto_em, restaurante_id) VALUES (CURRENT_TIMESTAMP, ?)", (rid,))
@@ -1597,13 +1597,15 @@ def caixa_balanco():
     cursor = db.cursor()
 
     # Busca todos os fechamentos do mês
-    cursor.execute("""
-        SELECT data, total_delivery, total_mesas, total_geral,
+    ph = "%s" if is_mysql() else "?"
+    cursor.execute(f"""
+        SELECT DATE(criado_em) as data, total_delivery, total_mesas, total_geral,
                qtd_pedidos_delivery, qtd_mesas, fechado_por
         FROM caixa_fechamentos
-        WHERE MONTH(data) = ? AND YEAR(data) = ?
-        AND restaurante_id = ?
-        ORDER BY data ASC
+        WHERE {"MONTH(criado_em)" if is_mysql() else "strftime('%m', criado_em)"} = {ph} 
+        AND {"YEAR(criado_em)" if is_mysql() else "strftime('%Y', criado_em)"} = {ph}
+        AND restaurante_id = {ph}
+        ORDER BY criado_em ASC
     """, (mes, ano, rid))
 
     dias = [dict(row) for row in cursor.fetchall()]

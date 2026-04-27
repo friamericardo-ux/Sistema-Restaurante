@@ -220,9 +220,9 @@ def obter_resumo_dashboard(restaurante_id):
 
         # 3. Verificar se o caixa já foi fechado hoje
         if is_mysql():
-            cursor.execute(f"SELECT id FROM caixa_fechamentos WHERE data = CURDATE() AND restaurante_id = {ph} LIMIT 1", (restaurante_id,))
+            cursor.execute(f"SELECT id FROM caixa_fechamentos WHERE DATE(criado_em) = CURDATE() AND restaurante_id = {ph} LIMIT 1", (restaurante_id,))
         else:
-            cursor.execute(f"SELECT id FROM caixa_fechamentos WHERE data = DATE('now', 'localtime') AND restaurante_id = {ph} LIMIT 1", (restaurante_id,))
+            cursor.execute(f"SELECT id FROM caixa_fechamentos WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime') AND restaurante_id = {ph} LIMIT 1", (restaurante_id,))
         caixa_fechado = cursor.fetchone() is not None
 
         pedidos_hoje = 0
