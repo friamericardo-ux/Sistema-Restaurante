@@ -6,7 +6,10 @@ from repository import (
     listar_adicionais, listar_adicionais_com_categorias,
     listar_produtos, adicionar_produto, editar_produto, desativar_produto,
     adicionar_adicional, editar_adicional, desativar_adicional,
-    listar_categorias_produtos
+    listar_categorias_produtos, obter_resumo_dashboard,
+    listar_mesas_com_itens, abrir_mesa as repo_abrir_mesa,
+    adicionar_item_mesa, remover_item_mesa,
+    fechar_mesa_com_historico, criar_pedido_delivery
 )
 import urllib.parse
 from services.whatsapp_service import WhatsAppService
@@ -485,255 +488,107 @@ def mesas():
 @login_required
 def dashboard_resumo():
     """Retorna contadores para o dashboard"""
-    db = get_connection()
-    db.row_factory = sqlite3.Row
-    cursor = db.cursor()
-    rid = session.get('restaurante_id', 1)
-
-    # Mesas abertas
-    cursor.execute("SELECT COUNT(*) as total FROM mesas WHERE restaurante_id = ?", (rid,))
-    mesas_abertas = cursor.fetchone()["total"]
-
-    # Pedidos delivery por status
-    cursor.execute("""
-        SELECT status, COUNT(*) as total FROM pedidos_delivery
-        WHERE status != 'entregue'
-        AND restaurante_id = ?
-        GROUP BY status
-    """, (rid,))
-    pedidos_por_status = {row["status"]: row["total"] for row in cursor.fetchall()}
-
-    # Verificar se caixa foi fechado hoje
-    cursor.execute("""
-        SELECT id FROM caixa_fechamentos
-        WHERE data = DATE('now', 'localtime')
-        AND restaurante_id = ?
-        LIMIT 1
-    """, (rid,))
-    caixa_fechado = cursor.fetchone() is not None
-
-    if caixa_fechado:
-        pedidos_hoje = 0
-        faturamento_hoje = 0.0
-    else:
-        # Total de pedidos hoje (todos os status)
-        cursor.execute("""
-            SELECT COUNT(*) as total
-            FROM pedidos_delivery
-            WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime')
-            AND restaurante_id = ?
-        """, (rid,))
-        pedidos_hoje = cursor.fetchone()["total"]
-
-        # Faturamento hoje (apenas pedidos entregues)
-        cursor.execute("""
-            SELECT COALESCE(SUM(total), 0) as faturamento
-            FROM pedidos_delivery
-            WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime')
-            AND status = 'entregue'
-            AND restaurante_id = ?
-        """, (rid,))
-        faturamento_hoje = cursor.fetchone()["faturamento"]
-
-    db.close()
-    return jsonify({
-        "sucesso": True,
-        "mesas_abertas": mesas_abertas,
-        "pedidos_novos": pedidos_por_status.get("novo", 0),
-        "pedidos_preparo": pedidos_por_status.get("em_preparo", 0),
-        "pedidos_entrega": pedidos_por_status.get("saiu_entrega", 0),
-        "pedidos_hoje": pedidos_hoje,
-        "faturamento_hoje": faturamento_hoje
-    })
+    try:
+        rid = session.get('restaurante_id', 1)
+        resumo = obter_resumo_dashboard(rid)
+        return jsonify({"sucesso": True, **resumo})
+    except Exception as e:
+        app.logger.error(f"Erro no dashboard_resumo: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro interno ao buscar resumo"}), 500
 
 @app.route("/api/mesas")
 @login_required
 def listar_mesas():
-    db = get_connection()
-    db.row_factory = sqlite3.Row
-    cursor = db.cursor()
-    rid = session.get('restaurante_id', 1)
-
-    cursor.execute("SELECT id, numero, total FROM mesas WHERE restaurante_id = ?", (rid,))
-    mesas_db = cursor.fetchall()
-
-    mesas = []
-    for mesa in mesas_db:
-        cursor.execute(
-            "SELECT id, nome, preco, quantidade, observacao FROM itens WHERE mesa_id = ? AND restaurante_id = ?",
-            (mesa["id"], rid)
-        )
-        itens = [dict(i) for i in cursor.fetchall()]
-
-        mesas.append({
-            "id": mesa["id"],
-            "numero": mesa["numero"],
-            "total": mesa["total"],
-            "itens": itens
-        })
-
-    db.close()
-    return jsonify({"sucesso": True, "mesas": mesas})
+    try:
+        rid = session.get('restaurante_id', 1)
+        mesas = listar_mesas_com_itens(rid)
+        return jsonify({"sucesso": True, "mesas": mesas})
+    except Exception as e:
+        app.logger.error(f"Erro no listar_mesas: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro ao listar mesas"}), 500
 
 @app.route("/api/mesa/abrir", methods=["POST"])
 @csrf.exempt
 @login_required
-def abrir_mesa():
-    dados = request.get_json()
-    num = str(dados.get("numero"))
-    rid = session.get('restaurante_id', 1)
-
-    db = get_connection()
-    cursor = db.cursor()
-
-    cursor.execute("SELECT numero FROM mesas WHERE numero = ? AND restaurante_id = ?", (num, rid))
-    if cursor.fetchone():
-        db.close()
-        return jsonify({"sucesso": False, "erro": "Mesa já aberta!"})
-
-    cursor.execute(
-        "INSERT INTO mesas (numero, total, restaurante_id) VALUES (?, ?, ?)",
-        (num, 0.0, rid)
-    )
-    db.commit()
-    db.close()
-
-    return jsonify({"sucesso": True})
+def route_abrir_mesa():
+    try:
+        dados = request.get_json()
+        num = str(dados.get("numero"))
+        rid = session.get('restaurante_id', 1)
+        
+        sucesso, erro = repo_abrir_mesa(num, rid)
+        return jsonify({"sucesso": sucesso, "erro": erro})
+    except Exception as e:
+        app.logger.error(f"Erro no abrir_mesa: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro ao abrir mesa"}), 500
 
 @app.route("/api/mesa/item", methods=["POST"])
 @csrf.exempt
 @login_required
 def adicionar_item():
-    dados = request.get_json()
-    num = str(dados.get("numero"))
-    rid = session.get('restaurante_id', 1)
+    try:
+        dados = request.get_json()
+        num = str(dados.get("numero"))
+        rid = session.get('restaurante_id', 1)
+        
+        nome = dados.get("nome")
+        preco = float(dados.get("preco"))
+        quantidade = int(dados.get("quantidade", 1))
+        observacao = dados.get("observacao", "")
 
-    db = get_connection()
-    cursor = db.cursor()
-
-    cursor.execute("SELECT id FROM mesas WHERE numero = ? AND restaurante_id = ?", (num, rid))
-    mesa = cursor.fetchone()
-    if not mesa:
-        db.close()
-        return jsonify({"sucesso": False, "erro": "Mesa não encontrada!"})
-
-    mesa_id = mesa[0]
-    nome = dados.get("nome")
-    preco = float(dados.get("preco"))
-    quantidade = int(dados.get("quantidade", 1))
-    observacao = dados.get("observacao", "")
-
-    cursor.execute("""
-        INSERT INTO itens (mesa_id, nome, preco, quantidade, observacao, restaurante_id)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (mesa_id, nome, preco, quantidade, observacao, rid))
-
-    cursor.execute("""
-        SELECT SUM(preco * quantidade) FROM itens WHERE mesa_id = ? AND restaurante_id = ?
-    """, (mesa_id, rid))
-    total = cursor.fetchone()[0] or 0
-
-    cursor.execute(
-        "UPDATE mesas SET total = ? WHERE id = ? AND restaurante_id = ?",
-        (total, mesa_id, rid)
-    )
-
-    db.commit()
-    db.close()
-    return jsonify({"sucesso": True})
-
+        sucesso, erro = adicionar_item_mesa(num, nome, preco, quantidade, observacao, rid)
+        return jsonify({"sucesso": sucesso, "erro": erro})
+    except Exception as e:
+        app.logger.error(f"Erro no adicionar_item: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro ao adicionar item"}), 500
 
 @app.route("/api/mesa/item/remover", methods=["POST"])
 @csrf.exempt
 @login_required
 def remover_item():
-    dados = request.get_json()
-    item_id = int(dados.get("id"))
-    rid = session.get('restaurante_id', 1)
-
-    db = get_connection()
-    cursor = db.cursor()
-
-    cursor.execute("SELECT mesa_id FROM itens WHERE id = ? AND restaurante_id = ?", (item_id, rid))
-    row = cursor.fetchone()
-    if not row:
-        db.close()
-        return jsonify({"sucesso": False, "erro": "Item não encontrado"})
-
-    mesa_id = row[0]
-
-    cursor.execute("DELETE FROM itens WHERE id = ? AND restaurante_id = ?", (item_id, rid))
-
-    cursor.execute("""
-        SELECT SUM(preco * quantidade) FROM itens WHERE mesa_id = ? AND restaurante_id = ?
-    """, (mesa_id, rid))
-    total = cursor.fetchone()[0] or 0
-
-    cursor.execute(
-        "UPDATE mesas SET total = ? WHERE id = ? AND restaurante_id = ?",
-        (total, mesa_id, rid)
-    )
-
-    db.commit()
-    db.close()
-    return jsonify({"sucesso": True})
-
+    try:
+        dados = request.get_json()
+        item_id = int(dados.get("id"))
+        rid = session.get('restaurante_id', 1)
+        
+        sucesso, erro = remover_item_mesa(item_id, rid)
+        return jsonify({"sucesso": sucesso, "erro": erro})
+    except Exception as e:
+        app.logger.error(f"Erro no remover_item: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro ao remover item"}), 500
 
 @app.route("/api/mesa/fechar", methods=["POST"])
 @csrf.exempt
 @login_required
-def fechar_mesa():
-    dados = request.get_json()
-    num = str(dados.get("numero"))
-    rid = session.get('restaurante_id', 1)
-
-    db = get_connection()
-    cursor = db.cursor()
-
-    cursor.execute("SELECT id FROM mesas WHERE numero = ? AND restaurante_id = ?", (num, rid))
-    mesa = cursor.fetchone()
-    if not mesa:
-        db.close()
-        return jsonify({"sucesso": False, "erro": "Mesa não encontrada!"})
-
-    mesa_id = mesa[0]
-
-    # Salvar histórico da mesa antes de deletar
-    cursor.execute("SELECT numero, total FROM mesas WHERE id = ? AND restaurante_id = ?", (mesa_id, rid))
-    mesa_info = cursor.fetchone()
-    cursor.execute("SELECT nome, preco, quantidade, observacao FROM itens WHERE mesa_id = ? AND restaurante_id = ?", (mesa_id, rid))
-    itens_mesa = cursor.fetchall()
-    itens_json = json.dumps([{"nome": i[0], "preco": i[1], "quantidade": i[2], "observacao": i[3]} for i in itens_mesa], ensure_ascii=False)
-    cursor.execute(
-        "INSERT INTO historico_mesas (mesa_numero, total, itens, restaurante_id) VALUES (?, ?, ?, ?)",
-        (mesa_info[0], mesa_info[1], itens_json, rid)
-    )
-
-    cursor.execute("DELETE FROM itens WHERE mesa_id = ? AND restaurante_id = ?", (mesa_id, rid))
-    cursor.execute("DELETE FROM mesas WHERE id = ? AND restaurante_id = ?", (mesa_id, rid))
-
-    db.commit()
-    db.close()
-    return jsonify({"sucesso": True})
-
+def route_fechar_mesa():
+    try:
+        dados = request.get_json()
+        num = str(dados.get("numero"))
+        rid = session.get('restaurante_id', 1)
+        
+        sucesso, erro = fechar_mesa_com_historico(num, rid)
+        return jsonify({"sucesso": sucesso, "erro": erro})
+    except Exception as e:
+        app.logger.error(f"Erro no fechar_mesa: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro ao fechar mesa"}), 500
 
 @app.route("/admin/force_close_mesa/<int:mesa_id>")
 @login_required
 def force_close_mesa(mesa_id):
-    """Fecha forçado de mesa corrompida — sem validações, direto no banco."""
-    rid = session.get('restaurante_id', 1)
-    db = get_connection()
-    cursor = db.cursor()
-    cursor.execute("SELECT id, numero FROM mesas WHERE id = ? AND restaurante_id = ?", (mesa_id, rid))
-    mesa = cursor.fetchone()
-    if not mesa:
+    """Fecha forçado de mesa corrompida"""
+    try:
+        rid = session.get('restaurante_id', 1)
+        db = get_connection()
+        cursor = db.cursor()
+        ph = "%s" if is_mysql() else "?"
+        cursor.execute(f"DELETE FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa_id, rid))
+        cursor.execute(f"DELETE FROM mesas WHERE id = {ph} AND restaurante_id = {ph}", (mesa_id, rid))
+        db.commit()
         db.close()
-        return jsonify({"sucesso": False, "erro": f"Mesa ID {mesa_id} não encontrada."})
-    cursor.execute("DELETE FROM itens WHERE mesa_id = ? AND restaurante_id = ?", (mesa_id, rid))
-    cursor.execute("DELETE FROM mesas WHERE id = ? AND restaurante_id = ?", (mesa_id, rid))
-    db.commit()
-    db.close()
-    return jsonify({"sucesso": True, "mensagem": f"Mesa ID {mesa_id} (número {mesa[1]}) fechada forçadamente."})
+        return jsonify({"sucesso": True})
+    except Exception as e:
+        app.logger.error(f"Erro no force_close_mesa: {e}")
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
 
 
 # ========================
@@ -761,81 +616,62 @@ def cardapio_cliente():
 @app.route("/api/cardapio")
 def api_cardapio():
     """Retorna os produtos do cardápio"""
-    produtos = listar_produtos(session['restaurante_id'])
-    resultado = []
-    for p in produtos:
-        resultado.append({
-            "id": p[0],
-            "nome": p[1],
-            "preco": p[2],
-            "categoria": p[3],
-            "emoji": p[4],
-            "foto": p[6] if len(p) > 6 else None,
-            "descricao": p[7] if len(p) > 7 else "",    
-        })
-    return jsonify({"sucesso": True, "produtos": resultado})
+    try:
+        rid = request.args.get('restaurante_id', 1)
+        produtos = listar_produtos(rid)
+        resultado = []
+        for p in produtos:
+            resultado.append({
+                "id": p[0],
+                "nome": p[1],
+                "preco": float(p[2]),
+                "categoria": p[3],
+                "emoji": p[4],
+                "foto": p[6] if len(p) > 6 else None,
+                "descricao": p[7] if len(p) > 7 else "",    
+            })
+        return jsonify({"sucesso": True, "produtos": resultado})
+    except Exception as e:
+        app.logger.error(f"Erro no api_cardapio: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro ao carregar cardápio"}), 500
 
 @app.route("/api/adicionais")
 def api_adicionais():
-    categoria = request.args.get('categoria', None)
-    adicionais = listar_adicionais(session['restaurante_id'], categoria=categoria)
-    resultado = [{"id": a[0], "nome": a[1], "preco": a[2]} for a in adicionais]
-    return jsonify({"sucesso": True, "adicionais": resultado})
+    try:
+        rid = request.args.get('restaurante_id', 1)
+        categoria = request.args.get('categoria', None)
+        adicionais = listar_adicionais(rid, categoria=categoria)
+        resultado = [{"id": a[0], "nome": a[1], "preco": float(a[2])} for a in adicionais]
+        return jsonify({"sucesso": True, "adicionais": resultado})
+    except Exception as e:
+        app.logger.error(f"Erro no api_adicionais: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro ao carregar adicionais"}), 500
 
 @app.route("/api/pedido", methods=["POST"])
 @csrf.exempt
-def criar_pedido():
+def route_criar_pedido():
     """Cria um novo pedido delivery"""
-    dados = request.get_json()
-    
-    cliente_nome = dados.get("nome")
-    cliente_telefone = dados.get("telefone")
-    cliente_endereco = dados.get("endereco")
-    itens = dados.get("itens", [])
-    forma_pagamento = (dados.get("pagamento") or "").strip().lower()
-    troco = dados.get("troco", 0)
-    restaurante_id = dados.get("restaurante_id", 1)
-    taxa_entrega = float(dados.get("taxa_entrega", 0))
-
-    if not itens or not cliente_nome:
-        return jsonify({"sucesso": False, "erro": "Dados incompletos!"})
-
-    # Calcula total
-    total = sum(item.get("preco", 0) * item.get("quantidade", 1) for item in itens)
-    total += taxa_entrega
-
-    # Salva no banco
-    db = get_connection()
-    cursor = db.cursor()
-    cursor.execute("""
-        INSERT INTO pedidos_delivery
-        (cliente_nome, cliente_telefone, cliente_endereco, itens, taxa_entrega, total, forma_pagamento, troco, status, restaurante_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        cliente_nome,
-        cliente_telefone,
-        cliente_endereco,
-        json.dumps(itens, ensure_ascii=False),
-        taxa_entrega,
-        total,
-        forma_pagamento,
-        troco,
-        'novo',
-        restaurante_id
-    ))
-    
-    pedido_id = cursor.lastrowid
-    db.commit()
-    db.close()
-    
-    # Gera resumo do pedido
-    resumo = gerar_resumo_pedido(pedido_id, cliente_nome, itens, total, taxa_entrega)
-    
-    return jsonify({
-        "sucesso": True,
-        "pedido_id": pedido_id,
-        "resumo": resumo
-    })
+    try:
+        dados = request.get_json()
+        resultado = criar_pedido_delivery(dados)
+        
+        # Gera resumo para o WhatsApp
+        resumo = gerar_resumo_pedido(
+            resultado["pedido_id"], 
+            resultado["cliente"], 
+            resultado["itens"], 
+            resultado["total"], 
+            resultado["taxa_entrega"]
+        )
+        
+        return jsonify({
+            "sucesso": True,
+            "pedido_id": resultado["pedido_id"],
+            "resumo": resumo
+        })
+    except Exception as e:
+        app.logger.error(f"Erro no criar_pedido: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro ao criar pedido"}), 500
 
 def gerar_resumo_pedido(pedido_id, cliente, itens, total, taxa_entrega=0):
     """Gera o resumo formatado do pedido"""

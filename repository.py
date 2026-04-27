@@ -51,12 +51,13 @@ class UserRepository:
         self.init_user_table()
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM users WHERE username = ?", (Config.ADMIN_USER,))
+        ph = "%s" if is_mysql() else "?"
+        cursor.execute(f"SELECT id FROM users WHERE username = {ph}", (Config.ADMIN_USER,))
         if cursor.fetchone():
             return False
         password_hash = SecurityService.hash_password(Config.ADMIN_PASS)
         cursor.execute(
-            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+            f"INSERT INTO users (username, password_hash, role) VALUES ({ph}, {ph}, {ph})",
             (Config.ADMIN_USER, password_hash, "admin")
         )
         conn.commit()
@@ -69,7 +70,7 @@ class UserRepository:
         cursor.execute("SELECT id FROM users LIMIT 1")
         return cursor.fetchone() is not None
 
-    def create_custom_admin(self, username: str, password: str, restaurante_id: int, role: str = 'atendente') -> bool:
+    def create_custom_admin(self, username: str, password: str, restaurante_id: int = 1, role: str = 'admin') -> bool:
         self.init_user_table()
         ph = "%s" if is_mysql() else "?"
         conn = self.get_connection()
@@ -86,7 +87,6 @@ class UserRepository:
         return True
 
     def get_user_by_username(self, username: str) -> Optional[User]:
-        import logging
         ph = "%s" if is_mysql() else "?"
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -95,21 +95,18 @@ class UserRepository:
             (username,)
         )
         row = cursor.fetchone()
-        logging.warning(f"[DEBUG] get_user_by_username('{username}') row: {row}")
         conn.close()
         if row:
-            user = User(id=row[0], username=row[1], password_hash=row[2], role=row[3], restaurante_id=row[4])
-            logging.warning(f"[DEBUG] get_user_by_username('{username}') User: {user}")
-            return user
-        logging.warning(f"[DEBUG] get_user_by_username('{username}') returned None")
+            return User(id=row[0], username=row[1], password_hash=row[2], role=row[3], restaurante_id=row[4])
         return None
 
     def update_password(self, user_id: int, new_password: str) -> None:
+        ph = "%s" if is_mysql() else "?"
         new_hash = SecurityService.hash_password(new_password)
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE users SET password_hash = ? WHERE id = ?",
+            f"UPDATE users SET password_hash = {ph} WHERE id = {ph}",
             (new_hash, user_id)
         )
         conn.commit()
@@ -151,20 +148,12 @@ class UserRepository:
         self.init_user_table()
         conn = self.get_connection()
         cursor = conn.cursor()
-        if is_mysql():
-            cursor.execute("""
-                SELECT id, username, role, licenca_vencimento
-                FROM users
-                WHERE role != 'superadmin' AND role != 'super_admin'
-                ORDER BY id
-            """)
-        else:
-            cursor.execute("""
-                SELECT id, username, role, licenca_vencimento
-                FROM users
-                WHERE role != 'superadmin' AND role != 'super_admin'
-                ORDER BY id
-            """)
+        cursor.execute("""
+            SELECT id, username, role, licenca_vencimento
+            FROM users
+            WHERE role != 'superadmin' AND role != 'super_admin'
+            ORDER BY id
+        """)
         rows = cursor.fetchall()
         conn.close()
         return rows
@@ -172,12 +161,10 @@ class UserRepository:
     def renovar_licenca(self, user_id: int, dias: int) -> bool:
         """Renova a licença somando X dias. Se vencida, conta a partir de hoje."""
         from datetime import date, timedelta
+        ph = "%s" if is_mysql() else "?"
         conn = self.get_connection()
         cursor = conn.cursor()
-        if is_mysql():
-            cursor.execute("SELECT licenca_vencimento FROM users WHERE id = %s", (user_id,))
-        else:
-            cursor.execute("SELECT licenca_vencimento FROM users WHERE id = ?", (user_id,))
+        cursor.execute(f"SELECT licenca_vencimento FROM users WHERE id = {ph}", (user_id,))
         row = cursor.fetchone()
         if not row:
             conn.close()
@@ -189,10 +176,8 @@ class UserRepository:
             nova_data = venc + timedelta(days=dias) if venc > hoje else hoje + timedelta(days=dias)
         else:
             nova_data = hoje + timedelta(days=dias)
-        if is_mysql():
-            cursor.execute("UPDATE users SET licenca_vencimento = %s WHERE id = %s", (nova_data, user_id))
-        else:
-            cursor.execute("UPDATE users SET licenca_vencimento = ? WHERE id = ?", (str(nova_data), user_id))
+        
+        cursor.execute(f"UPDATE users SET licenca_vencimento = {ph} WHERE id = {ph}", (nova_data if is_mysql() else str(nova_data), user_id))
         conn.commit()
         conn.close()
         return True
@@ -200,16 +185,214 @@ class UserRepository:
     def bloquear_licenca(self, user_id: int) -> bool:
         """Define vencimento como ontem (bloqueia imediatamente)."""
         from datetime import date, timedelta
+        ph = "%s" if is_mysql() else "?"
         ontem = date.today() - timedelta(days=1)
         conn = self.get_connection()
         cursor = conn.cursor()
-        if is_mysql():
-            cursor.execute("UPDATE users SET licenca_vencimento = %s WHERE id = %s", (ontem, user_id))
-        else:
-            cursor.execute("UPDATE users SET licenca_vencimento = ? WHERE id = ?", (str(ontem), user_id))
+        cursor.execute(f"UPDATE users SET licenca_vencimento = {ph} WHERE id = {ph}", (ontem if is_mysql() else str(ontem), user_id))
         conn.commit()
         conn.close()
         return True
+
+
+# ========== DASHBOARD ==========
+
+def obter_resumo_dashboard(restaurante_id):
+    """
+    Retorna os dados consolidados para o dashboard.
+    """
+    ph = "%s" if is_mysql() else "?"
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        # 1. Mesas abertas
+        cursor.execute(f"SELECT COUNT(*) FROM mesas WHERE restaurante_id = {ph}", (restaurante_id,))
+        mesas_abertas = cursor.fetchone()[0] or 0
+
+        # 2. Pedidos delivery por status (não entregues)
+        cursor.execute(f"""
+            SELECT status, COUNT(*) 
+            FROM pedidos_delivery
+            WHERE status != 'entregue' AND restaurante_id = {ph}
+            GROUP BY status
+        """, (restaurante_id,))
+        pedidos_por_status = {row[0]: row[1] for row in cursor.fetchall()}
+
+        # 3. Verificar se o caixa já foi fechado hoje
+        if is_mysql():
+            cursor.execute(f"SELECT id FROM caixa_fechamentos WHERE data = CURDATE() AND restaurante_id = {ph} LIMIT 1", (restaurante_id,))
+        else:
+            cursor.execute(f"SELECT id FROM caixa_fechamentos WHERE data = DATE('now', 'localtime') AND restaurante_id = {ph} LIMIT 1", (restaurante_id,))
+        caixa_fechado = cursor.fetchone() is not None
+
+        pedidos_hoje = 0
+        faturamento_hoje = 0.0
+
+        if not caixa_fechado:
+            # 4. Total de pedidos hoje
+            if is_mysql():
+                cursor.execute(f"SELECT COUNT(*) FROM pedidos_delivery WHERE DATE(criado_em) = CURDATE() AND restaurante_id = {ph}", (restaurante_id,))
+            else:
+                cursor.execute(f"SELECT COUNT(*) FROM pedidos_delivery WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime') AND restaurante_id = {ph}", (restaurante_id,))
+            pedidos_hoje = cursor.fetchone()[0] or 0
+
+            # 5. Faturamento hoje (entregues)
+            if is_mysql():
+                cursor.execute(f"SELECT SUM(total) FROM pedidos_delivery WHERE DATE(criado_em) = CURDATE() AND status = 'entregue' AND restaurante_id = {ph}", (restaurante_id,))
+            else:
+                cursor.execute(f"SELECT SUM(total) FROM pedidos_delivery WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime') AND status = 'entregue' AND restaurante_id = {ph}", (restaurante_id,))
+            res_fat = cursor.fetchone()[0]
+            faturamento_hoje = float(res_fat) if res_fat else 0.0
+            
+        return {
+            "mesas_abertas": mesas_abertas,
+            "pedidos_novos": pedidos_por_status.get("novo", 0),
+            "pedidos_preparo": pedidos_por_status.get("em_preparo", 0),
+            "pedidos_entrega": pedidos_por_status.get("saiu_entrega", 0),
+            "pedidos_hoje": pedidos_hoje,
+            "faturamento_hoje": faturamento_hoje
+        }
+    finally:
+        conn.close()
+
+
+# ========== MESAS ==========
+
+def listar_mesas_com_itens(restaurante_id):
+    """Lista mesas abertas e seus respectivos itens."""
+    ph = "%s" if is_mysql() else "?"
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f"SELECT id, numero, total FROM mesas WHERE restaurante_id = {ph}", (restaurante_id,))
+        mesas_db = cursor.fetchall()
+
+        mesas = []
+        cursor2 = conn.cursor()
+        for mesa in mesas_db:
+            cursor2.execute(
+                f"SELECT id, nome, preco, quantidade, observacao FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}",
+                (mesa[0], restaurante_id)
+            )
+            itens = []
+            for i in cursor2.fetchall():
+                itens.append({
+                    "id": i[0],
+                    "nome": i[1],
+                    "preco": float(i[2]),
+                    "quantidade": i[3],
+                    "observacao": i[4]
+                })
+
+            mesas.append({
+                "id": mesa[0],
+                "numero": mesa[1],
+                "total": float(mesa[2]),
+                "itens": itens
+            })
+        return mesas
+    finally:
+        conn.close()
+
+def abrir_mesa(numero, restaurante_id):
+    ph = "%s" if is_mysql() else "?"
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f"SELECT id FROM mesas WHERE numero = {ph} AND restaurante_id = {ph}", (numero, restaurante_id))
+        if cursor.fetchone():
+            return False, "Mesa já está aberta!"
+        
+        cursor.execute(
+            f"INSERT INTO mesas (numero, total, restaurante_id) VALUES ({ph}, {ph}, {ph})",
+            (numero, 0.0, restaurante_id)
+        )
+        conn.commit()
+        return True, None
+    finally:
+        conn.close()
+
+def adicionar_item_mesa(mesa_numero, nome, preco, quantidade, observacao, restaurante_id):
+    ph = "%s" if is_mysql() else "?"
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f"SELECT id FROM mesas WHERE numero = {ph} AND restaurante_id = {ph}", (mesa_numero, restaurante_id))
+        mesa = cursor.fetchone()
+        if not mesa:
+            return False, "Mesa não encontrada!"
+        
+        mesa_id = mesa[0]
+        cursor.execute(f"""
+            INSERT INTO itens (mesa_id, nome, preco, quantidade, observacao, restaurante_id)
+            VALUES ({ph}, {ph}, {ph}, {ph}, {ph}, {ph})
+        """, (mesa_id, nome, preco, quantidade, observacao, restaurante_id))
+
+        # Atualiza total da mesa
+        cursor.execute(f"SELECT SUM(preco * quantidade) FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
+        total = cursor.fetchone()[0] or 0
+        cursor.execute(f"UPDATE mesas SET total = {ph} WHERE id = {ph} AND restaurante_id = {ph}", (total, mesa_id, restaurante_id))
+        
+        conn.commit()
+        return True, None
+    finally:
+        conn.close()
+
+def remover_item_mesa(item_id, restaurante_id):
+    ph = "%s" if is_mysql() else "?"
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f"SELECT mesa_id FROM itens WHERE id = {ph} AND restaurante_id = {ph}", (item_id, restaurante_id))
+        row = cursor.fetchone()
+        if not row:
+            return False, "Item não encontrado!"
+        
+        mesa_id = row[0]
+        cursor.execute(f"DELETE FROM itens WHERE id = {ph} AND restaurante_id = {ph}", (item_id, restaurante_id))
+
+        # Atualiza total da mesa
+        cursor.execute(f"SELECT SUM(preco * quantidade) FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
+        total = cursor.fetchone()[0] or 0
+        cursor.execute(f"UPDATE mesas SET total = {ph} WHERE id = {ph} AND restaurante_id = {ph}", (total, mesa_id, restaurante_id))
+        
+        conn.commit()
+        return True, None
+    finally:
+        conn.close()
+
+def fechar_mesa_com_historico(mesa_numero, restaurante_id):
+    import json
+    ph = "%s" if is_mysql() else "?"
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f"SELECT id, numero, total FROM mesas WHERE numero = {ph} AND restaurante_id = {ph}", (mesa_numero, restaurante_id))
+        mesa = cursor.fetchone()
+        if not mesa:
+            return False, "Mesa não encontrada!"
+        
+        mesa_id = mesa[0]
+        # Busca itens para o histórico
+        cursor.execute(f"SELECT nome, preco, quantidade, observacao FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
+        itens_db = cursor.fetchall()
+        itens_list = [{"nome": i[0], "preco": float(i[1]), "quantidade": i[2], "observacao": i[3]} for i in itens_db]
+        itens_json = json.dumps(itens_list, ensure_ascii=False)
+
+        # Salva no histórico
+        cursor.execute(f"""
+            INSERT INTO historico_mesas (mesa_numero, total, itens, restaurante_id) 
+            VALUES ({ph}, {ph}, {ph}, {ph})
+        """, (mesa[1], float(mesa[2]), itens_json, restaurante_id))
+
+        # Deleta mesa e itens
+        cursor.execute(f"DELETE FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
+        cursor.execute(f"DELETE FROM mesas WHERE id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
+        
+        conn.commit()
+        return True, None
+    finally:
+        conn.close()
 
 
 # ========== PRODUTOS ==========
@@ -253,6 +436,16 @@ def desativar_produto(id, restaurante_id):
     conn.commit()
     conn.close()
 
+def listar_categorias_produtos(restaurante_id):
+    """Retorna lista de categorias únicas dos produtos ativos."""
+    ph = "%s" if is_mysql() else "?"
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT DISTINCT categoria FROM produtos WHERE ativo = 1 AND restaurante_id = {ph} ORDER BY categoria", (restaurante_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [row[0] for row in rows]
+
 
 # ========== ADICIONAIS ==========
 
@@ -286,15 +479,16 @@ def listar_adicionais_com_categorias(restaurante_id):
     adicionais = cursor.fetchall()
 
     resultado = []
+    cursor2 = conn.cursor()
     for a in adicionais:
-        cursor.execute(
+        cursor2.execute(
             f"SELECT categoria FROM adicional_categoria WHERE adicional_id = {ph}", (a[0],)
         )
-        categorias = [row[0] for row in cursor.fetchall()]
+        categorias = [row[0] for row in cursor2.fetchall()]
         resultado.append({
             "id": a[0],
             "nome": a[1],
-            "preco": a[2],
+            "preco": float(a[2]),
             "ativo": a[3],
             "categorias": categorias
         })
@@ -304,7 +498,6 @@ def listar_adicionais_com_categorias(restaurante_id):
 def adicionar_adicional(nome, preco, categorias: list, restaurante_id):
     """
     Cadastra um adicional e vincula às categorias informadas.
-    categorias: lista de strings, ex: ['Lanches', 'Porções']
     """
     ph = "%s" if is_mysql() else "?"
     conn = get_connection()
@@ -349,12 +542,46 @@ def desativar_adicional(id, restaurante_id):
     conn.commit()
     conn.close()
 
-def listar_categorias_produtos(restaurante_id):
-    """Retorna lista de categorias únicas dos produtos ativos."""
+
+# ========== PEDIDOS DELIVERY ==========
+
+def criar_pedido_delivery(dados):
+    """Cria um novo pedido delivery no banco."""
+    import json
     ph = "%s" if is_mysql() else "?"
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute(f"SELECT DISTINCT categoria FROM produtos WHERE ativo = 1 AND restaurante_id = {ph} ORDER BY categoria", (restaurante_id,))
-    rows = cursor.fetchall()
-    conn.close()
-    return [row[0] for row in rows]
+    try:
+        cliente_nome = dados.get("nome")
+        cliente_telefone = dados.get("telefone")
+        cliente_endereco = dados.get("endereco")
+        itens = dados.get("itens", [])
+        forma_pagamento = (dados.get("pagamento") or "").strip().lower()
+        troco = float(dados.get("troco") or 0)
+        restaurante_id = int(dados.get("restaurante_id") or 1)
+        taxa_entrega = float(dados.get("taxa_entrega") or 0)
+
+        total = sum(float(item.get("preco", 0)) * int(item.get("quantidade", 1)) for item in itens)
+        total += taxa_entrega
+
+        cursor.execute(f"""
+            INSERT INTO pedidos_delivery
+            (cliente_nome, cliente_telefone, cliente_endereco, itens, taxa_entrega, total, forma_pagamento, troco, status, restaurante_id)
+            VALUES ({ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph})
+        """, (
+            cliente_nome, cliente_telefone, cliente_endereco,
+            json.dumps(itens, ensure_ascii=False),
+            taxa_entrega, total, forma_pagamento, troco, 'novo', restaurante_id
+        ))
+        
+        pedido_id = cursor.lastrowid
+        conn.commit()
+        return {
+            "pedido_id": pedido_id,
+            "total": total,
+            "itens": itens,
+            "cliente": cliente_nome,
+            "taxa_entrega": taxa_entrega
+        }
+    finally:
+        conn.close()
