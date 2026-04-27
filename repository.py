@@ -316,8 +316,8 @@ def adicionar_adicional(nome, preco, categorias: list, restaurante_id):
     adicional_id = cursor.lastrowid
     for cat in categorias:
         cursor.execute(
-            f"INSERT INTO adicional_categoria (adicional_id, categoria) VALUES ({ph}, {ph})",
-            (adicional_id, cat)
+            f"INSERT INTO adicional_categoria (adicional_id, categoria, restaurante_id) VALUES ({ph}, {ph}, {ph})",
+            (adicional_id, cat, restaurante_id)
         )
     conn.commit()
     conn.close()
@@ -332,11 +332,11 @@ def editar_adicional(id, nome, preco, categorias: list, restaurante_id):
         f"UPDATE adicionais SET nome={ph}, preco={ph} WHERE id={ph} AND restaurante_id={ph}",
         (nome, preco, id, restaurante_id)
     )
-    cursor.execute(f"DELETE FROM adicional_categoria WHERE adicional_id = {ph}", (id,))
+    cursor.execute(f"DELETE FROM adicional_categoria WHERE adicional_id = {ph} AND restaurante_id = {ph}", (id, restaurante_id))
     for cat in categorias:
         cursor.execute(
-            f"INSERT INTO adicional_categoria (adicional_id, categoria) VALUES ({ph}, {ph})",
-            (id, cat)
+            f"INSERT INTO adicional_categoria (adicional_id, categoria, restaurante_id) VALUES ({ph}, {ph}, {ph})",
+            (id, cat, restaurante_id)
         )
     conn.commit()
     conn.close()
