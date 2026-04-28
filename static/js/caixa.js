@@ -3,7 +3,8 @@
 let dadosResumo = null;
 
 function formatarReais(valor) {
-  return 'R$ ' + valor.toFixed(2).replace('.', ',');
+  const n = Number(valor) || 0;
+  return 'R$ ' + n.toFixed(2).replace('.', ',');
 }
 
 function extrairHora(timestamp) {

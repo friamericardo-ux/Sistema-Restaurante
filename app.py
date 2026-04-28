@@ -1396,7 +1396,7 @@ def caixa_movimentacoes():
             movimentacoes.append({
                 "tipo": "delivery",
                 "descricao": f"Pedido #{get_val(row, 'id', 0)} — {get_val(row, 'cliente_nome', 1)}",
-                "valor": get_val(row, 'total', 2),
+                "valor": float(get_val(row, 'total', 2) or 0),
                 "hora": get_val(row, 'criado_em', 3)
             })
 
@@ -1412,7 +1412,7 @@ def caixa_movimentacoes():
             movimentacoes.append({
                 "tipo": "mesa",
                 "descricao": f"Mesa {get_val(row, 'mesa_numero', 1)}",
-                "valor": get_val(row, 'total', 2),
+                "valor": float(get_val(row, 'total', 2) or 0),
                 "hora": get_val(row, 'fechado_em', 3)
             })
 
