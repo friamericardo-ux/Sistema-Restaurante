@@ -1,16 +1,15 @@
-{% extends "base.html" %}
+{% extends "admin_layout.html" %}
 
-{% block title %}Comanda — Painel Atendente{% endblock %}
+{% block title %}Mesas — Comanda Digital{% endblock %}
+
+{% block page_title %}Gestão de Mesas{% endblock %}
+{% block page_subtitle %}Controle de pedidos e ocupação em tempo real.{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/atendente.css') }}">
 {% endblock %}
 
 {% block content %}
-<header>
-  <h1>&#127828; COMANDA &mdash; Painel Atendente</h1>
-  <a href="/dashboard" style="color:#888;font-size:13px;text-decoration:none;margin-left:16px;">← Painel</a>
-</header>
 
 <button class="btn-nova-mesa" onclick="abrirModalNovaMesa()">+ Nova Mesa</button>
 

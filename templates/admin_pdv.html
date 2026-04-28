@@ -1,0 +1,22 @@
+{% extends "admin_layout.html" %}
+
+{% block title %}PDV — Comanda Digital{% endblock %}
+
+{% block page_title %}PDV (Ponto de Venda){% endblock %}
+{% block page_subtitle %}Venda rápida no balcão.{% endblock %}
+
+{% block content %}
+<div class="stat-card">
+    <div style="padding: 60px; text-align: center; color: var(--text-muted);">
+        <div style="width: 80px; height: 80px; background: var(--primary-soft); color: var(--primary); border-radius: 50%; display: grid; place-items: center; margin: 0 auto 24px;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M7 15h10"></path><path d="M12 9v10"></path></svg>
+        </div>
+        <h2 style="color: var(--text-main);">Módulo PDV em breve</h2>
+        <p>Estamos trabalhando em uma interface de venda rápida otimizada para computadores e tablets.</p>
+        <div style="margin-top: 32px; display: flex; gap: 12px; justify-content: center;">
+            <a href="/mesas" class="btn-status" style="text-decoration: none;">Ir para Mesas</a>
+            <a href="/delivery" class="btn-status" style="text-decoration: none;">Ir para Delivery</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

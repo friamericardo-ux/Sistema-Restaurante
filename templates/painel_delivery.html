@@ -1,54 +1,161 @@
-{% extends "base.html" %}
+{% extends "admin_layout.html" %}
 
-{% block title %}Painel Delivery{% endblock %}
+{% block title %}Delivery — Comanda Digital{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/delivery.css') }}">
+{% block page_title %}Pedidos Delivery{% endblock %}
+{% block page_subtitle %}Gerencie o fluxo de entregas em tempo real.{% endblock %}
+
+{% block top_actions %}
+<button onclick="carregarPedidos()" class="btn-status" style="background: var(--primary); color: white;">
+    Atualizar Agora
+</button>
 {% endblock %}
 
 {% block content %}
-<header>
-  <h1>&#128757; Painel <span>Delivery</span></h1>
-  <div class="header-right">
-    <div class="status-dot"></div>
-    <span class="status-text" id="ultima-atualizacao">Atualizando...</span>
-    <a href="/mesas" class="btn-voltar">&larr; Mesas</a>
-    <a href="/dashboard" class="btn-voltar">🏠 Painel</a>
-  </div>
-</header>
-
-<div class="colunas">
-  <!-- NOVOS -->
-  <div class="coluna coluna-novo">
-    <div class="coluna-titulo">
-      &#128276; Novos
-      <span class="contador" id="count-novo">0</span>
+<div class="kanban-container">
+    <!-- NOVO -->
+    <div class="kanban-column" id="col-novo">
+        <div class="column-header">
+            <div class="column-title">
+                <div class="column-dot" style="background: var(--info);"></div>
+                Novos
+            </div>
+            <span class="column-count" id="count-novo">0</span>
+        </div>
+        <div class="column-body" id="list-novo"></div>
     </div>
-    <div class="lista-pedidos" id="lista-novo"></div>
-  </div>
 
-  <!-- EM PREPARO -->
-  <div class="coluna coluna-preparo">
-    <div class="coluna-titulo">
-      &#127859; Em preparo
-      <span class="contador" id="count-em_preparo">0</span>
+    <!-- EM PREPARO -->
+    <div class="kanban-column" id="col-preparo">
+        <div class="column-header">
+            <div class="column-title">
+                <div class="column-dot" style="background: var(--warning);"></div>
+                Em preparo
+            </div>
+            <span class="column-count" id="count-preparo">0</span>
+        </div>
+        <div class="column-body" id="list-preparo"></div>
     </div>
-    <div class="lista-pedidos" id="lista-em_preparo"></div>
-  </div>
 
-  <!-- SAIU PARA ENTREGA -->
-  <div class="coluna coluna-saiu">
-    <div class="coluna-titulo">
-      &#128757; Saiu para entrega
-      <span class="contador" id="count-saiu_entrega">0</span>
+    <!-- SAIU PARA ENTREGA -->
+    <div class="kanban-column" id="col-entrega">
+        <div class="column-header">
+            <div class="column-title">
+                <div class="column-dot" style="background: var(--primary);"></div>
+                Saiu p/ entrega
+            </div>
+            <span class="column-count" id="count-entrega">0</span>
+        </div>
+        <div class="column-body" id="list-entrega"></div>
     </div>
-    <div class="lista-pedidos" id="lista-saiu_entrega"></div>
-  </div>
+
+    <!-- ENTREGUE (Finalizado) -->
+    <div class="kanban-column" id="col-finalizado">
+        <div class="column-header">
+            <div class="column-title">
+                <div class="column-dot" style="background: var(--success);"></div>
+                Entregues
+            </div>
+            <span class="column-count" id="count-finalizado">0</span>
+        </div>
+        <div class="column-body" id="list-finalizado"></div>
+    </div>
 </div>
-
-<div id="toast"></div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/delivery.js') }}"></script>
+<script>
+    async function carregarPedidos() {
+        try {
+            const resp = await fetch('/api/pedidos/delivery');
+            const data = await resp.json();
+            
+            if (data.sucesso) {
+                renderizarKanban(data.pedidos);
+            }
+        } catch (err) {
+            console.error("Erro ao carregar pedidos:", err);
+        }
+    }
+
+    function renderizarKanban(pedidos) {
+        const columns = {
+            'novo': document.getElementById('list-novo'),
+            'em_preparo': document.getElementById('list-preparo'),
+            'saiu_entrega': document.getElementById('list-entrega'),
+            'entregue': document.getElementById('list-finalizado')
+        };
+
+        const counts = {
+            'novo': 0,
+            'em_preparo': 0,
+            'saiu_entrega': 0,
+            'entregue': 0
+        };
+
+        // Limpar colunas
+        Object.values(columns).forEach(col => col.innerHTML = '');
+
+        pedidos.forEach(p => {
+            const status = p.status || 'novo';
+            if (columns[status]) {
+                counts[status]++;
+                const card = criarCard(p);
+                columns[status].appendChild(card);
+            }
+        });
+
+        // Atualizar contadores
+        Object.keys(counts).forEach(key => {
+            document.getElementById(`count-${key === 'entregue' ? 'finalizado' : key}`).textContent = counts[key];
+        });
+    }
+
+    function criarCard(p) {
+        const div = document.createElement('div');
+        div.className = 'kanban-card';
+        
+        const itensTxt = p.itens.map(i => `${i.quantidade}x ${i.nome}`).join(', ');
+        const total = parseFloat(p.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        
+        let btnAcao = '';
+        if (p.status === 'novo') {
+            btnAcao = `<button class="btn-status" onclick="mudarStatus(${p.id}, 'em_preparo')">Aceitar</button>`;
+        } else if (p.status === 'em_preparo') {
+            btnAcao = `<button class="btn-status" onclick="mudarStatus(${p.id}, 'saiu_entrega')">Despachar</button>`;
+        } else if (p.status === 'saiu_entrega') {
+            btnAcao = `<button class="btn-status" onclick="mudarStatus(${p.id}, 'entregue')" style="background: var(--success); color: white;">Concluir</button>`;
+        }
+
+        div.innerHTML = `
+            <span class="card-order-id">#${p.id}</span>
+            <span class="card-customer">${p.cliente_nome}</span>
+            <div class="card-items">${itensTxt}</div>
+            <div class="card-footer">
+                <span class="card-price">${total}</span>
+                ${btnAcao}
+            </div>
+        `;
+        return div;
+    }
+
+    async function mudarStatus(id, status) {
+        try {
+            const resp = await fetch('/api/pedido/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pedido_id: id, status: status })
+            });
+            const data = await resp.json();
+            if (data.sucesso) {
+                carregarPedidos();
+            }
+        } catch (err) {
+            alert("Erro ao mudar status!");
+        }
+    }
+
+    carregarPedidos();
+    setInterval(carregarPedidos, 15000);
+</script>
 {% endblock %}

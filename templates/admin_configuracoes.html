@@ -1,28 +1,16 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin — Configurações</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_configuracoes.css') }}">
-</head>
-<body>
+{% extends "admin_layout.html" %}
 
-  <!-- CABEÇALHO -->
-  <div class="header">
-    <h1>🍽️ Comanda Digital</h1>
-    <nav class="nav-links">
-      <a href="/dashboard">Painel</a>
-      <a href="/admin/produtos">Produtos</a>
-      <a href="/admin/adicionais">Adicionais</a>
-      <a href="/admin/usuarios">Usuários</a>
-      <a href="/admin/configuracoes" class="active">Configurações</a>
-      <a href="/logout">Sair</a>
-    </nav>
-  </div>
+{% block title %}Configurações — Comanda Digital{% endblock %}
+
+{% block page_title %}Configurações{% endblock %}
+{% block page_subtitle %}Gerencie a identidade e funcionamento do seu estabelecimento.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_configuracoes.css') }}">
+{% endblock %}
+
+{% block content %}
 
   <div class="container">
 
@@ -44,6 +32,13 @@
         <div class="form-group">
           <label>Nome do Restaurante</label>
           <input type="text" name="nome_restaurante" value="{{ configs.nome_restaurante }}" placeholder="Ex: Burger House">
+        </div>
+        <div class="form-group">
+          <label>Cor Identidade (SaaS)</label>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="color" name="cor_primaria" value="{{ cor_primaria }}" style="width: 50px; height: 40px; padding: 0; border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Esta cor será aplicada em botões, ícones e destaques do painel.</span>
+          </div>
         </div>
       </div>
 
@@ -137,6 +132,8 @@
 
   </div>
 
-  <script src="{{ url_for('static', filename='js/admin_configuracoes.js') }}"></script>
-</body>
-</html>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin_configuracoes.js') }}"></script>
+{% endblock %}

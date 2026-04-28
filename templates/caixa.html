@@ -1,19 +1,15 @@
-{% extends "base.html" %}
+{% extends "admin_layout.html" %}
+
 {% block title %}Caixa — Comanda Digital{% endblock %}
+
+{% block page_title %}Módulo de Caixa{% endblock %}
+{% block page_subtitle %}Resumo financeiro e fechamento do dia.{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/caixa.css') }}">
 {% endblock %}
 
 {% block content %}
-<!-- HEADER -->
-<header class="caixa-header">
-  <div class="caixa-logo">🍔 Comanda<span>Digital</span></div>
-  <div class="caixa-header-right">
-    <span class="caixa-user">💰 <strong>Módulo de Caixa</strong></span>
-    <a href="/dashboard" class="btn-voltar">← Painel</a>
-  </div>
-</header>
 
 <!-- CORPO -->
 <div class="caixa-body">

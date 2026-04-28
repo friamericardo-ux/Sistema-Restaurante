@@ -1,313 +1,131 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel Admin — Comanda Digital</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/painel.css') }}">
-</head>
-<body>
+{% extends "admin_layout.html" %}
 
-<!-- ══ TOPBAR ══════════════════════════════════════════════════════════════ -->
-<header class="topbar">
+{% block title %}Início — Comanda Digital{% endblock %}
 
-  <div class="logo"><span>Comanda</span><em>Digital</em></div>
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Visão geral do seu estabelecimento em tempo real.{% endblock %}
 
-  <nav>
-    <ul class="nav-links">
-      <li>
-        <a href="/dashboard" class="active">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-            <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
-          </svg>
-          Painel
+{% block top_actions %}
+<div style="display: flex; gap: 10px; align-items: center;">
+    <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+        <div style="width: 8px; height: 8px; background: #10B981; border-radius: 50%; animation: pulse 2s infinite;"></div>
+        Ao vivo
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- STATS -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon" style="background: rgba(255, 122, 47, 0.1); color: #ff7a2f;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            </div>
+            <span class="stat-trend" style="background: rgba(16, 185, 129, 0.1); color: #10B981;">+12%</span>
+        </div>
+        <div class="stat-value" id="val-mesas">--</div>
+        <div class="stat-label">Mesas Abertas</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            </div>
+        </div>
+        <div class="stat-value" id="val-novos">--</div>
+        <div class="stat-label">Novos Pedidos</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+        </div>
+        <div class="stat-value" id="val-preparo">--</div>
+        <div class="stat-label">Em Preparo</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+            </div>
+        </div>
+        <div class="stat-value" id="val-entrega">--</div>
+        <div class="stat-label">Saiu p/ Entrega</div>
+    </div>
+</div>
+
+<!-- QUICK ACCESS -->
+<div style="margin-bottom: 24px;">
+    <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 16px;">Acesso Rápido</h2>
+    <div class="stats-grid">
+        <a href="/mesas" style="text-decoration: none; color: inherit;">
+            <div class="stat-card" style="padding: 20px; align-items: center; text-align: center;">
+                <div class="stat-icon" style="background: var(--primary-soft); color: var(--primary); margin-bottom: 8px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                </div>
+                <div style="font-weight: 700; font-size: 0.9rem;">Mesas</div>
+            </div>
         </a>
-      </li>
-      <li>
-        <a href="/mesas">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
-          Mesas
+        <a href="/delivery" style="text-decoration: none; color: inherit;">
+            <div class="stat-card" style="padding: 20px; align-items: center; text-align: center;">
+                <div class="stat-icon" style="background: var(--primary-soft); color: var(--primary); margin-bottom: 8px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                </div>
+                <div style="font-weight: 700; font-size: 0.9rem;">Delivery</div>
+            </div>
         </a>
-      </li>
-      <li>
-        <a href="/delivery">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="1" y="3" width="15" height="13"/>
-            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-            <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-          </svg>
-          Delivery
+        <a href="/admin/produtos" style="text-decoration: none; color: inherit;">
+            <div class="stat-card" style="padding: 20px; align-items: center; text-align: center;">
+                <div class="stat-icon" style="background: var(--primary-soft); color: var(--primary); margin-bottom: 8px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line></svg>
+                </div>
+                <div style="font-weight: 700; font-size: 0.9rem;">Cardápio</div>
+            </div>
         </a>
-      </li>
-      <li>
-        <a href="{{ ('/cardapio/' + restaurante_slug) if restaurante_slug else '/cardapio' }}" target="_blank">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-          </svg>
-          Cardápio
+        <a href="/caixa" style="text-decoration: none; color: inherit;">
+            <div class="stat-card" style="padding: 20px; align-items: center; text-align: center;">
+                <div class="stat-icon" style="background: var(--primary-soft); color: var(--primary); margin-bottom: 8px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                </div>
+                <div style="font-weight: 700; font-size: 0.9rem;">Caixa</div>
+            </div>
         </a>
-      </li>
-      {% if session.get('role') in ('admin', 'superadmin', 'super_admin') %}
-      <li>
-        <a href="/caixa">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="1" x2="12" y2="23"/>
-            <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
-          </svg>
-          Caixa
-        </a>
-      </li>
-      {% endif %}
-    </ul>
-  </nav>
-
-  <div class="topbar-right">
-    <button class="btn-whatsapp" onclick="abrirWhatsApp()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-      </svg>
-      <span>WhatsApp</span>
-    </button>
-    <div class="topbar-user">
-      <span>{{ username }}</span>
-      <a href="/logout" class="btn-logout">Sair</a>
     </div>
-  </div>
+</div>
 
-</header>
+<style>
+    @keyframes pulse {
+        0% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.2); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+</style>
+{% endblock %}
 
+{% block extra_js %}
+<script>
+    async function carregarResumo() {
+        try {
+            const resp = await fetch('/api/dashboard/resumo');
+            const data = await resp.json();
+            if (data.sucesso) {
+                document.getElementById('val-mesas').textContent = data.mesas_abertas;
+                document.getElementById('val-novos').textContent = data.pedidos_novos;
+                document.getElementById('val-preparo').textContent = data.pedidos_preparo;
+                document.getElementById('val-entrega').textContent = data.pedidos_entrega;
+            }
+        } catch (err) {
+            console.error("Erro ao carregar resumo:", err);
+        }
+    }
 
-<!-- ══ CONTEÚDO PRINCIPAL ══════════════════════════════════════════════════ -->
-<main class="main">
-
-  <div class="page-header">
-    <div>
-      <h1>Painel de Controle</h1>
-      <p id="subtitulo">Atualizando automaticamente a cada 30 segundos</p>
-    </div>
-    <div class="live-badge">
-      <div class="live-dot"></div>
-      Ao vivo
-    </div>
-  </div>
-
-
-  <!-- ── STATUS ATUAL ──────────────────────────────────────────────────── -->
-  <p class="section-label">Status atual</p>
-
-  <div class="status-grid">
-
-    <div class="stat-card c-orange">
-      <div class="glow"></div>
-      <div class="icon-wrap">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff7a2f" stroke-width="2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-      </div>
-      <div class="tag">Mesas abertas</div>
-      <div class="value" id="val-mesas"><span class="skeleton"></span></div>
-      <div class="label">em andamento agora</div>
-    </div>
-
-    <div class="stat-card c-yellow">
-      <div class="glow"></div>
-      <div class="icon-wrap">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f5c518" stroke-width="2">
-          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 01-3.46 0"/>
-        </svg>
-      </div>
-      <div class="tag">Pedidos novos</div>
-      <div class="value" id="val-novos"><span class="skeleton"></span></div>
-      <div class="label">aguardando aceite</div>
-    </div>
-
-    <div class="stat-card c-blue">
-      <div class="glow"></div>
-      <div class="icon-wrap">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a9eff" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M12 6v6l4 2"/>
-        </svg>
-      </div>
-      <div class="tag">Em preparo</div>
-      <div class="value" id="val-preparo"><span class="skeleton"></span></div>
-      <div class="label">sendo preparados</div>
-    </div>
-
-    <div class="stat-card c-green">
-      <div class="glow"></div>
-      <div class="icon-wrap">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2">
-          <rect x="1" y="3" width="15" height="13"/>
-          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-          <circle cx="5.5" cy="18.5" r="2.5"/>
-          <circle cx="18.5" cy="18.5" r="2.5"/>
-        </svg>
-      </div>
-      <div class="tag">Saiu pra entrega</div>
-      <div class="value" id="val-entrega"><span class="skeleton"></span></div>
-      <div class="label">a caminho do cliente</div>
-    </div>
-
-  </div>
-
-
-  <!-- ── ACESSO RÁPIDO ─────────────────────────────────────────────────── -->
-  <p class="section-label">Acesso rápido</p>
-
-  <!-- Linha 1 — todos os usuários veem -->
-  <div class="quick-grid">
-
-    <a href="/mesas" class="quick-card qa-mesas">
-      <div class="qicon" style="background:var(--orange-dim)">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff7a2f" stroke-width="2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-      </div>
-      <h3>Mesas</h3>
-      <p>Gerencie o salão, adicione itens e encerre comandas.</p>
-      <span class="arrow">↗</span>
-    </a>
-
-    <a href="/delivery" class="quick-card qa-delivery">
-      <div class="qicon" style="background:var(--blue-dim)">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a9eff" stroke-width="2">
-          <rect x="1" y="3" width="15" height="13"/>
-          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-          <circle cx="5.5" cy="18.5" r="2.5"/>
-          <circle cx="18.5" cy="18.5" r="2.5"/>
-        </svg>
-      </div>
-      <h3>Painel Delivery</h3>
-      <p>Acompanhe pedidos por status em tempo real.</p>
-      <span class="badge-pill badge-ok" id="badge-delivery">✓ Sem pedidos pendentes</span>
-      <span class="arrow">↗</span>
-    </a>
-
-    <a href="{{ ('/cardapio/' + restaurante_slug) if restaurante_slug else '/cardapio' }}" target="_blank" class="quick-card qa-cardapio">
-      <div class="qicon" style="background:var(--green-dim)">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2">
-          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-        </svg>
-      </div>
-      <h3>Cardápio</h3>
-      <p>Visualize o cardápio como o cliente vê. Abre em nova aba.</p>
-      <span class="arrow">↗</span>
-    </a>
-
-    {% if session.get('role') in ('admin', 'superadmin', 'super_admin') %}
-    <a href="/caixa" class="quick-card qa-caixa">
-      <div class="qicon" style="background:var(--yellow-dim)">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f5c518" stroke-width="2">
-          <line x1="12" y1="1" x2="12" y2="23"/>
-          <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
-        </svg>
-      </div>
-      <h3>Caixa</h3>
-      <p>Resumo financeiro e movimentações do caixa.</p>
-      <span class="arrow">↗</span>
-    </a>
-    {% endif %}
-
-  </div>
-
-  {% if session.get('role') in ('admin', 'superadmin', 'super_admin') %}
-  <!-- Linha 2 — só admin vê -->
-  <div class="quick-grid row2">
-
-    <a href="/admin/produtos" class="quick-card qa-produtos">
-      <div class="qicon" style="background:var(--red-dim)">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e8293b" stroke-width="2">
-          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-          <line x1="3" y1="6" x2="21" y2="6"/>
-          <path d="M16 10a4 4 0 01-8 0"/>
-        </svg>
-      </div>
-      <h3>Produtos</h3>
-      <p>Cadastre, edite e remova itens do cardápio.</p>
-      <span class="arrow">↗</span>
-    </a>
-
-    <a href="/admin/adicionais" class="quick-card qa-adicionais">
-      <div class="qicon" style="background:var(--purple-dim)">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="16"/>
-          <line x1="8" y1="12" x2="16" y2="12"/>
-        </svg>
-      </div>
-      <h3>Adicionais</h3>
-      <p>Configure os extras disponíveis para os produtos.</p>
-      <span class="arrow">↗</span>
-    </a>
-
-    <a href="/admin/usuarios" class="quick-card qa-usuarios">
-      <div class="qicon" style="background:rgba(107,114,128,0.15)">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
-          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-          <path d="M16 3.13a4 4 0 010 7.75"/>
-        </svg>
-      </div>
-      <h3>Usuários</h3>
-      <p>Crie e gerencie os acessos ao sistema.</p>
-      <span class="arrow">↗</span>
-    </a>
-
-    <a href="/admin/configuracoes" class="quick-card qa-configuracoes">
-      <div class="qicon" style="background:rgba(255,122,47,0.12)">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff7a2f" stroke-width="2">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
-        </svg>
-      </div>
-      <h3>Configurações</h3>
-      <p>Nome, WhatsApp, entrega e horário do estabelecimento.</p>
-      <span class="arrow">↗</span>
-    </a>
-
-  </div>
-  {% endif %}
-
-  {% if session.get('role') in ('superadmin', 'super_admin') %}
-  <div class="quick-grid row2">
-    <a href="/superadmin" class="quick-card qa-superadmin">
-      <div class="qicon" style="background:rgba(255,44,44,0.12)">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-             stroke="#ff4444" stroke-width="2">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0110 0v4"/>
-        </svg>
-      </div>
-      <h3>Super Admin</h3>
-      <p>Gestão de licenças e controle dos restaurantes.</p>
-      <span class="arrow">↗</span>
-    </a>
-  </div>
-  {% endif %}
-
-</main>
-
-
-<!-- ══ FOOTER ══════════════════════════════════════════════════════════════ -->
-<footer class="footer">
-  Comanda Digital © 2026 — Painel Admin
-</footer>
-
-<script src="{{ url_for('static', filename='js/painel.js') }}"></script>
-
-</body>
-</html>
+    // Carregar ao iniciar e a cada 30s
+    carregarResumo();
+    setInterval(carregarResumo, 30000);
+</script>
+{% endblock %}

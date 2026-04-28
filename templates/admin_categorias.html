@@ -1,0 +1,19 @@
+{% extends "admin_layout.html" %}
+
+{% block title %}Categorias — Comanda Digital{% endblock %}
+
+{% block page_title %}Categorias{% endblock %}
+{% block page_subtitle %}Gerencie as categorias do seu cardápio.{% endblock %}
+
+{% block content %}
+<div class="stat-card">
+    <div style="padding: 40px; text-align: center; color: var(--text-muted);">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 16px; opacity: 0.3;"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+        <h3>Gestão de Categorias</h3>
+        <p>Atualmente, as categorias são gerenciadas diretamente no cadastro de produtos.</p>
+        <div style="margin-top: 24px;">
+            <a href="/admin/produtos" class="btn-status" style="background: var(--primary); color: white; text-decoration: none; padding: 10px 20px;">Ir para Produtos</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

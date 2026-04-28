@@ -1,27 +1,16 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin — Adicionais</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_adicionais.css') }}">
-</head>
-<body>
+{% extends "admin_layout.html" %}
 
-  <!-- CABEÇALHO -->
-  <div class="header">
-    <h1>🍽️ Comanda Digital</h1>
-    <nav class="nav-links">
-      <a href="/dashboard">Painel</a>
-      <a href="/admin/produtos">Produtos</a>
-      <a href="/admin/adicionais" class="active">Adicionais</a>
-      <a href="/admin/usuarios">Usuários</a>
-      <a href="/logout">Sair</a>
-    </nav>
-  </div>
+{% block title %}Adicionais — Comanda Digital{% endblock %}
+
+{% block page_title %}Adicionais{% endblock %}
+{% block page_subtitle %}Configure os complementos extras para os seus produtos.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_adicionais.css') }}">
+{% endblock %}
+
+{% block content %}
 
   <div class="container">
 
@@ -143,6 +132,8 @@
     </div>
   </div>
 
-  <script src="{{ url_for('static', filename='js/admin_adicionais.js') }}"></script>
-</body>
-</html>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin_adicionais.js') }}"></script>
+{% endblock %}

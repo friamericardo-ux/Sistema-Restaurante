@@ -1,25 +1,15 @@
-{% extends "base.html" %}
+{% extends "admin_layout.html" %}
 
-{% block title %}Admin &mdash; Produtos{% endblock %}
+{% block title %}Produtos — Comanda Digital{% endblock %}
+
+{% block page_title %}Produtos{% endblock %}
+{% block page_subtitle %}Gerencie os itens do seu cardápio.{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="header">
-  <h1>&#128722; Admin &mdash; Produtos</h1>
-  <nav class="nav-links">
-    <a href="/dashboard">🏠 Painel</a>
-    <a href="/admin/produtos" class="active">Produtos</a>
-    <a href="/admin/adicionais">Adicionais</a>
-    <a href="/mesas">Mesas</a>
-    <a href="/delivery">Delivery</a>
-    <a href="/admin/usuarios">👥 Usuários</a>
-    <a href="/admin/alterar-senha">🔑 Alterar Senha</a>
-    <a href="/logout">Sair</a>
-  </nav>
-</div>
 
 <div class="container">
 

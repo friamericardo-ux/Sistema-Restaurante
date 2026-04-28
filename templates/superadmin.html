@@ -1,29 +1,18 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Super Admin — Licenças</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/superadmin.css') }}">
-</head>
-<body>
+{% extends "admin_layout.html" %}
 
-  <header class="sa-header">
-    <div class="sa-logo">⚡ Super Admin</div>
-    <div class="sa-header-right">
-      <span class="sa-user">{{ session.get('username') }}</span>
-      <a href="/logout" class="btn-sair">Sair</a>
-    </div>
-  </header>
+{% block title %}Super Admin — Comanda Digital{% endblock %}
+
+{% block page_title %}Gestão de Licenças{% endblock %}
+{% block page_subtitle %}Controle de acesso dos restaurantes cadastrados no sistema.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/superadmin.css') }}">
+{% endblock %}
+
+{% block content %}
 
   <main class="sa-main">
 
-    <div class="sa-page-header">
-      <h1>Gestão de Licenças</h1>
-      <p>Controle de acesso dos restaurantes cadastrados no sistema.</p>
-    </div>
 
     <div class="sa-novo-restaurante">
       <h2>Novo Restaurante</h2>
@@ -106,6 +95,8 @@
 
   </main>
 
-  <script src="{{ url_for('static', filename='js/superadmin.js') }}"></script>
-</body>
-</html>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/superadmin.js') }}"></script>
+{% endblock %}

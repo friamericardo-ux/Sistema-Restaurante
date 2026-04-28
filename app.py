@@ -67,6 +67,12 @@ Talisman(app,
     session_cookie_secure=True,
 )
 
+@app.context_processor
+def inject_global_vars():
+    # Cor primária vinda do banco ou fallback Indigo
+    cor = get_config("cor_primaria", "#6366F1", restaurante_id=session.get('restaurante_id', 1))
+    return dict(cor_primaria=cor)
+
 # Extensões e tamanho máximo de upload
 EXTENSOES_PERMITIDAS = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
@@ -921,7 +927,7 @@ def admin_configuracoes():
             "nome_restaurante", "whatsapp_restaurante",
             "frete_por_km", "endereco_restaurante",
             "horario_abertura", "horario_fechamento",
-            "google_maps_key", "restaurante_ativo"
+            "google_maps_key", "restaurante_ativo", "cor_primaria"
         ]
         for campo in campos:
             valor = request.form.get(campo, "").strip()
@@ -1863,6 +1869,20 @@ def desativar_adicional_route(id):
 def api_categorias():
     categorias = listar_categorias_produtos(session['restaurante_id'])
     return jsonify({"sucesso": True, "categorias": categorias})
+
+
+@app.route("/admin/categorias")
+@admin_required
+def admin_categorias():
+    categorias = listar_categorias_produtos(session['restaurante_id'])
+    return render_template("admin_categorias.html", categorias=categorias)
+
+
+@app.route("/pdv")
+@login_required
+def pdv():
+    """Página do PDV (Ponto de Venda)"""
+    return render_template("admin_pdv.html")
 
 
 # ========================
