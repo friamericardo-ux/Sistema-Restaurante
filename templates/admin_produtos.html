@@ -164,18 +164,18 @@
       {% for p in produtos %}
       <tr>
         <td>
-          {% if p[6] and p[6] != '' %}
-          <img src="/static/img/produtos/{{ p[6] }}" class="thumb" alt="Foto de {{ p[1] }}"
+          {% if p[5] and p[5] != '' %}
+          <img src="/static/img/produtos/{{ p[5] }}" class="thumb" alt="Foto de {{ p[1] }}"
                onerror="this.onerror=null;this.src='https://via.placeholder.com/46?text=?'">
           {% else %}
           <span class="no-image">Sem foto</span>
           {% endif %}
         </td>
-        <td><span class="prod-emoji">{{ p[4] }}</span></td>
+        <td><span class="prod-emoji">{{ p[4] if p[4] else '🍽️' }}</span></td>
         <td><strong>{{ p[1] }}</strong></td>
         <td class="prod-preco">R$ {{ "%.2f"|format(p[2]) }}</td>
         <td><span class="prod-categoria">{{ p[3] }}</span></td>
-        <td class="prod-descricao">{{ p[7] if p[7] else '—' }}</td>
+        <td class="prod-descricao">{{ p[6] if p[6] else '—' }}</td>
         <td>
           <a href="/admin/produtos/desativar/{{ p[0] }}"
              onclick="return confirm('Remover {{ p[1] }}?')">

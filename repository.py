@@ -401,7 +401,8 @@ def listar_produtos(restaurante_id):
     ph = "%s" if is_mysql() else "?"
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute(f"SELECT * FROM produtos WHERE ativo = 1 AND restaurante_id = {ph}", (restaurante_id,))
+    # Ordem fixa: id(0), nome(1), preco(2), categoria(3), emoji(4), foto(5), descricao(6)
+    cursor.execute(f"SELECT id, nome, preco, categoria, emoji, foto, descricao FROM produtos WHERE ativo = 1 AND restaurante_id = {ph}", (restaurante_id,))
     rows = cursor.fetchall()
     conn.close()
     return rows

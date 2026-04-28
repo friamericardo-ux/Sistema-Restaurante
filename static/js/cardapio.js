@@ -50,9 +50,17 @@ function renderProds(busca=''){
       <div class="cards-grid">`;
     prods.forEach(p=>{
       const qc=qtdNoCarrinho(p.id);
+      const fotoHtml = p.foto 
+        ? `<img src="/static/img/produtos/${p.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        : '';
+      const fallbackHtml = `<div style="width:100%;height:100%;display:${p.foto?'none':'flex'};align-items:center;justify-content:center;font-size:40px;background:#f8f9fa;border-radius:inherit">${p.emoji || '🍽️'}</div>`;
+
       html+=`
         <div class="card ${qc>0?'sel':''}" onclick="abrirModal(${p.id})">
-          <img src="/static/img/produtos/${p.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">
+          <div style="width:100%;height:140px;position:relative;border-radius:12px 12px 0 0;overflow:hidden;background:#eee">
+            ${fotoHtml}
+            ${fallbackHtml}
+          </div>
           <div class="card-badge ${qc>0?'v':''}">${qc}</div>
           <div class="card-body">
             <div class="card-nome">${p.nome}</div>
@@ -83,7 +91,13 @@ function quickAdd(e,id){
 function abrirModal(id){
   pAtual=getProd(id); qtd=1; adsSel=[];
   const foto=document.getElementById('mFoto');
-  foto.innerHTML=`<span style="font-size:90px">${pAtual.emoji}</span><button class="modal-fechar" onclick="fecharModal()">✕</button>`;
+  if(pAtual.foto){
+    foto.style.backgroundImage = `url(/static/img/produtos/${pAtual.foto})`;
+    foto.innerHTML = `<button class="modal-fechar" onclick="fecharModal()">✕</button>`;
+  } else {
+    foto.style.backgroundImage = 'none';
+    foto.innerHTML=`<span style="font-size:90px">${pAtual.emoji || '🍽️'}</span><button class="modal-fechar" onclick="fecharModal()">✕</button>`;
+  }
   document.getElementById('mNome').textContent=pAtual.nome;
   document.getElementById('mDesc').textContent=pAtual.desc;
   document.getElementById('mPreco').textContent=fmt(pAtual.preco);

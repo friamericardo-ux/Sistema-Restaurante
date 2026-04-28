@@ -626,9 +626,9 @@ def api_cardapio():
                 "nome": p[1],
                 "preco": float(p[2]),
                 "categoria": p[3],
-                "emoji": p[4],
-                "foto": p[6] if len(p) > 6 else None,
-                "descricao": p[7] if len(p) > 7 else "",    
+                "emoji": p[4] if p[4] else '🍽️',
+                "foto": p[5],
+                "descricao": p[6] if p[6] else "",    
             })
         return jsonify({"sucesso": True, "produtos": resultado})
     except Exception as e:
