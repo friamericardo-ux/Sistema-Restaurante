@@ -72,7 +72,25 @@ Talisman(app,
 def inject_global_vars():
     # Cor primária vinda do banco ou fallback Indigo
     cor = get_config("cor_primaria", "#6366F1", restaurante_id=session.get('restaurante_id', 1))
-    return dict(cor_primaria=cor)
+
+    # Slug do restaurante do usuário logado (para link do cardápio na sidebar)
+    # Retorna None em rotas públicas ou para superadmin sem restaurante vinculado
+    restaurante_slug = None
+    rid = session.get('restaurante_id')
+    if rid:
+        try:
+            _db = get_connection()
+            _cursor = _db.cursor()
+            ph = "%s" if is_mysql() else "?"
+            _cursor.execute(f"SELECT slug FROM restaurantes WHERE id = {ph}", (rid,))
+            row = _cursor.fetchone()
+            _db.close()
+            if row:
+                restaurante_slug = row[0] if not isinstance(row, dict) else row.get('slug')
+        except Exception:
+            pass  # banco pode não ter tabela restaurantes em dev local
+
+    return dict(cor_primaria=cor, restaurante_slug=restaurante_slug)
 
 # Extensões e tamanho máximo de upload
 EXTENSOES_PERMITIDAS = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
@@ -485,11 +503,8 @@ def index():
 @app.route("/mesas")
 @login_required
 def mesas():
-    role = session.get('role')
-    if role in ('atendente', 'admin', 'superadmin'):
-        return render_template("atendente.html")
-    else:
-        return redirect(url_for('index'))
+    """Página de gestão de mesas — design moderno com cards e status visual."""
+    return render_template("admin_mesas.html")
 
 @app.route("/api/dashboard/resumo")
 @login_required

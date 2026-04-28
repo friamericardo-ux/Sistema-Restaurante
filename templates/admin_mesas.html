@@ -1,0 +1,188 @@
+{% extends "admin_layout.html" %}
+
+{% block title %}Mesas — Comanda Digital{% endblock %}
+
+{% block page_title %}Gestão de Mesas{% endblock %}
+{% block page_subtitle %}Monitoramento em tempo real das mesas do salão.{% endblock %}
+
+{# CSS isolado — carregado APENAS nesta página #}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mesas_new.css') }}">
+{% endblock %}
+
+{% block top_actions %}
+<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+
+    {# Contadores rápidos #}
+    <div style="display:flex; gap:10px; font-size:0.78rem; color:var(--text-muted);">
+        <span>
+            <strong id="contador-total" style="color:var(--text-main);">—</strong> mesas
+        </span>
+        <span style="opacity:0.4;">|</span>
+        <span>
+            <strong id="contador-abertas" style="color:#3B82F6;">—</strong> abertas
+        </span>
+        <span style="opacity:0.4;">|</span>
+        <span>
+            <strong id="contador-ocupadas" style="color:#F59E0B;">—</strong> ocupadas
+        </span>
+    </div>
+
+    {# Indicador ao vivo #}
+    <div class="mesas-live-indicator">
+        <div class="mesas-live-dot"></div>
+        Ao vivo
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+{# ── TOOLBAR ──────────────────────────────────────────── #}
+<div class="mesas-toolbar">
+    <div class="mesas-search">
+        <svg class="mesas-search-icon" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="mesas-busca" placeholder="Buscar mesa pelo número…"
+               aria-label="Filtrar mesas pelo número">
+    </div>
+
+    <button class="btn-nova-mesa-new" onclick="abrirModalNovaMesa()" id="btn-nova-mesa">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Nova Mesa
+    </button>
+</div>
+
+{# ── LEGENDA DE STATUS ─────────────────────────────────── #}
+<div class="mesas-legenda" aria-label="Legenda de status das mesas">
+    <div class="legenda-item">
+        <span class="legenda-dot livre"></span> Livre
+    </div>
+    <div class="legenda-item">
+        <span class="legenda-dot aberta"></span> Aberta (sem consumo)
+    </div>
+    <div class="legenda-item">
+        <span class="legenda-dot ocupada"></span> Ocupada (com consumo)
+    </div>
+    <div class="legenda-item">
+        <span class="legenda-dot conta"></span> Conta Pedida
+    </div>
+</div>
+
+{# ── GRID DE MESAS ─────────────────────────────────────── #}
+<div class="mesas-grid" id="mesas-grid" role="list" aria-label="Lista de mesas">
+    {# Populado dinamicamente via mesas_new.js #}
+    <div class="mesas-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <h3>Carregando mesas…</h3>
+        <p>Aguarde um instante.</p>
+    </div>
+</div>
+
+
+{# ═══════════════════════════════════════════════════════
+   MODAL — Consumo da Mesa
+═══════════════════════════════════════════════════════ #}
+<div class="modal-overlay-new" id="modal-overlay" role="dialog"
+     aria-modal="true" aria-labelledby="modal-titulo">
+
+    <div class="modal-new">
+
+        {# Header #}
+        <div class="modal-header-new">
+            <h2 id="modal-titulo">Mesa —</h2>
+            <button class="modal-close-btn" onclick="fecharModal()" aria-label="Fechar modal">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="modal-body-new">
+
+            {# ── Cardápio rápido ───────────────────────── #}
+            <p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;
+                       letter-spacing:0.5px;color:var(--text-muted);margin-bottom:10px;">
+                Cardápio Rápido
+            </p>
+            <div class="modal-cardapio-grid" id="modal-cardapio-grid">
+                <span style="color:var(--text-muted);font-size:12px;">Carregando…</span>
+            </div>
+
+            {# ── Área de adicionais ────────────────────── #}
+            <div class="modal-adicionais-area" id="modal-adicionais-area">
+                <span class="modal-adicionais-produto-label" id="modal-adicionais-produto-label"></span>
+                <div class="modal-adicionais-lista" id="modal-adicionais-lista"></div>
+                <div style="display:flex;gap:8px;margin-top:10px;">
+                    <button class="modal-btn-add" onclick="confirmarItemComAdicionais()"
+                            style="flex:none;padding:8px 18px;font-size:0.82rem;">
+                        ✅ Adicionar
+                    </button>
+                    <button onclick="cancelarAdicionais()"
+                            style="flex:none;padding:8px 16px;font-size:0.82rem;
+                                   background:rgba(100,116,139,0.1);color:var(--text-muted);
+                                   border:none;border-radius:var(--radius-md);cursor:pointer;font-family:inherit;">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+
+            {# ── Adicionar item manualmente ────────────── #}
+            <div class="modal-manual-section" style="margin-bottom:20px;">
+                <label style="margin-bottom:8px;">Ou adicione manualmente</label>
+                <div class="modal-manual-row">
+                    <input type="text"   id="modal-item-nome"  placeholder="Nome do item">
+                    <input type="number" id="modal-item-preco" placeholder="Preço" step="0.01" min="0">
+                    <input type="number" id="modal-item-qtd"   placeholder="Qtd" value="1" min="1">
+                </div>
+                <button class="modal-btn-add" onclick="adicionarItemManual()"
+                        style="width:auto;padding:9px 20px;font-size:0.85rem;">
+                    + Adicionar Item
+                </button>
+            </div>
+
+            <hr style="border:none;border-top:1px solid var(--border);margin:0 0 20px;">
+
+            {# ── Lista de itens do consumo ─────────────── #}
+            <p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;
+                       letter-spacing:0.5px;color:var(--text-muted);margin-bottom:10px;">
+                Consumo da Mesa
+            </p>
+            <div class="modal-itens-lista" id="modal-itens-lista">
+                <div class="modal-item-linha" style="justify-content:center;color:var(--text-muted);font-size:0.85rem;">
+                    Nenhum item ainda.
+                </div>
+            </div>
+
+            {# ── Total ─────────────────────────────────── #}
+            <div class="modal-total-bar">
+                <span class="modal-total-label">Total da Mesa</span>
+                <span class="modal-total-valor" id="modal-total-valor">R$ 0,00</span>
+            </div>
+
+            {# ── Ações ─────────────────────────────────── #}
+            <div class="modal-acoes">
+                <button class="modal-btn-encerrar" onclick="confirmarFechamento(_mesaAtual)">
+                    🔒 Encerrar Mesa
+                </button>
+            </div>
+
+        </div><!-- /modal-body-new -->
+    </div><!-- /modal-new -->
+</div><!-- /modal-overlay-new -->
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/mesas_new.js') }}"></script>
+{% endblock %}
