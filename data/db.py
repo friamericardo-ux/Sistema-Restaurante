@@ -18,11 +18,27 @@ class _MySQLCursor:
         self._cursor = cursor
 
     def execute(self, sql, params=None):
+        # Transforma placeholders ? em %s
         sql = sql.replace('?', '%s')
-        sql = sql.replace("DATE('now', 'localtime')", 'CURDATE()')
-        sql = sql.replace("DATE('now')", 'CURDATE()')
-        sql = sql.replace(", 'localtime')", ")")
-        sql = re.sub(r"CAST\(strftime\('%H',\s*(\w+)\)\s*AS\s*INTEGER\)", r"HOUR(\1)", sql)
+        
+        # Traduz funções de data SQLite -> MySQL
+        # DATE('now', 'localtime') -> CURDATE()
+        sql = sql.replace("DATE('now', 'localtime')", "CURDATE()")
+        sql = sql.replace("DATE('now')", "CURDATE()")
+        
+        # DATE(coluna, 'localtime') -> DATE(coluna)
+        sql = re.sub(r"DATE\(([^,)]+),\s*'localtime'\)", r"DATE(\1)", sql)
+        
+        # strftime('%H', coluna, 'localtime') -> HOUR(coluna)
+        sql = re.sub(r"strftime\('%H',\s*([^,)]+)(,\s*'localtime')?\)", r"HOUR(\1)", sql)
+        
+        # CAST(... AS INTEGER) -> ...
+        sql = re.sub(r"CAST\((HOUR\([^)]+\))\s+AS\s+INTEGER\)", r"\1", sql)
+        
+        # CURRENT_TIMESTAMP e DATETIME('now', 'localtime')
+        sql = sql.replace("DATETIME('now', 'localtime')", "NOW()")
+        sql = sql.replace("DATETIME('now')", "NOW()")
+        
         return self._cursor.execute(sql, params or ())
 
     def fetchone(self):
