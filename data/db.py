@@ -18,9 +18,6 @@ class _MySQLCursor:
         self._cursor = cursor
 
     def execute(self, sql, params=None):
-        # Transforma placeholders ? em %s
-        sql = sql.replace('?', '%s')
-        
         # Traduz funções de data SQLite -> MySQL
         # DATE('now', 'localtime') -> DATE_FORMAT(NOW(), '%Y-%m-%d')
         sql = sql.replace("DATE('now', 'localtime')", "DATE_FORMAT(NOW(), '%Y-%m-%d')")
@@ -38,6 +35,11 @@ class _MySQLCursor:
         # CURRENT_TIMESTAMP e DATETIME('now', 'localtime')
         sql = sql.replace("DATETIME('now', 'localtime')", "NOW()")
         sql = sql.replace("DATETIME('now')", "NOW()")
+
+        # FINALMENTE: Escapa % e transforma placeholders
+        # Importante: deve ser a última etapa
+        sql = sql.replace('%', '%%')
+        sql = sql.replace('?', '%s')
         
         return self._cursor.execute(sql, params or ())
 

@@ -5,29 +5,34 @@
 ═══════════════════════════════════════ */
 
 :root {
-    --primary:      var(--cor-primaria, #6366F1);
-    --primary-hover: color-mix(in srgb, var(--primary), black 10%);
-    --primary-soft:  color-mix(in srgb, var(--primary), transparent 90%);
+    /* Cores Principais */
+    --primary:       #6366F1;
+    --primary-hover: #4F46E5;
+    --primary-soft:  rgba(99, 102, 241, 0.1);
     
-    --bg:           #F1F5F9;
-    --sidebar-bg:   #0F172A;
-    --sidebar-text: #94A3B8;
+    /* Cores de Interface */
+    --bg:            #F8FAFC;
+    --sidebar-bg:    #0F172A;
+    --sidebar-text:  #94A3B8;
     --sidebar-active: #FFFFFF;
     
-    --card-bg:      #FFFFFF;
-    --border:       #E2E8F0;
-    --text-main:    #1E293B;
-    --text-muted:   #64748B;
+    /* Superfícies e Bordas */
+    --card-bg:       #FFFFFF;
+    --border:        #E2E8F0;
+    --text-main:     #1E293B;
+    --text-muted:    #64748B;
     
-    --success:      #10B981;
-    --warning:      #F59E0B;
-    --danger:       #EF4444;
-    --info:         #3B82F6;
+    /* Estados */
+    --success:       #22C55E;
+    --warning:       #F59E0B;
+    --danger:        #EF4444;
+    --info:          #3B82F6;
 
-    --radius-lg:    16px;
-    --radius-md:    12px;
-    --shadow-sm:    0 1px 3px rgba(0,0,0,0.1);
-    --shadow-md:    0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    /* Utilidades */
+    --radius-lg:     16px;
+    --radius-md:     12px;
+    --shadow-sm:     0 1px 3px rgba(0,0,0,0.1);
+    --shadow-md:     0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
     
     --sidebar-width: 260px;
     --sidebar-collapsed: 80px;

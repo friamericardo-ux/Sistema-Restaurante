@@ -1,6 +1,6 @@
 /* ============================================================
    ADMIN — Estilos compartilhados (admin_produtos + admin_adicionais)
-   Tema: escuro com accent laranja #ff6b2b / dourado #f0a500
+   Tema: escuro com accent Indigo #6366F1
 ============================================================ */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -43,7 +43,7 @@ body {
 }
 
 .nav-links a:hover  { color: #f0f0f0; }
-.nav-links a.active { color: #ff6b2b; font-weight: 600; }
+.nav-links a.active { color: #6366F1; font-weight: 600; }
 
 /* ── CONTAINER ── */
 .container {
@@ -104,12 +104,12 @@ body {
 
 .form-group input:focus,
 .form-group select:focus,
-.form-group textarea:focus { border-color: #ff6b2b; }
+.form-group textarea:focus { border-color: #6366F1; }
 
 /* ── BOTÕES ── */
 .btn-add {
     padding: 10px 20px;
-    background: #ff6b2b;
+    background: #6366F1;
     color: white;
     border: none;
     border-radius: 8px;
@@ -120,7 +120,7 @@ body {
     transition: background 0.2s, transform 0.15s;
 }
 
-.btn-add:hover { background: #e55a20; transform: translateY(-1px); }
+.btn-add:hover { background: #4f46e5; transform: translateY(-1px); }
 
 .btn-del {
     background: transparent;
@@ -197,7 +197,7 @@ tr:hover td { background: #1e1e1e; }
     height: 46px;
     object-fit: cover;
     border-radius: 8px;
-    border: 2px solid #ff6b2b;
+    border: 2px solid #6366F1;
     display: block;
 }
 
@@ -222,7 +222,7 @@ tr:hover td { background: #1e1e1e; }
 }
 
 .prod-preco {
-    color: #ff6b2b;
+    color: #6366F1;
     font-weight: 700;
 }
 
@@ -262,7 +262,7 @@ tr:hover td { background: #1e1e1e; }
 
 .adicional-preco {
     font-size: 14px;
-    color: #ff6b2b;
+    color: #6366F1;
     font-weight: 700;
 }
 
@@ -305,7 +305,7 @@ tr:hover td { background: #1e1e1e; }
 }
 
 .emoji-trigger:hover,
-.emoji-trigger.open { border-color: #ff6b2b; }
+.emoji-trigger.open { border-color: #6366F1; }
 
 .emoji-trigger #emoji-display { font-size: 20px; line-height: 1; }
 .emoji-trigger #emoji-label   { color: #888; font-size: 13px; }
@@ -363,4 +363,4 @@ tr:hover td { background: #1e1e1e; }
 }
 
 .emoji-option:hover  { background: #2e2e2e; border-color: #3a3a3a; }
-.emoji-option.selected { background: rgba(255,107,43,0.2); border-color: #ff6b2b; }
+.emoji-option.selected { background: rgba(99, 102, 241, 0.2); border-color: #6366F1; }

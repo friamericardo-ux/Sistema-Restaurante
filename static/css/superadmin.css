@@ -235,7 +235,7 @@ body {
 }
 
 .sa-form-group input:focus {
-  border-color: #ff7a2f;
+  border-color: #6366F1;
 }
 
 .sa-form-group input::placeholder {
@@ -244,13 +244,13 @@ body {
 
 .sa-slug-preview {
   font-size: 0.78rem;
-  color: #ff7a2f;
+  color: #6366F1;
   min-height: 16px;
   font-family: monospace;
 }
 
 .btn-criar-restaurante {
-  background: #ff7a2f;
+  background: #6366F1;
   color: #fff;
   border: none;
   border-radius: 8px;

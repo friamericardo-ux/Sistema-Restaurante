@@ -1336,16 +1336,21 @@ def caixa_resumo():
         total_delivery = float(delivery['total'] if isinstance(delivery, dict) else (delivery[1] if delivery else 0))
         total_mesas = float(mesas['total'] if isinstance(mesas, dict) else (mesas[1] if mesas else 0))
         taxa_entrega = float(delivery['taxa_total'] if isinstance(delivery, dict) else (delivery[2] if delivery else 0))
+        
+        qtd_delivery = int(delivery['qtd'] if isinstance(delivery, dict) else (delivery[0] if delivery else 0))
+        qtd_mesas = int(mesas['qtd'] if isinstance(mesas, dict) else (mesas[0] if mesas else 0))
+
+        db.close()
 
         return jsonify({
             "sucesso": True,
             "total_delivery": total_delivery,
             "total_mesas": total_mesas,
             "total_geral": total_delivery + total_mesas,
-            "qtd_delivery": delivery['qtd'] if isinstance(delivery, dict) else (delivery[0] if delivery else 0),
-            "qtd_mesas": mesas['qtd'] if isinstance(mesas, dict) else (mesas[0] if mesas else 0),
+            "qtd_delivery": qtd_delivery,
+            "qtd_mesas": qtd_mesas,
             "taxa_entrega_total": taxa_entrega,
-            "qtd_entregas_taxa": delivery['qtd'] if isinstance(delivery, dict) else (delivery[0] if delivery else 0),
+            "qtd_entregas_taxa": qtd_delivery,
             "caixa_fechado": False
         })
     except Exception as e:
