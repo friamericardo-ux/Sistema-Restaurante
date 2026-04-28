@@ -20,7 +20,6 @@ async function carregarResumo() {
   try {
     const res = await fetch('/api/caixa/resumo');
     const data = await res.json();
-    console.log('[DEBUG CAIXA] Resumo:', data);
     if (!data.sucesso) return;
 
     dadosResumo = data;

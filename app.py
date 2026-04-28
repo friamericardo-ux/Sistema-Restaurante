@@ -1357,7 +1357,7 @@ def caixa_resumo():
         with open("caixa_error.log", "a", encoding="utf-8") as f:
             f.write(f"\n--- {datetime.now()} ---\n{error_msg}\n")
         print(f"Erro em /api/caixa/resumo:\n{error_msg}")
-        return jsonify({"sucesso": False, "erro": str(e), "traceback": error_msg}), 200
+        return jsonify({"sucesso": False, "erro": str(e)}), 200
 
 
 @app.route("/api/caixa/movimentacoes")
@@ -1424,7 +1424,7 @@ def caixa_movimentacoes():
         with open("caixa_error.log", "a", encoding="utf-8") as f:
             f.write(f"\n--- [MOVIMENTACOES] {datetime.now()} ---\n{error_msg}\n")
         print(f"Erro em /api/caixa/movimentacoes:\n{error_msg}")
-        return jsonify({"sucesso": False, "erro": str(e), "traceback": error_msg}), 200
+        return jsonify({"sucesso": False, "erro": str(e)}), 200
 
 
 @app.route("/api/caixa/fechar", methods=["POST"])
@@ -1674,7 +1674,7 @@ def caixa_grafico():
         with open("caixa_error.log", "a", encoding="utf-8") as f:
             f.write(f"\n--- [GRAFICO] {datetime.now()} ---\n{error_msg}\n")
         print(f"Erro em /api/caixa/grafico:\n{error_msg}")
-        return jsonify({"sucesso": False, "erro": str(e), "traceback": error_msg}), 200
+        return jsonify({"sucesso": False, "erro": str(e)}), 200
 
 @app.route("/api/caixa/balanco")
 @admin_required
