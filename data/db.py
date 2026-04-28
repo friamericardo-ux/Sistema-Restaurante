@@ -36,9 +36,9 @@ class _MySQLCursor:
         sql = sql.replace("DATETIME('now', 'localtime')", "NOW()")
         sql = sql.replace("DATETIME('now')", "NOW()")
 
-        # FINALMENTE: Escapa % e transforma placeholders
+        # FINALMENTE: Escapa % (exceto se for %s) e transforma placeholders
         # Importante: deve ser a última etapa
-        sql = sql.replace('%', '%%')
+        sql = re.sub(r'%(?!s)', '%%', sql)
         sql = sql.replace('?', '%s')
         
         return self._cursor.execute(sql, params or ())
