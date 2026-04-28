@@ -1374,6 +1374,10 @@ def caixa_movimentacoes():
         sessao_inicio = _get_sessao_inicio(cursor, rid)
         movimentacoes = []
 
+        def get_val(row, key, idx):
+            if isinstance(row, dict): return row.get(key)
+            return row[idx] if row and len(row) > idx else None
+
         # Pedidos delivery entregues nesta sessão
         cursor.execute("""
             SELECT id, cliente_nome, total, criado_em
@@ -1386,9 +1390,9 @@ def caixa_movimentacoes():
         for row in cursor.fetchall():
             movimentacoes.append({
                 "tipo": "delivery",
-                "descricao": f"Pedido #{row['id']} — {row['cliente_nome']}",
-                "valor": row["total"],
-                "hora": row["criado_em"]
+                "descricao": f"Pedido #{get_val(row, 'id', 0)} — {get_val(row, 'cliente_nome', 1)}",
+                "valor": get_val(row, 'total', 2),
+                "hora": get_val(row, 'criado_em', 3)
             })
 
         # Mesas fechadas nesta sessão
@@ -1402,9 +1406,9 @@ def caixa_movimentacoes():
         for row in cursor.fetchall():
             movimentacoes.append({
                 "tipo": "mesa",
-                "descricao": f"Mesa {row['mesa_numero']}",
-                "valor": row["total"],
-                "hora": row["fechado_em"]
+                "descricao": f"Mesa {get_val(row, 'mesa_numero', 1)}",
+                "valor": get_val(row, 'total', 2),
+                "hora": get_val(row, 'fechado_em', 3)
             })
 
         # Ordenar por hora (mais recente primeiro)
@@ -1413,8 +1417,12 @@ def caixa_movimentacoes():
         db.close()
         return jsonify({"sucesso": True, "movimentacoes": movimentacoes})
     except Exception as e:
-        print(f"Erro em /api/caixa/movimentacoes: {e}")
-        return jsonify({"sucesso": False, "erro": str(e)}), 500
+        import traceback
+        error_msg = traceback.format_exc()
+        with open("caixa_error.log", "a", encoding="utf-8") as f:
+            f.write(f"\n--- [MOVIMENTACOES] {datetime.now()} ---\n{error_msg}\n")
+        print(f"Erro em /api/caixa/movimentacoes:\n{error_msg}")
+        return jsonify({"sucesso": False, "erro": str(e), "traceback": error_msg}), 200
 
 
 @app.route("/api/caixa/fechar", methods=["POST"])
@@ -1570,23 +1578,38 @@ def caixa_historico():
 
 
 @app.route("/api/caixa/abrir", methods=["POST"])
-@csrf.exempt
 @admin_required
 def abrir_caixa():
     """Reabre o caixa removendo o registro de fechamento e inicia nova sessão"""
-    rid = session.get('restaurante_id', 1)
-    db = get_connection()
-    cursor = db.cursor()
-    cursor.execute(f"""
-        DELETE FROM caixa_fechamentos
-        WHERE {"DATE(criado_em) = CURDATE()" if is_mysql() else "DATE(criado_em, 'localtime') = DATE('now', 'localtime')"}
-        AND restaurante_id = {ph}
-    """, (rid,))
-    # Registrar início da nova sessão
-    cursor.execute("INSERT INTO caixa_sessoes (aberto_em, restaurante_id) VALUES (CURRENT_TIMESTAMP, ?)", (rid,))
-    db.commit()
-    db.close()
-    return jsonify({"sucesso": True})
+    try:
+        rid = session.get('restaurante_id', 1)
+        db = get_connection()
+        cursor = db.cursor()
+        
+        # SQL compatível
+        if is_mysql():
+            cursor.execute("""
+                DELETE FROM caixa_fechamentos
+                WHERE DATE(fechado_em) = CURDATE()
+                AND restaurante_id = %s
+            """, (rid,))
+            # Registrar início da nova sessão
+            cursor.execute("INSERT INTO caixa_sessoes (aberto_em, restaurante_id) VALUES (NOW(), %s)", (rid,))
+        else:
+            cursor.execute("""
+                DELETE FROM caixa_fechamentos
+                WHERE DATE(fechado_em, 'localtime') = DATE('now', 'localtime')
+                AND restaurante_id = ?
+            """, (rid,))
+            # Registrar início da nova sessão
+            cursor.execute("INSERT INTO caixa_sessoes (aberto_em, restaurante_id) VALUES (CURRENT_TIMESTAMP, ?)", (rid,))
+            
+        db.commit()
+        db.close()
+        return jsonify({"sucesso": True})
+    except Exception as e:
+        print(f"Erro em abrir_caixa: {e}")
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
 
 
 @app.route("/api/caixa/grafico")
@@ -1606,6 +1629,10 @@ def caixa_grafico():
         sessao_inicio = _get_sessao_inicio(cursor, rid)
         horas = {h: 0.0 for h in range(24)}
 
+        def get_val(row, key, idx):
+            if isinstance(row, dict): return row.get(key)
+            return row[idx] if row and len(row) > idx else None
+
         # Delivery por hora
         cursor.execute("""
             SELECT CAST(strftime('%H', criado_em, 'localtime') AS INTEGER) as hora,
@@ -1617,7 +1644,9 @@ def caixa_grafico():
             GROUP BY hora
         """, (sessao_inicio, rid))
         for row in cursor.fetchall():
-            horas[row["hora"]] += float(row["total"])
+            h = get_val(row, 'hora', 0)
+            if h is not None:
+                horas[int(h)] += float(get_val(row, 'total', 1))
 
         # Mesas por hora
         cursor.execute("""
@@ -1629,7 +1658,9 @@ def caixa_grafico():
             GROUP BY hora
         """, (sessao_inicio, rid))
         for row in cursor.fetchall():
-            horas[row["hora"]] += float(row["total"])
+            h = get_val(row, 'hora', 0)
+            if h is not None:
+                horas[int(h)] += float(get_val(row, 'total', 1))
 
         db.close()
         return jsonify({
@@ -1637,8 +1668,12 @@ def caixa_grafico():
             "horas": [{"hora": h, "total": horas[h]} for h in sorted(horas.keys())]
         })
     except Exception as e:
-        print(f"Erro em /api/caixa/grafico: {e}")
-        return jsonify({"sucesso": False, "erro": str(e)}), 500
+        import traceback
+        error_msg = traceback.format_exc()
+        with open("caixa_error.log", "a", encoding="utf-8") as f:
+            f.write(f"\n--- [GRAFICO] {datetime.now()} ---\n{error_msg}\n")
+        print(f"Erro em /api/caixa/grafico:\n{error_msg}")
+        return jsonify({"sucesso": False, "erro": str(e), "traceback": error_msg}), 200
 
 @app.route("/api/caixa/balanco")
 @admin_required
