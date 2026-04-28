@@ -85,7 +85,7 @@ app.config.update(
     PERMANENT_SESSION_LIFETIME=28800
 )
 # Inicia o banco usando o db.py
-#init_db()
+init_db()
 
 def _garantir_fechamentos_caixa():
     db = get_connection()
@@ -993,7 +993,7 @@ def listar_pedidos_delivery():
     pedidos = []
     for row in cursor.fetchall():
         p = dict(row)
-        p["itens"] = json.loads(p["itens"])
+        p["itens"] = json.loads(p["itens"]) if p.get("itens") else []
         pedidos.append(p)
 
     db.close()

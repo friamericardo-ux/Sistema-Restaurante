@@ -117,6 +117,9 @@ def init_db():
         _init_mysql()
     else:
         _init_sqlite()
+    
+    # Roda as migrations após garantir que as tabelas base existem
+    _run_migrations()
 
 
 def _init_sqlite():
@@ -421,4 +424,4 @@ def _run_migrations():
     from data.migrations import run_migrations
     run_migrations(get_connection, is_mysql())
 
-_run_migrations()
+# _run_migrations()
