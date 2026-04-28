@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 import os
 import logging
 import sqlite3
@@ -1348,8 +1349,12 @@ def caixa_resumo():
             "caixa_fechado": False
         })
     except Exception as e:
-        print(f"Erro em /api/caixa/resumo: {e}")
-        return jsonify({"sucesso": False, "erro": str(e)}), 500
+        import traceback
+        error_msg = traceback.format_exc()
+        with open("caixa_error.log", "a", encoding="utf-8") as f:
+            f.write(f"\n--- {datetime.now()} ---\n{error_msg}\n")
+        print(f"Erro em /api/caixa/resumo:\n{error_msg}")
+        return jsonify({"sucesso": False, "erro": str(e), "traceback": error_msg}), 200
 
 
 @app.route("/api/caixa/movimentacoes")

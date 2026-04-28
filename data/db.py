@@ -22,9 +22,9 @@ class _MySQLCursor:
         sql = sql.replace('?', '%s')
         
         # Traduz funções de data SQLite -> MySQL
-        # DATE('now', 'localtime') -> CURDATE()
-        sql = sql.replace("DATE('now', 'localtime')", "CURDATE()")
-        sql = sql.replace("DATE('now')", "CURDATE()")
+        # DATE('now', 'localtime') -> DATE_FORMAT(NOW(), '%Y-%m-%d')
+        sql = sql.replace("DATE('now', 'localtime')", "DATE_FORMAT(NOW(), '%Y-%m-%d')")
+        sql = sql.replace("DATE('now')", "DATE_FORMAT(NOW(), '%Y-%m-%d')")
         
         # DATE(coluna, 'localtime') -> DATE(coluna)
         sql = re.sub(r"DATE\(([^,)]+),\s*'localtime'\)", r"DATE(\1)", sql)
