@@ -1340,8 +1340,6 @@ def caixa_resumo():
         qtd_delivery = int(delivery['qtd'] if isinstance(delivery, dict) else (delivery[0] if delivery else 0))
         qtd_mesas = int(mesas['qtd'] if isinstance(mesas, dict) else (mesas[0] if mesas else 0))
 
-        db.close()
-
         return jsonify({
             "sucesso": True,
             "total_delivery": total_delivery,
@@ -1419,7 +1417,6 @@ def caixa_movimentacoes():
         # Ordenar por hora (mais recente primeiro)
         movimentacoes.sort(key=lambda x: x["hora"] or "", reverse=True)
 
-        db.close()
         return jsonify({"sucesso": True, "movimentacoes": movimentacoes})
     except Exception as e:
         import traceback
@@ -1667,7 +1664,6 @@ def caixa_grafico():
             if h is not None:
                 horas[int(h)] += float(get_val(row, 'total', 1))
 
-        db.close()
         return jsonify({
             "sucesso": True,
             "horas": [{"hora": h, "total": horas[h]} for h in sorted(horas.keys())]

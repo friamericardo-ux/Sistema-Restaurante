@@ -92,7 +92,10 @@ class _MySQLConnection:
         self._conn.rollback()
 
     def close(self):
-        self._conn.close()
+        try:
+            self._conn.close()
+        except:
+            pass
 
     def __enter__(self):
         return self
