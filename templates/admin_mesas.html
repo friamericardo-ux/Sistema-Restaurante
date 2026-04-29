@@ -170,9 +170,11 @@ MODAL — Consumo da Mesa
 
             {# ── Ações ─────────────────────────────────── #}
             <div class="modal-acoes">
+                {% if session.get('role') in ('admin', 'caixa', 'superadmin', 'super_admin') %}
                 <button class="modal-btn-encerrar" onclick="confirmarFechamento(_mesaAtual)">
                     🔒 Encerrar Mesa
                 </button>
+                {% endif %}
             </div>
 
         </div><!-- /modal-body-new -->
