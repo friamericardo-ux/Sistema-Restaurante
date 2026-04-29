@@ -264,7 +264,7 @@ def listar_mesas_com_itens(restaurante_id):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute(f"SELECT id, numero, total FROM mesas WHERE restaurante_id = {ph}", (restaurante_id,))
+        cursor.execute(f"SELECT id, numero, total, status FROM mesas WHERE restaurante_id = {ph}", (restaurante_id,))
         mesas_db = cursor.fetchall()
 
         mesas = []
@@ -288,6 +288,7 @@ def listar_mesas_com_itens(restaurante_id):
                 "id": mesa[0],
                 "numero": mesa[1],
                 "total": float(mesa[2]),
+                "status": mesa[3] or "livre",
                 "itens": itens
             })
         return mesas
@@ -304,8 +305,8 @@ def abrir_mesa(numero, restaurante_id):
             return False, "Mesa já está aberta!"
         
         cursor.execute(
-            f"INSERT INTO mesas (numero, total, restaurante_id) VALUES ({ph}, {ph}, {ph})",
-            (numero, 0.0, restaurante_id)
+            f"INSERT INTO mesas (numero, total, status, restaurante_id) VALUES ({ph}, {ph}, {ph}, {ph})",
+            (numero, 0.0, "aberta", restaurante_id)
         )
         conn.commit()
         return True, None
@@ -332,6 +333,10 @@ def adicionar_item_mesa(mesa_numero, nome, preco, quantidade, observacao, restau
         cursor.execute(f"SELECT SUM(preco * quantidade) FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
         total = cursor.fetchone()[0] or 0
         cursor.execute(f"UPDATE mesas SET total = {ph} WHERE id = {ph} AND restaurante_id = {ph}", (total, mesa_id, restaurante_id))
+        
+        # Atualiza status para 'ocupada' se tem consumo e não está com conta pedida
+        if total and float(total) > 0:
+            cursor.execute(f"UPDATE mesas SET status = 'ocupada' WHERE id = {ph} AND restaurante_id = {ph} AND status != 'conta_pedida'", (mesa_id, restaurante_id))
         
         conn.commit()
         return True, None
@@ -391,6 +396,76 @@ def fechar_mesa_com_historico(mesa_numero, restaurante_id):
         
         conn.commit()
         return True, None
+    finally:
+        conn.close()
+
+def get_mesa(mesa_id, restaurante_id):
+    ph = "%s" if is_mysql() else "?"
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f"SELECT id, numero, total, status FROM mesas WHERE id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        return {
+            "id": row[0],
+            "numero": row[1],
+            "total": float(row[2]),
+            "status": row[3] or "livre"
+        }
+    finally:
+        conn.close()
+
+def pedir_conta_mesa(mesa_id, restaurante_id):
+    ph = "%s" if is_mysql() else "?"
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f"SELECT id, status FROM mesas WHERE id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
+        mesa = cursor.fetchone()
+        if not mesa:
+            return False, "Mesa não encontrada!"
+        
+        cursor.execute(f"UPDATE mesas SET status = {ph} WHERE id = {ph} AND restaurante_id = {ph}", ("conta_pedida", mesa_id, restaurante_id))
+        conn.commit()
+        return True, None
+    except Exception as e:
+        conn.rollback()
+        return False, str(e)
+    finally:
+        conn.close()
+
+def fechar_mesa(mesa_id, restaurante_id):
+    import json
+    ph = "%s" if is_mysql() else "?"
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f"SELECT id, numero, total FROM mesas WHERE id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
+        mesa = cursor.fetchone()
+        if not mesa:
+            return False, "Mesa não encontrada!"
+        
+        mesa_id_val = mesa[0]
+        cursor.execute(f"SELECT nome, preco, quantidade, observacao FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa_id_val, restaurante_id))
+        itens_db = cursor.fetchall()
+        itens_list = [{"nome": i[0], "preco": float(i[1]), "quantidade": i[2], "observacao": i[3]} for i in itens_db]
+        itens_json = json.dumps(itens_list, ensure_ascii=False)
+
+        cursor.execute(f"""
+            INSERT INTO historico_mesas (mesa_numero, total, itens, restaurante_id) 
+            VALUES ({ph}, {ph}, {ph}, {ph})
+        """, (mesa[1], float(mesa[2]), itens_json, restaurante_id))
+
+        cursor.execute(f"DELETE FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa_id_val, restaurante_id))
+        cursor.execute(f"DELETE FROM mesas WHERE id = {ph} AND restaurante_id = {ph}", (mesa_id_val, restaurante_id))
+        
+        conn.commit()
+        return True, None
+    except Exception as e:
+        conn.rollback()
+        return False, str(e)
     finally:
         conn.close()
 

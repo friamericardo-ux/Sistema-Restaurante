@@ -10,7 +10,8 @@ from repository import (
     listar_categorias_produtos, obter_resumo_dashboard,
     listar_mesas_com_itens, abrir_mesa as repo_abrir_mesa,
     adicionar_item_mesa, remover_item_mesa,
-    fechar_mesa_com_historico, criar_pedido_delivery
+    fechar_mesa_com_historico, criar_pedido_delivery,
+    get_mesa, pedir_conta_mesa, fechar_mesa as repo_fechar_mesa
 )
 import urllib.parse
 from services.whatsapp_service import WhatsAppService
@@ -611,6 +612,41 @@ def force_close_mesa(mesa_id):
     except Exception as e:
         app.logger.error(f"Erro no force_close_mesa: {e}")
         return jsonify({"sucesso": False, "erro": str(e)}), 500
+
+@app.route("/api/mesa/pedir-conta/<int:mesa_id>", methods=["POST"])
+@csrf.exempt
+@login_required
+def pedir_conta(mesa_id):
+    """Pedir conta da mesa - qualquer perfil autenticado"""
+    try:
+        rid = session.get('restaurante_id', 1)
+        mesa = get_mesa(mesa_id, rid)
+        if not mesa:
+            return jsonify({"sucesso": False, "erro": "Mesa não encontrada"}), 404
+        sucesso, erro = pedir_conta_mesa(mesa_id, rid)
+        return jsonify({"sucesso": sucesso, "erro": erro})
+    except Exception as e:
+        app.logger.error(f"Erro no pedir_conta: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro ao pedir conta"}), 500
+
+@app.route("/api/mesa/fechar/<int:mesa_id>", methods=["POST"])
+@csrf.exempt
+@login_required
+def route_fechar_mesa_id(mesa_id):
+    """Fechar mesa - somente admin, caixa ou superadmin"""
+    try:
+        role = session.get('role')
+        if role not in ('admin', 'caixa', 'superadmin', 'super_admin'):
+            return jsonify({"sucesso": False, "erro": "Permissão negada"}), 403
+        rid = session.get('restaurante_id', 1)
+        mesa = get_mesa(mesa_id, rid)
+        if not mesa:
+            return jsonify({"sucesso": False, "erro": "Mesa não encontrada"}), 404
+        sucesso, erro = repo_fechar_mesa(mesa_id, rid)
+        return jsonify({"sucesso": sucesso, "erro": erro})
+    except Exception as e:
+        app.logger.error(f"Erro no fechar_mesa_id: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro ao fechar mesa"}), 500
 
 
 # ========================

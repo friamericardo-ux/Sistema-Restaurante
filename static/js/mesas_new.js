@@ -14,9 +14,9 @@
 'use strict';
 
 /* ── Estado ────────────────────────────────────────────── */
-let _mesaAtual       = null;   // número da mesa aberta no modal
+let _mesaAtual = null;   // número da mesa aberta no modal
 let _itemSelecionado = null;   // produto pendente de adicionais
-let _intervalId      = null;   // ID do único setInterval de polling
+let _intervalId = null;   // ID do único setInterval de polling
 
 /* ── Helpers ────────────────────────────────────────────── */
 function escapeHtml(str) {
@@ -32,17 +32,18 @@ function fmtBRL(valor) {
 /* ── Determina o status visual de uma mesa ─────────────── */
 function getStatusMesa(mesa) {
     if (!mesa) return 'livre';
-    if (mesa.pediu_conta) return 'conta';
-    if (parseFloat(mesa.total) > 0) return 'ocupada';
-    return 'aberta';
+    if (mesa.status === 'conta_pedida' || mesa.pediu_conta) return 'conta_pedida';
+    if (mesa.status === 'ocupada' || parseFloat(mesa.total) > 0) return 'ocupada';
+    if (mesa.status === 'aberta') return 'aberta';
+    return 'livre';
 }
 
 function getLabelStatus(status) {
     const map = {
-        livre:   'Livre',
-        aberta:  'Aberta',
+        livre: 'Livre',
+        aberta: 'Aberta',
         ocupada: 'Ocupada',
-        conta:   'Conta Pedida',
+        conta_pedida: 'Conta Pedida',
     };
     return map[status] || status;
 }
@@ -53,7 +54,7 @@ async function renderizarMesas() {
     if (!container) return;
 
     try {
-        const res  = await fetch('/api/mesas');
+        const res = await fetch('/api/mesas');
         const data = await res.json();
 
         const filtro = (document.getElementById('mesas-busca')?.value || '').trim().toLowerCase();
@@ -86,28 +87,53 @@ async function renderizarMesas() {
             return;
         }
 
-        // Ordena: ocupadas > conta > abertas
+        // Ordena: conta_pedida > ocupadas > abertas
         mesas.sort((a, b) => {
-            const order = { conta: 0, ocupada: 1, aberta: 2, livre: 3 };
+            const order = { conta_pedida: 0, ocupada: 1, aberta: 2, livre: 3 };
             return (order[getStatusMesa(a)] ?? 99) - (order[getStatusMesa(b)] ?? 99);
         });
+
+        const userRole = typeof USER_ROLE !== 'undefined' ? USER_ROLE : 'admin';
+        const podeFechar = ['admin', 'caixa', 'superadmin', 'super_admin'].includes(userRole);
+        const podePedirConta = !podeFechar;
 
         container.innerHTML = mesas.map(m => {
             const status = getStatusMesa(m);
             const qtdItens = m.itens ? m.itens.length : 0;
-            return `
-            <div class="mesa-card-new ${status}" id="mesa-card-${m.numero}"
-                 role="button" tabindex="0"
-                 aria-label="Mesa ${m.numero} — ${getLabelStatus(status)}"
-                 onclick="abrirModal('${m.numero}')"
-                 onkeydown="if(event.key==='Enter')abrirModal('${m.numero}')">
-                <div class="mesa-card-body">
-                    <div class="mesa-numero">Mesa ${escapeHtml(m.numero)}</div>
-                    <span class="mesa-status-badge ${status}">${getLabelStatus(status)}</span>
-                    <div class="mesa-itens-count">${qtdItens} item${qtdItens !== 1 ? 's' : ''}</div>
-                    <div class="mesa-total">${fmtBRL(m.total)}</div>
-                </div>
-                <div class="mesa-card-footer">
+            let botoes = '';
+
+            if (status === 'conta_pedida' && podeFechar) {
+                botoes = `
+                    <button class="btn-mesa-action ver"
+                            onclick="event.stopPropagation(); abrirModal('${m.numero}')"
+                            title="Ver consumo">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        Ver
+                    </button>
+                    <button class="btn-mesa-action fechar"
+                            onclick="event.stopPropagation(); fecharMesaPorId(${m.id})"
+                            title="Fechar Mesa">
+                        🔒 Fechar
+                    </button>`;
+            } else if (status === 'ocupada' && podePedirConta) {
+                botoes = `
+                    <button class="btn-mesa-action ver"
+                            onclick="event.stopPropagation(); abrirModal('${m.numero}')"
+                            title="Ver consumo">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        Ver
+                    </button>
+                    <button class="btn-mesa-action fechar"
+                            onclick="event.stopPropagation(); pedirContaPorId(${m.id})"
+                            title="Pedir Conta">
+                        🧾 Pedir Conta
+                    </button>`;
+            } else {
+                botoes = `
                     <button class="btn-mesa-action ver"
                             onclick="event.stopPropagation(); abrirModal('${m.numero}')"
                             title="Ver consumo">
@@ -123,7 +149,23 @@ async function renderizarMesas() {
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                         </svg>
                         Encerrar
-                    </button>
+                    </button>`;
+            }
+
+            return `
+            <div class="mesa-card-new ${status}" id="mesa-card-${m.numero}"
+                 role="button" tabindex="0"
+                 aria-label="Mesa ${m.numero} — ${getLabelStatus(status)}"
+                 onclick="abrirModal('${m.numero}')"
+                 onkeydown="if(event.key==='Enter')abrirModal('${m.numero}')">
+                <div class="mesa-card-body">
+                    <div class="mesa-numero">Mesa ${escapeHtml(m.numero)}</div>
+                    <span class="mesa-status-badge ${status}">${getLabelStatus(status)}</span>
+                    <div class="mesa-itens-count">${qtdItens} item${qtdItens !== 1 ? 's' : ''}</div>
+                    <div class="mesa-total">${fmtBRL(m.total)}</div>
+                </div>
+                <div class="mesa-card-footer">
+                    ${botoes}
                 </div>
             </div>`;
         }).join('');
@@ -136,14 +178,14 @@ async function renderizarMesas() {
 
 /* ── Atualiza os counters no top-bar ──────────────────── */
 function atualizarContadores(data) {
-    const total   = document.getElementById('contador-total');
+    const total = document.getElementById('contador-total');
     const abertas = document.getElementById('contador-abertas');
     const ocupadas = document.getElementById('contador-ocupadas');
     if (!total) return;
 
     const mesas = data.mesas || [];
-    total.textContent   = mesas.length;
-    if (abertas)  abertas.textContent  = mesas.filter(m => getStatusMesa(m) === 'aberta').length;
+    total.textContent = mesas.length;
+    if (abertas) abertas.textContent = mesas.filter(m => getStatusMesa(m) === 'aberta').length;
     if (ocupadas) ocupadas.textContent = mesas.filter(m => getStatusMesa(m) === 'ocupada').length;
 }
 
@@ -199,6 +241,38 @@ function fecharMesa(numMesa) {
         });
 }
 
+function pedirContaPorId(mesaId) {
+    if (!confirm('Pedir a conta desta mesa?')) return;
+    fetch(`/api/mesa/pedir-conta/${mesaId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (data.sucesso) {
+                renderizarMesas();
+            } else {
+                alert('Erro: ' + (data.erro || 'Não foi possível pedir a conta.'));
+            }
+        });
+}
+
+function fecharMesaPorId(mesaId) {
+    if (!confirm('Fechar esta mesa? Todos os itens serão apagados.')) return;
+    fetch(`/api/mesa/fechar/${mesaId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (data.sucesso) {
+                renderizarMesas();
+            } else {
+                alert('Erro: ' + (data.erro || 'Não foi possível fechar a mesa.'));
+            }
+        });
+}
+
 /* ═══════════════════════════════════════════════════════
    MODAL — consumo da mesa
 ═══════════════════════════════════════════════════════ */
@@ -243,7 +317,7 @@ async function montarCardapioModal() {
     if (!grid) return;
     grid.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Carregando...</span>';
     try {
-        const res  = await fetch('/api/cardapio');
+        const res = await fetch('/api/cardapio');
         const data = await res.json();
         grid.innerHTML = '';
         if (!data.sucesso || !data.produtos.length) {
@@ -253,8 +327,8 @@ async function montarCardapioModal() {
         data.produtos.forEach(p => {
             const btn = document.createElement('button');
             btn.className = 'modal-produto-btn';
-            btn.dataset.nome      = p.nome;
-            btn.dataset.preco     = p.preco;
+            btn.dataset.nome = p.nome;
+            btn.dataset.preco = p.preco;
             btn.dataset.categoria = p.categoria || '';
             btn.dataset.descricao = p.descricao || '';
             btn.innerHTML = `
@@ -282,7 +356,7 @@ async function selecionarProduto(produto) {
 
     try {
         const url = '/api/adicionais' + (produto.categoria ? `?categoria=${encodeURIComponent(produto.categoria)}` : '');
-        const res  = await fetch(url);
+        const res = await fetch(url);
         const data = await res.json();
         lista.innerHTML = '';
         if (data.sucesso && data.adicionais.length > 0) {
@@ -291,7 +365,7 @@ async function selecionarProduto(produto) {
                 label.className = 'modal-adicional-chip';
                 const cb = document.createElement('input');
                 cb.type = 'checkbox';
-                cb.dataset.nome  = a.nome;
+                cb.dataset.nome = a.nome;
                 cb.dataset.preco = a.preco;
                 label.appendChild(cb);
                 label.appendChild(document.createTextNode(
@@ -314,11 +388,11 @@ function confirmarItemComAdicionais() {
     const adicionais = Array.from(checks).map(cb => ({ nome: cb.dataset.nome, preco: parseFloat(cb.dataset.preco) }));
 
     let nomeCompleto = _itemSelecionado.nome;
-    let precoTotal   = _itemSelecionado.preco;
+    let precoTotal = _itemSelecionado.preco;
 
     if (adicionais.length > 0) {
         nomeCompleto += ' (+ ' + adicionais.map(a => a.nome).join(', ') + ')';
-        precoTotal   += adicionais.reduce((s, a) => s + a.preco, 0);
+        precoTotal += adicionais.reduce((s, a) => s + a.preco, 0);
     }
 
     cancelarAdicionais();
@@ -335,9 +409,9 @@ function cancelarAdicionais() {
 
 /* ── Adicionar item manualmente ────────────────────────── */
 function adicionarItemManual() {
-    const nome  = (document.getElementById('modal-item-nome')?.value || '').trim();
+    const nome = (document.getElementById('modal-item-nome')?.value || '').trim();
     const preco = parseFloat(document.getElementById('modal-item-preco')?.value || '0');
-    const qtd   = parseInt(document.getElementById('modal-item-qtd')?.value || '1') || 1;
+    const qtd = parseInt(document.getElementById('modal-item-qtd')?.value || '1') || 1;
 
     if (!nome || isNaN(preco) || preco <= 0) {
         alert('Preencha o nome e o preço corretamente!');
@@ -345,9 +419,9 @@ function adicionarItemManual() {
     }
 
     enviarItem(nome, preco, qtd, () => {
-        document.getElementById('modal-item-nome').value  = '';
+        document.getElementById('modal-item-nome').value = '';
         document.getElementById('modal-item-preco').value = '';
-        document.getElementById('modal-item-qtd').value   = '1';
+        document.getElementById('modal-item-qtd').value = '1';
     });
 }
 
@@ -372,7 +446,7 @@ function enviarItem(nome, preco, quantidade, onSucesso) {
 /* ── Atualiza lista de itens no modal ──────────────────── */
 async function atualizarConsumoModal(numMesa) {
     try {
-        const res  = await fetch('/api/mesas');
+        const res = await fetch('/api/mesas');
         const data = await res.json();
         const mesa = (data.mesas || []).find(m => String(m.numero) === String(numMesa));
 
