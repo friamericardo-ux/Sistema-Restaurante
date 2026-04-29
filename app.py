@@ -1106,7 +1106,7 @@ def cancelar_pedido(id):
 @login_required
 def admin_usuarios():
     """Página de gerenciamento de usuários"""
-    if session.get('role') not in ('admin', 'superadmin'):
+    if session.get('role') not in ('admin', 'superadmin', 'super_admin'):
         return redirect(url_for('dashboard'))
     return render_template("admin_usuarios.html")
 
@@ -1115,7 +1115,7 @@ def admin_usuarios():
 def listar_usuarios_route():
     """Lista usuários do restaurante"""
     try:
-        if session.get('role') not in ('admin', 'superadmin'):
+        if session.get('role') not in ('admin', 'superadmin', 'super_admin'):
             return jsonify({"sucesso": False, "erro": "Permissão negada"}), 403
         from repository import listar_usuarios
         restaurante_id = session.get('restaurante_id', 1)
