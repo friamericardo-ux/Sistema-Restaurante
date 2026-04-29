@@ -377,6 +377,17 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# NOVO — decorator para rotas de caixa (admin + caixa + super)
+def caixa_or_admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login_web'))
+        if session.get('role') not in ('admin', 'superadmin', 'super_admin', 'caixa'):
+            return redirect(url_for('mesas'))
+        return f(*args, **kwargs)
+    return decorated
+
 # NOVO — decorator exclusivo do superadmin
 def superadmin_required(f):
     @wraps(f)
@@ -491,8 +502,8 @@ def index():
         restaurante_slug = row[0]
     if role == 'admin':
         return render_template('dashboard.html', restaurante_slug=restaurante_slug)
-    elif role == 'atendente':
-        return render_template('atendente.html')
+    elif role in ('atendente', 'garcom'):
+        return redirect(url_for('mesas'))
     elif role == 'caixa':
         return render_template('caixa.html')
     elif role in ('superadmin', 'super_admin'):
@@ -1315,14 +1326,14 @@ def remover_usuario(user_id):
 # ========== MÓDULO DE CAIXA ==========
 
 @app.route("/caixa")
-@admin_required
+@caixa_or_admin_required
 def caixa():
     """Página do módulo de caixa"""
     return render_template("caixa.html")
 
 
 @app.route("/api/caixa/resumo")
-@admin_required
+@caixa_or_admin_required
 def caixa_resumo():
     """Retorna resumo financeiro da sessão atual do caixa"""
     try:
@@ -1416,7 +1427,7 @@ def caixa_resumo():
 
 
 @app.route("/api/caixa/movimentacoes")
-@admin_required
+@caixa_or_admin_required
 def caixa_movimentacoes():
     """Retorna lista de movimentações da sessão atual (delivery + mesas)"""
     try:
@@ -1483,7 +1494,7 @@ def caixa_movimentacoes():
 
 
 @app.route("/api/caixa/fechar", methods=["POST"])
-@admin_required
+@caixa_or_admin_required
 def fechar_caixa():
     """Fecha o caixa do dia e salva resumo"""
     try:
@@ -1574,7 +1585,7 @@ def fechar_caixa():
 
 
 @app.route("/api/caixa/historico")
-@admin_required
+@caixa_or_admin_required
 def caixa_historico():
     """Retorna fechamentos da tabela fechamentos_caixa filtrados por mês/ano"""
     try:
@@ -1635,7 +1646,7 @@ def caixa_historico():
 
 
 @app.route("/api/caixa/abrir", methods=["POST"])
-@admin_required
+@caixa_or_admin_required
 def abrir_caixa():
     """Reabre o caixa removendo o registro de fechamento e inicia nova sessão"""
     try:
@@ -1670,7 +1681,7 @@ def abrir_caixa():
 
 
 @app.route("/api/caixa/grafico")
-@admin_required
+@caixa_or_admin_required
 def caixa_grafico():
     """Retorna faturamento agrupado por hora para gráfico"""
     try:
@@ -1732,7 +1743,7 @@ def caixa_grafico():
         return jsonify({"sucesso": False, "erro": str(e)}), 200
 
 @app.route("/api/caixa/balanco")
-@admin_required
+@caixa_or_admin_required
 def caixa_balanco():
     """Retorna balanço mensal agrupado por dia"""
     try:

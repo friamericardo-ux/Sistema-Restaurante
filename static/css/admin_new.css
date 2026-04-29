@@ -396,36 +396,6 @@ body {
     color: white;
 }
 
-/* ══ RESPONSIVIDADE ═══════════════════════════════════════════════════ */
-@media (max-width: 1024px) {
-    .sidebar {
-        width: var(--sidebar-collapsed);
-    }
-    .logo-text, .nav-label, .user-info, .user-role {
-        display: none;
-    }
-    .content {
-        margin-left: var(--sidebar-collapsed);
-        width: calc(100% - var(--sidebar-collapsed));
-    }
-    .nav-item {
-        justify-content: center;
-        padding: 12px;
-    }
-    .nav-item span {
-        display: none;
-    }
-}
-
-@media (max-width: 768px) {
-    .kanban-container {
-        grid-template-columns: repeat(1, 1fr);
-    }
-    .content {
-        padding: 20px;
-    }
-}
-
 /* ══ LINK DO CARDÁPIO PÚBLICO ══════════════════════════════════════════ */
 /* Diferencia visualmente sem quebrar o padrão da sidebar */
 .nav-item-cardapio-publico {
@@ -568,4 +538,248 @@ body {
     background: rgba(239, 68, 68, 0.1);
     color: #B91C1C;
     border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ══ MOBILE SIDEBAR OVERLAY ═══════════════════════════════════════ */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.sidebar-overlay.show {
+    opacity: 1;
+}
+
+/* ══ HAMBURGER BUTTON (mobile only) ═════════════════════════════ */
+.hamburger-btn {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 998;
+    background: var(--sidebar-bg);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px;
+    cursor: pointer;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: background 0.2s;
+}
+.hamburger-btn:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* ══ SIDEBAR CLOSE (mobile only) ════════════════════════════════ */
+.sidebar-close-mobile {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--sidebar-text);
+    cursor: pointer;
+    padding: 4px;
+    margin-left: auto;
+}
+.sidebar-close-mobile:hover {
+    color: #fff;
+}
+
+/* ══ MOBILE BOTTOM NAV (atendente/garcom) ═══════════════════════ */
+.mobile-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--sidebar-bg);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    z-index: 990;
+    padding: 8px 12px;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+.mobile-bottom-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    font-size: 0.65rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.mobile-bottom-item svg {
+    width: 22px;
+    height: 22px;
+    opacity: 0.7;
+}
+.mobile-bottom-item.active {
+    color: var(--primary);
+}
+.mobile-bottom-item.active svg {
+    opacity: 1;
+    color: var(--primary);
+}
+.mobile-bottom-item:hover {
+    color: #fff;
+}
+.mobile-bottom-logout {
+    opacity: 0.5;
+}
+.mobile-bottom-logout:hover {
+    opacity: 1;
+    color: var(--danger);
+}
+
+/* ══ RESPONSIVIDADE ════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+    .sidebar {
+        width: var(--sidebar-collapsed);
+    }
+    .logo-text, .nav-label, .user-info {
+        display: none;
+    }
+    .content {
+        margin-left: var(--sidebar-collapsed);
+        width: calc(100% - var(--sidebar-collapsed));
+    }
+    .nav-item {
+        justify-content: center;
+        padding: 12px;
+    }
+    .nav-item span {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .hamburger-btn {
+        display: flex;
+    }
+
+    .sidebar-overlay {
+        display: block;
+        pointer-events: none;
+    }
+    .sidebar-overlay.show {
+        pointer-events: auto;
+    }
+
+    .sidebar {
+        width: 280px !important;
+        left: -280px;
+        transition: left 0.3s ease;
+        border-right: 1px solid rgba(255,255,255,0.08);
+    }
+    .sidebar.open {
+        left: 0;
+    }
+
+    .sidebar-close-mobile {
+        display: flex;
+    }
+
+    .logo-text, .nav-label, .user-info {
+        display: flex !important;
+    }
+    .nav-item {
+        justify-content: flex-start !important;
+        padding: 10px 14px !important;
+    }
+    .nav-item span {
+        display: inline !important;
+    }
+
+    .content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 20px 16px;
+        padding-top: 70px;
+    }
+
+    body.sidebar-open {
+        overflow: hidden;
+    }
+
+    .mobile-bottom-nav {
+        display: flex;
+    }
+
+    .top-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .page-title h1 {
+        font-size: 1.2rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .kanban-container {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .mesas-toolbar {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .mesas-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+        gap: 10px !important;
+    }
+
+    .mesas-search {
+        width: 100%;
+    }
+
+    .mesas-legenda {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mesas-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
+        gap: 8px !important;
+    }
+
+    .modal-new {
+        width: 95%;
+        max-height: 90vh;
+    }
+
+    .modal-manual-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .page-title h1 {
+        font-size: 1rem;
+    }
+
+    .content {
+        padding: 16px 12px;
+        padding-top: 70px;
+    }
 }
