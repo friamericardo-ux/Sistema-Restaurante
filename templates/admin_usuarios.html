@@ -10,6 +10,14 @@
 
 {% block content %}
 
+{% if erro %}
+<div class="alert alert-error">{{ erro }}</div>
+{% endif %}
+
+{% if sucesso %}
+<div class="alert alert-success">{{ sucesso }}</div>
+{% endif %}
+
 <div style="display: grid; grid-template-columns: 1fr 350px; gap: 24px; max-width: 1200px;">
 
     <div>
@@ -23,12 +31,35 @@
                         <tr>
                             <th>Usuário</th>
                             <th>Função</th>
-                            <th>Status</th>
-                            <th style="width: 100px;">Ações</th>
+                            <th>Ações</th>
                         </tr>
                     </thead>
-                    <tbody id="usuarios-tbody">
-                        <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Carregando...</td></tr>
+                    <tbody>
+                        {% if usuarios %}
+                            {% for u in usuarios %}
+                            <tr>
+                                <td>{{ u[1] }}</td>
+                                <td>
+                                    {% if u[2] == 'admin' %}Admin
+                                    {% elif u[2] == 'garcom' %}Garçom
+                                    {% elif u[2] == 'atendente' %}Atendente
+                                    {% elif u[2] == 'caixa' %}Caixa
+                                    {% else %}{{ u[2] }}{% endif %}
+                                </td>
+                                <td>
+                                    {% if u[0] != session.user_id %}
+                                    <form action="/admin/usuarios/remover/{{ u[0] }}" method="POST" style="display:inline;" onsubmit="return confirm('Remover este usuário?');">
+                                        <button type="submit" class="btn btn-sm btn-danger">Remover</button>
+                                    </form>
+                                    {% else %}
+                                    <span style="color: var(--text-muted); font-size: 0.8rem;">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                        <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Nenhum usuário encontrado.</td></tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
@@ -41,21 +72,24 @@
                 <h2>Novo Usuário</h2>
             </div>
             <div class="card-body">
-                <form id="form-novo-usuario">
+                <form method="POST" action="/admin/usuarios">
                     <div class="form-group">
-                        <label for="novo-username">Usuário</label>
-                        <input type="text" id="novo-username" name="username" required placeholder="Digite o usuário">
+                        <label for="username">Usuário</label>
+                        <input type="text" id="username" name="username" required placeholder="Digite o usuário">
                     </div>
                     <div class="form-group">
-                        <label for="nova-senha">Senha</label>
-                        <input type="password" id="nova-senha" name="password" required placeholder="Digite a senha">
+                        <label for="password">Senha</label>
+                        <input type="password" id="password" name="password" required placeholder="Digite a senha">
                     </div>
                     <div class="form-group">
-                        <label for="novo-role">Função</label>
-                        <select id="novo-role" name="role" required>
-                            <option value="">Selecione...</option>
-                            <option value="garcom">Garçom</option>
+                        <label for="confirmar">Confirmar Senha</label>
+                        <input type="password" id="confirmar" name="confirmar" required placeholder="Confirme a senha">
+                    </div>
+                    <div class="form-group">
+                        <label for="role">Função</label>
+                        <select id="role" name="role" required>
                             <option value="atendente">Atendente</option>
+                            <option value="garcom">Garçom</option>
                             <option value="caixa">Caixa</option>
                         </select>
                     </div>
@@ -69,102 +103,4 @@
 
 </div>
 
-{% endblock %}
-
-{% block extra_js %}
-<script>
-(async function() {
-    async function carregarUsuarios() {
-        try {
-            const resp = await fetch('/api/usuarios/listar');
-            const data = await resp.json();
-            const tbody = document.getElementById('usuarios-tbody');
-            
-            if (!data.sucesso || !data.usuarios || data.usuarios.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Nenhum usuário encontrado.</td></tr>';
-                return;
-            }
-            
-            const currentUserId = {{ session.user_id | default(0) }};
-            
-            tbody.innerHTML = data.usuarios.map(u => {
-                const labelRole = { garcom: 'Garçom', atendente: 'Atendente', caixa: 'Caixa' };
-                const labelStatus = u.ativo ? '<span style="color: #10B981;">Ativo</span>' : '<span style="color: #EF4444;">Inativo</span>';
-                const podeDesativar = u.id !== currentUserId && u.ativo;
-                
-                return `<tr>
-                    <td>${escapeHtml(u.username)}</td>
-                    <td>${labelRole[u.role] || u.role}</td>
-                    <td>${labelStatus}</td>
-                    <td>
-                        ${podeDesativar ? `<button class="btn btn-sm btn-danger" onclick="desativarUsuario(${u.id})">Desativar</button>` : '<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>'}
-                    </td>
-                </tr>`;
-            }).join('');
-        } catch (e) {
-            console.error('Erro ao carregar usuários:', e);
-        }
-    }
-    
-    function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.appendChild(document.createTextNode(String(str)));
-        return div.innerHTML;
-    }
-    
-    document.getElementById('form-novo-usuario').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const username = document.getElementById('novo-username').value.trim();
-        const password = document.getElementById('nova-senha').value;
-        const role = document.getElementById('novo-role').value;
-        
-        if (!username || !password || !role) {
-            alert('Preencha todos os campos');
-            return;
-        }
-        
-        try {
-            const resp = await fetch('/api/usuarios/criar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, role })
-            });
-            const data = await resp.json();
-            
-            if (data.sucesso) {
-                alert('Usuário criado com sucesso!');
-                document.getElementById('form-novo-usuario').reset();
-                carregarUsuarios();
-            } else {
-                alert(data.erro || 'Erro ao criar usuário');
-            }
-        } catch (e) {
-            alert('Erro ao criar usuário');
-        }
-    });
-    
-    window.desativarUsuario = async function(userId) {
-        if (!confirm('Desativar este usuário?')) return;
-        
-        try {
-            const resp = await fetch(`/api/usuarios/desativar/${userId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            const data = await resp.json();
-            
-            if (data.sucesso) {
-                carregarUsuarios();
-            } else {
-                alert(data.erro || 'Erro ao desativar usuário');
-            }
-        } catch (e) {
-            alert('Erro ao desativar usuário');
-        }
-    };
-    
-    await carregarUsuarios();
-})();
-</script>
 {% endblock %}
