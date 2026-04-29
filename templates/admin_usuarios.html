@@ -47,7 +47,7 @@
                                     {% else %}{{ u[2] }}{% endif %}
                                 </td>
                                 <td>
-                                    {% if u[0] != session.user_id %}
+                                    {% if u[0] != session.get('user_id') %}
                                     <form action="/admin/usuarios/remover/{{ u[0] }}" method="POST" style="display:inline;" onsubmit="return confirm('Remover este usuário?');">
                                         <button type="submit" class="btn btn-sm btn-danger">Remover</button>
                                     </form>
