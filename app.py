@@ -66,7 +66,7 @@ Talisman(app,
         'font-src': "'self' data: fonts.gstatic.com",
         'connect-src': "'self' maps.googleapis.com *.googleapis.com",
     },
-    session_cookie_secure=True,
+    session_cookie_secure=False,
 )
 
 @app.context_processor
