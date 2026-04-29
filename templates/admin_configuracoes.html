@@ -6,129 +6,129 @@
 {% block page_subtitle %}Gerencie a identidade e funcionamento do seu estabelecimento.{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_configuracoes.css') }}">
 {% endblock %}
 
 {% block content %}
 
-  <div class="container">
+<div class="container">
 
-    {% if sucesso %}
-    <div class="alert alert-sucesso">✅ {{ sucesso }}</div>
-    {% endif %}
-    {% if erro %}
-    <div class="alert alert-erro">❌ {{ erro }}</div>
-    {% endif %}
+  {% if sucesso %}
+  <div class="alert alert-sucesso">✅ {{ sucesso }}</div>
+  {% endif %}
+  {% if erro %}
+  <div class="alert alert-erro">❌ {{ erro }}</div>
+  {% endif %}
 
-    <form method="POST" action="/admin/configuracoes">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <form method="POST" action="/admin/configuracoes">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-      <!-- IDENTIDADE -->
-      <div class="card-config">
-        <div class="card-config-titulo">🏪 Identidade</div>
-        <div class="form-group">
-          <label>Nome do Restaurante</label>
-          <input type="text" name="nome_restaurante" value="{{ configs.nome_restaurante }}" placeholder="Ex: Burger House">
-        </div>
-        <div class="form-group">
-          <label>Cor Identidade (SaaS)</label>
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="color" name="cor_primaria" value="{{ cor_primaria }}" style="width: 50px; height: 40px; padding: 0; border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
-            <span style="font-size: 0.85rem; color: var(--text-muted);">Esta cor será aplicada em botões, ícones e destaques do painel.</span>
-          </div>
-        </div>
+    <!-- IDENTIDADE -->
+    <div class="card-config">
+      <div class="card-config-titulo">🏪 Identidade</div>
+      <div class="form-group">
+        <label>Nome do Restaurante</label>
+        <input type="text" name="nome_restaurante" value="{{ configs.nome_restaurante }}"
+          placeholder="Ex: Burger House">
       </div>
-
-      <!-- CONTATO -->
-      <div class="card-config">
-        <div class="card-config-titulo">📞 Contato</div>
-        <div class="form-group">
-          <label>WhatsApp do Restaurante</label>
-          <input type="text" id="whatsapp_restaurante" name="whatsapp_restaurante"
-                 value="{{ configs.whatsapp_restaurante }}"
-                 placeholder="5567993487509" maxlength="20">
-          <div class="field-hint" id="whatsapp-preview"></div>
-        </div>
-      </div>
-
-      <!-- ENTREGA -->
-      <div class="card-config">
-        <div class="card-config-titulo">🛵 Entrega</div>
-        <div class="form-group">
-          <label>Endereço do Restaurante</label>
-          <input type="text" id="endereco_restaurante" name="endereco_restaurante"
-                 value="{{ configs.endereco_restaurante }}"
-                 placeholder="Ex: Rua das Flores, 123, Centro, Cuiabá, MT"
-                 autocomplete="off">
-          <div class="field-hint">Digite o endereço completo do seu estabelecimento</div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Frete por KM (R$)</label>
-            <input type="number" name="frete_por_km" step="0.01" min="0"
-                   value="{{ configs.frete_por_km }}" placeholder="2.00">
-          </div>
-        </div>
-      </div>
-
-      <!-- HORÁRIO -->
-      <div class="card-config">
-        <div class="card-config-titulo">🕐 Horário de Funcionamento</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Abertura</label>
-            <input type="time" name="horario_abertura" value="{{ configs.horario_abertura }}">
-          </div>
-          <div class="form-group">
-            <label>Fechamento</label>
-            <input type="time" name="horario_fechamento" value="{{ configs.horario_fechamento }}">
-          </div>
-        </div>
-      </div>
-
-      <button type="submit" class="btn-salvar">💾 Salvar Configurações</button>
-    </form>
-
-    <!-- STATUS DO ESTABELECIMENTO (fora do form, toggle instantâneo) -->
-    <div class="card-config card-status" id="card-status">
-      <div class="card-config-titulo">🚦 Status do Estabelecimento</div>
-      <div class="status-body">
-        <div class="status-info">
-          <div class="status-badge" id="status-badge">
-            {% if configs.restaurante_ativo == "1" %}
-              <span class="badge-aberto">🟢 Aberto — recebendo pedidos</span>
-            {% else %}
-              <span class="badge-fechado">🔴 Fechado — não recebe pedidos</span>
-            {% endif %}
-          </div>
-          <p class="status-dica">Fechar o estabelecimento bloqueia novos pedidos imediatamente.</p>
-        </div>
-        <button type="button" id="btn-toggle-status"
-                class="btn-toggle-status {{ 'btn-fechar' if configs.restaurante_ativo == '1' else 'btn-abrir' }}"
-                data-ativo="{{ configs.restaurante_ativo }}">
-          {% if configs.restaurante_ativo == "1" %}
-            🔒 Fechar Estabelecimento
-          {% else %}
-            🔓 Abrir Estabelecimento
-          {% endif %}
-        </button>
-      </div>
-
-      <!-- Link WhatsApp (só aparece quando fechado) -->
-      <div id="aviso-whatsapp" class="{{ '' if configs.restaurante_ativo == '0' else 'hidden' }}">
-        <div class="whatsapp-aviso">
-          <span>📣 Avisar clientes pelo WhatsApp:</span>
-          <a id="link-whatsapp-fechado"
-             href="https://api.whatsapp.com/send?text={{ 'Olá! Informamos que o ' ~ configs.nome_restaurante ~ ' está fechado no momento e não está recebendo pedidos. Em breve voltamos! 🙏' | urlencode }}"
-             target="_blank" class="btn-whatsapp">
-            💬 Enviar "Estamos fechados"
-          </a>
+      <div class="form-group">
+        <label>Cor Identidade (SaaS)</label>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <input type="color" name="cor_primaria" value="{{ cor_primaria }}"
+            style="width: 50px; height: 40px; padding: 0; border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Esta cor será aplicada em botões, ícones e
+            destaques do painel.</span>
         </div>
       </div>
     </div>
 
+    <!-- CONTATO -->
+    <div class="card-config">
+      <div class="card-config-titulo">📞 Contato</div>
+      <div class="form-group">
+        <label>WhatsApp do Restaurante</label>
+        <input type="text" id="whatsapp_restaurante" name="whatsapp_restaurante"
+          value="{{ configs.whatsapp_restaurante }}" placeholder="5567993487509" maxlength="20">
+        <div class="field-hint" id="whatsapp-preview"></div>
+      </div>
+    </div>
+
+    <!-- ENTREGA -->
+    <div class="card-config">
+      <div class="card-config-titulo">🛵 Entrega</div>
+      <div class="form-group">
+        <label>Endereço do Restaurante</label>
+        <input type="text" id="endereco_restaurante" name="endereco_restaurante"
+          value="{{ configs.endereco_restaurante }}" placeholder="Ex: Rua das Flores, 123, Centro, Cuiabá, MT"
+          autocomplete="off">
+        <div class="field-hint">Digite o endereço completo do seu estabelecimento</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Frete por KM (R$)</label>
+          <input type="number" name="frete_por_km" step="0.01" min="0" value="{{ configs.frete_por_km }}"
+            placeholder="2.00">
+        </div>
+      </div>
+    </div>
+
+    <!-- HORÁRIO -->
+    <div class="card-config">
+      <div class="card-config-titulo">🕐 Horário de Funcionamento</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Abertura</label>
+          <input type="time" name="horario_abertura" value="{{ configs.horario_abertura }}">
+        </div>
+        <div class="form-group">
+          <label>Fechamento</label>
+          <input type="time" name="horario_fechamento" value="{{ configs.horario_fechamento }}">
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-salvar">💾 Salvar Configurações</button>
+  </form>
+
+  <!-- STATUS DO ESTABELECIMENTO (fora do form, toggle instantâneo) -->
+  <div class="card-config card-status" id="card-status">
+    <div class="card-config-titulo">🚦 Status do Estabelecimento</div>
+    <div class="status-body">
+      <div class="status-info">
+        <div class="status-badge" id="status-badge">
+          {% if configs.restaurante_ativo == "1" %}
+          <span class="badge-aberto">🟢 Aberto — recebendo pedidos</span>
+          {% else %}
+          <span class="badge-fechado">🔴 Fechado — não recebe pedidos</span>
+          {% endif %}
+        </div>
+        <p class="status-dica">Fechar o estabelecimento bloqueia novos pedidos imediatamente.</p>
+      </div>
+      <button type="button" id="btn-toggle-status"
+        class="btn-toggle-status {{ 'btn-fechar' if configs.restaurante_ativo == '1' else 'btn-abrir' }}"
+        data-ativo="{{ configs.restaurante_ativo }}">
+        {% if configs.restaurante_ativo == "1" %}
+        🔒 Fechar Estabelecimento
+        {% else %}
+        🔓 Abrir Estabelecimento
+        {% endif %}
+      </button>
+    </div>
+
+    <!-- Link WhatsApp (só aparece quando fechado) -->
+    <div id="aviso-whatsapp" class="{{ '' if configs.restaurante_ativo == '0' else 'hidden' }}">
+      <div class="whatsapp-aviso">
+        <span>📣 Avisar clientes pelo WhatsApp:</span>
+        <a id="link-whatsapp-fechado"
+          href="https://api.whatsapp.com/send?text={{ 'Olá! Informamos que o ' ~ configs.nome_restaurante ~ ' está fechado no momento e não está recebendo pedidos. Em breve voltamos! 🙏' | urlencode }}"
+          target="_blank" class="btn-whatsapp">
+          💬 Enviar "Estamos fechados"
+        </a>
+      </div>
+    </div>
   </div>
+
+</div>
 
 {% endblock %}
 

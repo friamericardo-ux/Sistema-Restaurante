@@ -5,9 +5,7 @@
 {% block page_title %}Produtos{% endblock %}
 {% block page_subtitle %}Gerencie os itens do seu cardápio.{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-{% endblock %}
+{% block extra_css %}{% endblock %}
 
 {% block content %}
 
@@ -17,7 +15,7 @@
   <div class="form-box">
     <h2>&#10133; Adicionar Produto</h2>
     <form action="/admin/produtos/adicionar" method="POST" enctype="multipart/form-data">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div class="form-row">
         <div class="form-group">
           <label>Nome do produto</label>
@@ -124,7 +122,8 @@
       <div class="form-row" style="margin-top:10px;">
         <div class="form-group">
           <label>Descri&ccedil;&atilde;o (opcional)</label>
-          <textarea name="descricao" placeholder="Ingredientes ou informa&ccedil;&otilde;es extras..." rows="2"></textarea>
+          <textarea name="descricao" placeholder="Ingredientes ou informa&ccedil;&otilde;es extras..."
+            rows="2"></textarea>
         </div>
         <div class="form-group" style="max-width:200px;">
           <label>Foto</label>
@@ -156,7 +155,7 @@
         <td>
           {% if p[5] and p[5] != '' %}
           <img src="/static/img/produtos/{{ p[5] }}" class="thumb" alt="Foto de {{ p[1] }}"
-               onerror="this.onerror=null;this.src='https://via.placeholder.com/46?text=?'">
+            onerror="this.onerror=null;this.src='https://via.placeholder.com/46?text=?'">
           {% else %}
           <span class="no-image">Sem foto</span>
           {% endif %}
@@ -167,8 +166,7 @@
         <td><span class="prod-categoria">{{ p[3] }}</span></td>
         <td class="prod-descricao">{{ p[6] if p[6] else '—' }}</td>
         <td>
-          <a href="/admin/produtos/desativar/{{ p[0] }}"
-             onclick="return confirm('Remover {{ p[1] }}?')">
+          <a href="/admin/produtos/desativar/{{ p[0] }}" onclick="return confirm('Remover {{ p[1] }}?')">
             <button class="btn-del">Remover</button>
           </a>
         </td>
@@ -182,43 +180,43 @@
 
 {% block extra_js %}
 <script>
-function toggleEmojiPicker() {
-  const panel   = document.getElementById('emoji-panel');
-  const trigger = document.getElementById('emoji-trigger');
-  const isOpen  = panel.classList.contains('open');
-  document.querySelectorAll('.emoji-panel.open').forEach(p => p.classList.remove('open'));
-  document.querySelectorAll('.emoji-trigger.open').forEach(t => t.classList.remove('open'));
-  if (!isOpen) {
-    panel.classList.add('open');
-    trigger.classList.add('open');
+  function toggleEmojiPicker() {
+    const panel = document.getElementById('emoji-panel');
+    const trigger = document.getElementById('emoji-trigger');
+    const isOpen = panel.classList.contains('open');
+    document.querySelectorAll('.emoji-panel.open').forEach(p => p.classList.remove('open'));
+    document.querySelectorAll('.emoji-trigger.open').forEach(t => t.classList.remove('open'));
+    if (!isOpen) {
+      panel.classList.add('open');
+      trigger.classList.add('open');
+    }
   }
-}
 
-function selectEmoji(emoji) {
-  document.getElementById('emoji-val').value           = emoji;
-  document.getElementById('emoji-display').textContent = emoji;
-  document.getElementById('emoji-label').textContent   = '';
-  document.querySelectorAll('.emoji-option').forEach(btn =>
-    btn.classList.toggle('selected', btn.textContent.trim() === emoji)
-  );
-  closeEmojiPicker();
-}
+  function selectEmoji(emoji) {
+    document.getElementById('emoji-val').value = emoji;
+    document.getElementById('emoji-display').textContent = emoji;
+    document.getElementById('emoji-label').textContent = '';
+    document.querySelectorAll('.emoji-option').forEach(btn =>
+      btn.classList.toggle('selected', btn.textContent.trim() === emoji)
+    );
+    closeEmojiPicker();
+  }
 
-function clearEmoji() {
-  document.getElementById('emoji-val').value           = '';
-  document.getElementById('emoji-display').textContent = '🍽️';
-  document.getElementById('emoji-label').textContent   = 'Escolher';
-  document.querySelectorAll('.emoji-option').forEach(btn => btn.classList.remove('selected'));
-  closeEmojiPicker();
-}
+  function clearEmoji() {
+    document.getElementById('emoji-val').value = '';
+    document.getElementById('emoji-display').textContent = '🍽️';
+    document.getElementById('emoji-label').textContent = 'Escolher';
+    document.querySelectorAll('.emoji-option').forEach(btn => btn.classList.remove('selected'));
+    closeEmojiPicker();
+  }
 
-function closeEmojiPicker() {
-  document.getElementById('emoji-panel').classList.remove('open');
-  document.getElementById('emoji-trigger').classList.remove('open');
-}
+  function closeEmojiPicker() {
+    document.getElementById('emoji-panel').classList.remove('open');
+    document.getElementById('emoji-trigger').classList.remove('open');
+  }
 
-document.addEventListener('click', function(e) {
-  if (!e.target.closest('.emoji-picker-group')) closeEmojiPicker();
-});
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.emoji-picker-group')) closeEmojiPicker();
+  });
 </script>
 {% endblock %}

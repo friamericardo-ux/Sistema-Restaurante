@@ -7,7 +7,7 @@
 
 {# CSS isolado — carregado APENAS nesta página #}
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/mesas_new.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mesas_new.css') }}?v=2">
 {% endblock %}
 
 {% block top_actions %}
@@ -173,6 +173,10 @@ MODAL — Consumo da Mesa
                 {% if session.get('role') in ('admin', 'caixa', 'superadmin', 'super_admin') %}
                 <button class="modal-btn-encerrar" onclick="confirmarFechamento(_mesaAtual)">
                     🔒 Encerrar Mesa
+                </button>
+                {% else %}
+                <button class="modal-btn-encerrar" onclick="pedirContaPeloModal()" style="background: rgba(168,85,247,0.1); color: #9333EA; border-color: rgba(168,85,247,0.2);">
+                    🧾 Pedir a Conta
                 </button>
                 {% endif %}
             </div>

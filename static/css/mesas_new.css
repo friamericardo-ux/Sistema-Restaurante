@@ -97,9 +97,9 @@
     border-radius: 50%;
 }
 
-.legenda-dot.livre    { background: #94A3B8; }
-.legenda-dot.aberta   { background: #3B82F6; }
-.legenda-dot.ocupada  { background: #F59E0B; }
+.legenda-dot.livre    { background: var(--text-muted); }
+.legenda-dot.aberta   { background: var(--info); }
+.legenda-dot.ocupada  { background: var(--warning); }
 .legenda-dot.conta    { background: #A855F7; }
 
 /* ── GRID DE MESAS ────────────────────────────────────── */
@@ -143,9 +143,9 @@
     transition: background 0.3s;
 }
 
-.mesa-card-new.livre::before    { background: #94A3B8; }
-.mesa-card-new.aberta::before   { background: #3B82F6; }
-.mesa-card-new.ocupada::before  { background: #F59E0B; }
+.mesa-card-new.livre::before    { background: var(--text-muted); }
+.mesa-card-new.aberta::before   { background: var(--info); }
+.mesa-card-new.ocupada::before  { background: var(--warning); }
 .mesa-card-new.conta::before    { background: #A855F7; }
 
 /* ── STATUS BORDER GLOW ──────────────────────────────── */
@@ -181,9 +181,9 @@
     width: fit-content;
 }
 
-.mesa-status-badge.livre    { background: rgba(148,163,184,0.15); color: #64748B; }
-.mesa-status-badge.aberta   { background: rgba(59,130,246,0.12);  color: #2563EB; }
-.mesa-status-badge.ocupada  { background: rgba(245,158,11,0.15);  color: #D97706; }
+.mesa-status-badge.livre    { background: rgba(100,116,139,0.15); color: var(--text-muted); }
+.mesa-status-badge.aberta   { background: rgba(59,130,246,0.12);  color: var(--info); }
+.mesa-status-badge.ocupada  { background: rgba(245,158,11,0.15);  color: var(--warning); }
 .mesa-status-badge.conta    { background: rgba(168,85,247,0.12);  color: #9333EA; }
 
 .mesa-status-badge::before {
@@ -194,9 +194,9 @@
     border-radius: 50%;
 }
 
-.mesa-status-badge.livre::before    { background: #94A3B8; }
-.mesa-status-badge.aberta::before   { background: #3B82F6; animation: pulse-blue 2s infinite; }
-.mesa-status-badge.ocupada::before  { background: #F59E0B; animation: pulse-orange 2s infinite; }
+.mesa-status-badge.livre::before    { background: var(--text-muted); }
+.mesa-status-badge.aberta::before   { background: var(--info); animation: pulse-blue 2s infinite; }
+.mesa-status-badge.ocupada::before  { background: var(--warning); animation: pulse-orange 2s infinite; }
 .mesa-status-badge.conta::before    { background: #A855F7; animation: pulse-purple 2s infinite; }
 
 .mesa-total {
@@ -235,8 +235,8 @@
     gap: 4px;
 }
 
-.btn-mesa-action.abrir    { background: rgba(59,130,246,0.1); color: #2563EB; }
-.btn-mesa-action.abrir:hover { background: #3B82F6; color: #fff; }
+.btn-mesa-action.abrir    { background: rgba(59,130,246,0.1); color: var(--info); }
+.btn-mesa-action.abrir:hover { background: var(--info); color: #fff; }
 
 .btn-mesa-action.ver      { background: rgba(99,102,241,0.1); color: var(--primary); }
 .btn-mesa-action.ver:hover { background: var(--primary); color: #fff; }
@@ -244,8 +244,8 @@
 .btn-mesa-action.conta    { background: rgba(168,85,247,0.1); color: #9333EA; }
 .btn-mesa-action.conta:hover { background: #A855F7; color: #fff; }
 
-.btn-mesa-action.fechar   { background: rgba(239,68,68,0.1); color: #DC2626; }
-.btn-mesa-action.fechar:hover { background: #EF4444; color: #fff; }
+.btn-mesa-action.fechar   { background: rgba(239,68,68,0.1); color: var(--danger); }
+.btn-mesa-action.fechar:hover { background: var(--danger); color: #fff; }
 
 /* ── ANIMAÇÕES DE PULSE ───────────────────────────────── */
 @keyframes pulse-blue {

@@ -66,7 +66,7 @@ Talisman(app,
         'font-src': "'self' data: fonts.gstatic.com",
         'connect-src': "'self' maps.googleapis.com *.googleapis.com",
     },
-    session_cookie_secure=False,
+    session_cookie_secure=True, 
 )
 
 @app.context_processor
@@ -585,6 +585,10 @@ def remover_item():
 @login_required
 def route_fechar_mesa():
     try:
+        role = session.get('role')
+        if role not in ('admin', 'caixa', 'superadmin', 'super_admin'):
+            return jsonify({"sucesso": False, "erro": "Permissão negada"}), 403
+
         dados = request.get_json()
         num = str(dados.get("numero"))
         rid = session.get('restaurante_id', 1)

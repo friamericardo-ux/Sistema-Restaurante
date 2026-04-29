@@ -102,53 +102,51 @@ async function renderizarMesas() {
             const qtdItens = m.itens ? m.itens.length : 0;
             let botoes = '';
 
-            if (status === 'conta_pedida' && podeFechar) {
-                botoes = `
-                    <button class="btn-mesa-action ver"
-                            onclick="event.stopPropagation(); abrirModal('${m.numero}')"
-                            title="Ver consumo">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                        </svg>
-                        Ver
-                    </button>
-                    <button class="btn-mesa-action fechar"
-                            onclick="event.stopPropagation(); fecharMesaPorId(${m.id})"
-                            title="Fechar Mesa">
-                        🔒 Fechar
-                    </button>`;
-            } else if (status === 'ocupada' && podePedirConta) {
-                botoes = `
-                    <button class="btn-mesa-action ver"
-                            onclick="event.stopPropagation(); abrirModal('${m.numero}')"
-                            title="Ver consumo">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                        </svg>
-                        Ver
-                    </button>
-                    <button class="btn-mesa-action fechar"
-                            onclick="event.stopPropagation(); pedirContaPorId(${m.id})"
-                            title="Pedir Conta">
-                        🧾 Pedir Conta
-                    </button>`;
+            if (status === 'conta_pedida') {
+                if (podeFechar) {
+                    botoes = `
+                        <button class="btn-mesa-action ver" onclick="event.stopPropagation(); abrirModal('${m.numero}')" title="Ver consumo">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Ver
+                        </button>
+                        <button class="btn-mesa-action fechar" onclick="event.stopPropagation(); fecharMesaPorId(${m.id})" title="Fechar Mesa">
+                            🔒 Fechar
+                        </button>`;
+                } else {
+                    botoes = `
+                        <button class="btn-mesa-action ver" onclick="event.stopPropagation(); abrirModal('${m.numero}')" title="Ver consumo">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Ver
+                        </button>
+                        <button class="btn-mesa-action conta" title="Aguardando fechamento" style="cursor: not-allowed; opacity: 0.6;">
+                            ⏳ Conta Pedida
+                        </button>`;
+                }
+            } else if (status === 'ocupada' || status === 'aberta') {
+                if (podePedirConta) {
+                    botoes = `
+                        <button class="btn-mesa-action ver" onclick="event.stopPropagation(); abrirModal('${m.numero}')" title="Ver consumo">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Ver
+                        </button>
+                        <button class="btn-mesa-action conta" onclick="event.stopPropagation(); pedirContaPorId(${m.id})" title="Pedir Conta">
+                            🧾 Pedir Conta
+                        </button>`;
+                } else {
+                    botoes = `
+                        <button class="btn-mesa-action ver" onclick="event.stopPropagation(); abrirModal('${m.numero}')" title="Ver consumo">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Ver
+                        </button>
+                        <button class="btn-mesa-action fechar" onclick="event.stopPropagation(); confirmarFechamento('${m.numero}')" title="Encerrar mesa">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            Encerrar
+                        </button>`;
+                }
             } else {
                 botoes = `
-                    <button class="btn-mesa-action ver"
-                            onclick="event.stopPropagation(); abrirModal('${m.numero}')"
-                            title="Ver consumo">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                        </svg>
-                        Ver
-                    </button>
-                    <button class="btn-mesa-action fechar"
-                            onclick="event.stopPropagation(); confirmarFechamento('${m.numero}')"
-                            title="Encerrar mesa">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg>
-                        Encerrar
+                    <button class="btn-mesa-action abrir" onclick="event.stopPropagation(); abrirModal('${m.numero}')" title="Abrir Mesa">
+                        ➕ Abrir
                     </button>`;
             }
 
@@ -250,11 +248,22 @@ function pedirContaPorId(mesaId) {
         .then(r => r.json())
         .then(data => {
             if (data.sucesso) {
+                fecharModal();
                 renderizarMesas();
             } else {
                 alert('Erro: ' + (data.erro || 'Não foi possível pedir a conta.'));
             }
         });
+}
+
+function pedirContaPeloModal() {
+    if (!_mesaAtual) return;
+    fetch('/api/mesas')
+      .then(r => r.json())
+      .then(data => {
+         const m = (data.mesas || []).find(x => String(x.numero) === String(_mesaAtual));
+         if (m) pedirContaPorId(m.id);
+      });
 }
 
 function fecharMesaPorId(mesaId) {
