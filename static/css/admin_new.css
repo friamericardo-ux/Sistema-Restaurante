@@ -442,3 +442,130 @@ body {
     border-color: rgba(34, 197, 94, 0.5);
     color: #86efac !important;
 }
+
+/* ══ CARDS ═══════════════════════════════════════════════════════════ */
+.card {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+.card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+}
+.card-header h2 {
+    font-size: 1rem;
+    font-weight: 700;
+}
+.card-body {
+    padding: 24px;
+}
+
+/* ══ TABLE ════════════════════════════════════════════════════════════ */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+.table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+}
+.table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-main);
+}
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+/* ══ BUTTONS ══════════════════════════════════════════════════════════ */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+.btn-primary:hover {
+    background: var(--primary-hover);
+}
+.btn-danger {
+    background: var(--danger);
+    color: white;
+}
+.btn-danger:hover {
+    background: #DC2626;
+}
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+/* ══ FORMS ════════════════════════════════════════════════════════════ */
+.form-group {
+    margin-bottom: 16px;
+}
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text-main);
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    background: var(--bg);
+    color: var(--text-main);
+    transition: border-color 0.2s;
+}
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* ══ ALERTS ═══════════════════════════════════════════════════════════ */
+.alert {
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+.alert-success {
+    background: rgba(34, 197, 94, 0.1);
+    color: #15803D;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+.alert-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #B91C1C;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
