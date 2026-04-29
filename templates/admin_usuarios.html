@@ -85,7 +85,7 @@
                 return;
             }
             
-            const currentUserId = {{ session.get('user_id', 0) }};
+            const currentUserId = {{ session.user_id | default(0) }};
             
             tbody.innerHTML = data.usuarios.map(u => {
                 const labelRole = { garcom: 'Garçom', atendente: 'Atendente', caixa: 'Caixa' };
