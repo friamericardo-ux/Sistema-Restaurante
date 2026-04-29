@@ -298,12 +298,6 @@ async function abrirModal(numMesa) {
         document.getElementById('modal-adicionais-lista').innerHTML = '';
     }
 
-    // Limpa inputs manuais
-    ['modal-item-nome', 'modal-item-preco', 'modal-item-qtd'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = id === 'modal-item-qtd' ? '1' : '';
-    });
-
     document.getElementById('modal-overlay').classList.add('ativo');
 
     // Carrega dados em paralelo
@@ -390,7 +384,7 @@ async function selecionarProduto(produto) {
     }
 }
 
-/* Confirma item com adicionais marcados */
+/* Confirma item com adicionais marcados + observação */
 function confirmarItemComAdicionais() {
     if (!_itemSelecionado) return;
     const checks = document.querySelectorAll('#modal-adicionais-lista input[type=checkbox]:checked');
@@ -404,8 +398,10 @@ function confirmarItemComAdicionais() {
         precoTotal += adicionais.reduce((s, a) => s + a.preco, 0);
     }
 
+    const observacao = (document.getElementById('modal-observacao')?.value || '').trim();
+
     cancelarAdicionais();
-    enviarItem(nomeCompleto, precoTotal, 1);
+    enviarItem(nomeCompleto, precoTotal, 1, null, observacao);
 }
 
 function cancelarAdicionais() {
@@ -414,32 +410,16 @@ function cancelarAdicionais() {
     if (area) area.classList.remove('ativo');
     const lista = document.getElementById('modal-adicionais-lista');
     if (lista) lista.innerHTML = '';
+    const obs = document.getElementById('modal-observacao');
+    if (obs) obs.value = '';
 }
 
-/* ── Adicionar item manualmente ────────────────────────── */
-function adicionarItemManual() {
-    const nome = (document.getElementById('modal-item-nome')?.value || '').trim();
-    const preco = parseFloat(document.getElementById('modal-item-preco')?.value || '0');
-    const qtd = parseInt(document.getElementById('modal-item-qtd')?.value || '1') || 1;
-
-    if (!nome || isNaN(preco) || preco <= 0) {
-        alert('Preencha o nome e o preço corretamente!');
-        return;
-    }
-
-    enviarItem(nome, preco, qtd, () => {
-        document.getElementById('modal-item-nome').value = '';
-        document.getElementById('modal-item-preco').value = '';
-        document.getElementById('modal-item-qtd').value = '1';
-    });
-}
-
-/* ── POST genérico de item ─────────────────────────────── */
-function enviarItem(nome, preco, quantidade, onSucesso) {
+/* ── POST genérico de item (com observação) ──────────────── */
+function enviarItem(nome, preco, quantidade, onSucesso, observacao) {
     fetch('/api/mesa/item', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ numero: _mesaAtual, nome, preco, quantidade })
+        body: JSON.stringify({ numero: _mesaAtual, nome, preco, quantidade, observacao: observacao || '' })
     })
         .then(r => r.json())
         .then(data => {
@@ -469,12 +449,18 @@ async function atualizarConsumoModal(numMesa) {
             return;
         }
 
-        lista.innerHTML = mesa.itens.map(item => `
+        lista.innerHTML = mesa.itens.map(item => {
+            const obs = item.observacao ? escapeHtml(item.observacao) : '';
+            return `
             <div class="modal-item-linha">
-                <span class="modal-item-nome">${escapeHtml(item.quantidade)}x ${escapeHtml(item.nome)}</span>
+                <div class="modal-item-info">
+                    <span class="modal-item-nome">${escapeHtml(item.quantidade)}x ${escapeHtml(item.nome)}</span>
+                    ${obs ? `<span class="modal-item-obs">📝 ${obs}</span>` : ''}
+                </div>
                 <span class="modal-item-preco">${fmtBRL(item.preco * item.quantidade)}</span>
                 <button class="btn-remover-item" onclick="removerItem(${item.id})" title="Remover item">✕</button>
-            </div>`).join('');
+            </div>`;
+        }).join('');
 
         if (total) total.textContent = fmtBRL(mesa.total);
     } catch (err) {

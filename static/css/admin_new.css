@@ -769,11 +769,6 @@ body {
         max-height: 90vh;
     }
 
-    .modal-manual-row {
-        flex-direction: column;
-        gap: 8px;
-    }
-
     .page-title h1 {
         font-size: 1rem;
     }

@@ -118,10 +118,16 @@ MODAL — Consumo da Mesa
                 <span style="color:var(--text-muted);font-size:12px;">Carregando…</span>
             </div>
 
-            {# ── Área de adicionais ────────────────────── #}
+            {# ── Área de adicionais + Observação ───────── #}
             <div class="modal-adicionais-area" id="modal-adicionais-area">
                 <span class="modal-adicionais-produto-label" id="modal-adicionais-produto-label"></span>
                 <div class="modal-adicionais-lista" id="modal-adicionais-lista"></div>
+
+                <div class="modal-observacao-group">
+                    <label for="modal-observacao">Observação</label>
+                    <textarea id="modal-observacao" placeholder="Ex: sem cebola, carne mal passada, retirar tomate..." rows="2"></textarea>
+                </div>
+
                 <div style="display:flex;gap:8px;margin-top:10px;">
                     <button class="modal-btn-add" onclick="confirmarItemComAdicionais()"
                         style="flex:none;padding:8px 18px;font-size:0.82rem;">
@@ -133,20 +139,6 @@ MODAL — Consumo da Mesa
                         Cancelar
                     </button>
                 </div>
-            </div>
-
-            {# ── Adicionar item manualmente ────────────── #}
-            <div class="modal-manual-section" style="margin-bottom:20px;">
-                <label style="margin-bottom:8px;">Ou adicione manualmente</label>
-                <div class="modal-manual-row">
-                    <input type="text" id="modal-item-nome" placeholder="Nome do item">
-                    <input type="number" id="modal-item-preco" placeholder="Preço" step="0.01" min="0">
-                    <input type="number" id="modal-item-qtd" placeholder="Qtd" value="1" min="1">
-                </div>
-                <button class="modal-btn-add" onclick="adicionarItemManual()"
-                    style="width:auto;padding:9px 20px;font-size:0.85rem;">
-                    + Adicionar Item
-                </button>
             </div>
 
             <hr style="border:none;border-top:1px solid var(--border);margin:0 0 20px;">
