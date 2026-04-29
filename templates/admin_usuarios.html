@@ -2,92 +2,169 @@
 
 {% block title %}Usuários — Comanda Digital{% endblock %}
 
-{% block page_title %}Usuários{% endblock %}
-{% block page_subtitle %}Gerencie os acessos da sua equipe.{% endblock %}
+{% block page_title %}Gerenciamento de Usuários{% endblock %}
+{% block page_subtitle %}Gerencie os usuários do seu restaurante.{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% block top_actions %}
 {% endblock %}
 
 {% block content %}
 
-<div class="container">
+<div style="display: grid; grid-template-columns: 1fr 350px; gap: 24px; max-width: 1200px;">
 
-  <!-- FORMULÁRIO CRIAR USUÁRIO -->
-  <div class="form-box">
-    <h2>➕ Criar Novo Usuário</h2>
-
-    {% if erro %}
-    <div style="background:#3a1a1a;border:1px solid #ef4444;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:14px;">
-      ⚠️ {{ erro }}
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h2>Usuários Cadastrados</h2>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Usuário</th>
+                            <th>Função</th>
+                            <th>Status</th>
+                            <th style="width: 100px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usuarios-tbody">
+                        <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    {% endif %}
 
-    {% if sucesso %}
-    <div style="background:#1a3a1a;border:1px solid #22c55e;color:#4ade80;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:14px;">
-      ✅ {{ sucesso }}
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h2>Novo Usuário</h2>
+            </div>
+            <div class="card-body">
+                <form id="form-novo-usuario">
+                    <div class="form-group">
+                        <label for="novo-username">Usuário</label>
+                        <input type="text" id="novo-username" name="username" required placeholder="Digite o usuário">
+                    </div>
+                    <div class="form-group">
+                        <label for="nova-senha">Senha</label>
+                        <input type="password" id="nova-senha" name="password" required placeholder="Digite a senha">
+                    </div>
+                    <div class="form-group">
+                        <label for="novo-role">Função</label>
+                        <select id="novo-role" name="role" required>
+                            <option value="">Selecione...</option>
+                            <option value="garcom">Garçom</option>
+                            <option value="atendente">Atendente</option>
+                            <option value="caixa">Caixa</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Criar Usuário
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
-    {% endif %}
-
-    <form method="POST" action="/admin/usuarios" autocomplete="off">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Nome de usuário</label>
-          <input type="text" name="username" placeholder="Ex: funcionario1" required minlength="3" maxlength="30">
-        </div>
-        <div class="form-group">
-          <label>Perfil</label>
-          <select name="role" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:14px;">
-            <option value="atendente">Atendente (Mesas + Delivery)</option>
-            <option value="admin">⚠️ Admin (acesso total)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Senha</label>
-          <input type="password" name="password" placeholder="Mínimo 6 caracteres" required minlength="6">
-        </div>
-        <div class="form-group">
-          <label>Confirmar senha</label>
-          <input type="password" name="confirmar" placeholder="Repita a senha" required minlength="6">
-        </div>
-        <button type="submit" class="btn-add" style="align-self:flex-end;">+ Criar</button>
-      </div>
-    </form>
-  </div>
-
-  <!-- LISTA DE USUÁRIOS -->
-  <div class="section-label">👤 Usuários cadastrados</div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Usuário</th>
-        <th>Perfil</th>
-        <th>Ação</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for u in usuarios %}
-      <tr>
-        <td>{{ u[0] }}</td>
-        <td><strong>{{ u[1] }}</strong></td>
-        <td><span class="prod-categoria">{{ u[2] }}</span></td>
-        <td>
-          {% if u[0] != session.get('user_id') %}
-          <form method="POST" action="/admin/usuarios/remover/{{ u[0] }}" style="display:inline;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <button type="submit" class="btn-del" onclick="return confirm('Remover o usuário {{ u[1] }}?')">Remover</button>
-          </form>
-          {% else %}
-          <span style="color:#555;font-size:12px;">Você</span>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
 
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(async function() {
+    async function carregarUsuarios() {
+        try {
+            const resp = await fetch('/api/usuarios/listar');
+            const data = await resp.json();
+            const tbody = document.getElementById('usuarios-tbody');
+            
+            if (!data.sucesso || !data.usuarios || data.usuarios.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Nenhum usuário encontrado.</td></tr>';
+                return;
+            }
+            
+            const currentUserId = {{ session.get('user_id', 0) }};
+            
+            tbody.innerHTML = data.usuarios.map(u => {
+                const labelRole = { garcom: 'Garçom', atendente: 'Atendente', caixa: 'Caixa' };
+                const labelStatus = u.ativo ? '<span style="color: #10B981;">Ativo</span>' : '<span style="color: #EF4444;">Inativo</span>';
+                const podeDesativar = u.id !== currentUserId && u.ativo;
+                
+                return `<tr>
+                    <td>${escapeHtml(u.username)}</td>
+                    <td>${labelRole[u.role] || u.role}</td>
+                    <td>${labelStatus}</td>
+                    <td>
+                        ${podeDesativar ? `<button class="btn btn-sm btn-danger" onclick="desativarUsuario(${u.id})">Desativar</button>` : '<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>'}
+                    </td>
+                </tr>`;
+            }).join('');
+        } catch (e) {
+            console.error('Erro ao carregar usuários:', e);
+        }
+    }
+    
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(String(str)));
+        return div.innerHTML;
+    }
+    
+    document.getElementById('form-novo-usuario').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const username = document.getElementById('novo-username').value.trim();
+        const password = document.getElementById('nova-senha').value;
+        const role = document.getElementById('novo-role').value;
+        
+        if (!username || !password || !role) {
+            alert('Preencha todos os campos');
+            return;
+        }
+        
+        try {
+            const resp = await fetch('/api/usuarios/criar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, role })
+            });
+            const data = await resp.json();
+            
+            if (data.sucesso) {
+                alert('Usuário criado com sucesso!');
+                document.getElementById('form-novo-usuario').reset();
+                carregarUsuarios();
+            } else {
+                alert(data.erro || 'Erro ao criar usuário');
+            }
+        } catch (e) {
+            alert('Erro ao criar usuário');
+        }
+    });
+    
+    window.desativarUsuario = async function(userId) {
+        if (!confirm('Desativar este usuário?')) return;
+        
+        try {
+            const resp = await fetch(`/api/usuarios/desativar/${userId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await resp.json();
+            
+            if (data.sucesso) {
+                carregarUsuarios();
+            } else {
+                alert(data.erro || 'Erro ao desativar usuário');
+            }
+        } catch (e) {
+            alert('Erro ao desativar usuário');
+        }
+    };
+    
+    await carregarUsuarios();
+})();
+</script>
 {% endblock %}

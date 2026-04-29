@@ -1100,6 +1100,87 @@ def cancelar_pedido(id):
         return jsonify({"sucesso": False, "erro": "Pedido não encontrado ou não está como 'novo'."})
     return jsonify({"sucesso": True})
 
+# ========== USUARIOS ==========
+
+@app.route("/admin/usuarios")
+@login_required
+def admin_usuarios():
+    """Página de gerenciamento de usuários"""
+    if session.get('role') != 'admin':
+        return redirect(url_for('dashboard'))
+    return render_template("admin_usuarios.html")
+
+@app.route("/api/usuarios/listar")
+@login_required
+def listar_usuarios_route():
+    """Lista usuários do restaurante"""
+    try:
+        if session.get('role') != 'admin':
+            return jsonify({"sucesso": False, "erro": "Permissão negada"}), 403
+        from repository import listar_usuarios
+        restaurante_id = session.get('restaurante_id', 1)
+        usuarios = listar_usuarios(restaurante_id)
+        return jsonify({"sucesso": True, "usuarios": usuarios})
+    except Exception as e:
+        app.logger.error(f"Erro ao listar usuários: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro interno"}), 500
+
+@app.route("/api/usuarios/criar", methods=["POST"])
+@csrf.exempt
+@login_required
+def criar_usuario():
+    """Cria novo usuário"""
+    try:
+        if session.get('role') != 'admin':
+            return jsonify({"sucesso": False, "erro": "Permissão negada"}), 403
+        
+        dados = request.get_json()
+        username = dados.get("username", "").strip()
+        password = dados.get("password", "").strip()
+        role = dados.get("role", "").strip()
+        
+        if not username or not password or not role:
+            return jsonify({"sucesso": False, "erro": "Preencha todos os campos"}), 400
+        
+        if role not in ('garcom', 'atendente', 'caixa'):
+            return jsonify({"sucesso": False, "erro": "Role inválida"}), 400
+        
+        from repository import UserRepository
+        repo = UserRepository()
+        restaurante_id = session.get('restaurante_id', 1)
+        
+        if repo.create_custom_admin(username, password, restaurante_id, role):
+            return jsonify({"sucesso": True})
+        else:
+            return jsonify({"sucesso": False, "erro": "Usuário já existe"}), 400
+    except Exception as e:
+        app.logger.error(f"Erro ao criar usuário: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro interno"}), 500
+
+@app.route("/api/usuarios/desativar/<int:user_id>", methods=["POST"])
+@csrf.exempt
+@login_required
+def desativar_usuario_route(user_id):
+    """Desativa um usuário"""
+    try:
+        if session.get('role') != 'admin':
+            return jsonify({"sucesso": False, "erro": "Permissão negada"}), 403
+        
+        if user_id == session.get('user_id'):
+            return jsonify({"sucesso": False, "erro": "Você não pode se desativar"}), 400
+        
+        from repository import desativar_usuario
+        restaurante_id = session.get('restaurante_id', 1)
+        
+        if desativar_usuario(user_id, restaurante_id):
+            return jsonify({"sucesso": True})
+        else:
+            return jsonify({"sucesso": False, "erro": "Usuário não encontrado"})
+    except Exception as e:
+        app.logger.error(f"Erro ao desativar usuário: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro interno"}), 500
+
+
 # ========== IMPRESSÃO DE COMANDA ==========
 
 @app.route('/pedido/<int:id>/imprimir')

@@ -47,6 +47,20 @@ class UserRepository:
             except Exception:
                 pass  # coluna já existe
 
+        # Migração: adiciona ativo se não existir
+        if is_mysql():
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN ativo TINYINT DEFAULT 1")
+                conn.commit()
+            except Exception:
+                pass
+        else:
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN ativo INTEGER DEFAULT 1")
+                conn.commit()
+            except Exception:
+                pass
+
     def create_admin(self):
         self.init_user_table()
         conn = self.get_connection()
@@ -193,6 +207,39 @@ class UserRepository:
         conn.commit()
         conn.close()
         return True
+
+
+# ========== USUARIOS ==========
+
+def listar_usuarios(restaurante_id):
+    """Lista usuários do restaurante (exceto superadmin)."""
+    ph = "%s" if is_mysql() else "?"
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            f"SELECT id, username, role, ativo FROM users WHERE restaurante_id = {ph} AND role != 'superadmin' AND role != 'super_admin' ORDER BY id",
+            (restaurante_id,)
+        )
+        rows = cursor.fetchall()
+        return [{"id": r[0], "username": r[1], "role": r[2], "ativo": r[3]} for r in rows]
+    finally:
+        conn.close()
+
+def desativar_usuario(user_id, restaurante_id):
+    """Desativa um usuário (não delete)."""
+    ph = "%s" if is_mysql() else "?"
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f"UPDATE users SET ativo = 0 WHERE id = {ph} AND restaurante_id = {ph} AND role NOT IN ('superadmin', 'super_admin')", (user_id, restaurante_id))
+        conn.commit()
+        return True
+    except Exception as e:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
 
 
 # ========== DASHBOARD ==========
