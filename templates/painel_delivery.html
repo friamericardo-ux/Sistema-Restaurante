@@ -97,16 +97,33 @@
 
         pedidos.forEach(p => {
             const status = p.status || 'novo';
-            if (columns[status]) {
-                counts[status]++;
-                const card = criarCard(p);
-                columns[status].appendChild(card);
-            }
+            if (!columns[status]) return;
+            counts[status]++;
+            if (status === 'entregue') return;
+            const card = criarCard(p);
+            columns[status].appendChild(card);
         });
 
+        const countMap = {
+            'novo': 'count-novo',
+            'em_preparo': 'count-preparo',
+            'saiu_entrega': 'count-entrega',
+            'entregue': 'count-finalizado'
+        };
         Object.keys(counts).forEach(key => {
-            document.getElementById(`count-${key === 'entregue' ? 'finalizado' : key}`).textContent = counts[key];
+            const el = document.getElementById(countMap[key]);
+            if (el) el.textContent = counts[key];
         });
+
+        const totalEntregues = counts['entregue'];
+        const colEntregues = columns['entregue'];
+        if (totalEntregues > 0) {
+            colEntregues.innerHTML = `<div style="text-align:center;padding:20px;color:var(--success);font-size:14px;">
+                ✓ ${totalEntregues} pedido${totalEntregues > 1 ? 's' : ''} finalizado${totalEntregues > 1 ? 's' : ''} hoje
+            </div>`;
+        } else {
+            colEntregues.innerHTML = '<div class="vazio">Nenhum entregue ainda</div>';
+        }
     }
 
     function criarCard(p) {
