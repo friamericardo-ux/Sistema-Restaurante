@@ -129,10 +129,11 @@ window.initAutocomplete = function initAutocomplete() {
 };
 
 function calcularFrete(enderecoCliente) {
+  const rid = document.getElementById('restauranteId')?.value || 1;
   fetch('/api/maps/calcular-frete', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({endereco_destino: enderecoCliente})
+    body: JSON.stringify({endereco_destino: enderecoCliente, restaurante_id: parseInt(rid)})
   })
   .then(r => r.json())
   .then(data => {
