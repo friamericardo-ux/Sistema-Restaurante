@@ -32,7 +32,7 @@ function fmtBRL(valor) {
 /* ── Determina o status visual de uma mesa ─────────────── */
 function getStatusMesa(mesa) {
     if (!mesa) return 'livre';
-    if (mesa.status === 'conta_pedida' || mesa.pediu_conta) return 'conta_pedida';
+    if (mesa.status === 'conta_pedida' || mesa.pediu_conta) return 'conta';
     if (mesa.status === 'ocupada' || parseFloat(mesa.total) > 0) return 'ocupada';
     if (mesa.status === 'aberta') return 'aberta';
     return 'livre';
@@ -43,7 +43,7 @@ function getLabelStatus(status) {
         livre: 'Livre',
         aberta: 'Aberta',
         ocupada: 'Ocupada',
-        conta_pedida: 'Conta Pedida',
+        conta: 'Conta Pedida',
     };
     return map[status] || status;
 }
