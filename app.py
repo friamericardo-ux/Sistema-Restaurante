@@ -1993,7 +1993,8 @@ def carrinho_por_slug(slug):
     if not row:
         abort(404)
     restaurante_id = row[0]
-    return render_template("carrinho_cliente.html", slug=slug, restaurante_id=restaurante_id, google_maps_key=Config.GOOGLE_MAPS_KEY)
+    google_maps_key = os.getenv('GOOGLE_MAPS_API_KEY', '')
+return render_template("carrinho_cliente.html", slug=slug, restaurante_id=restaurante_id, google_maps_key=google_maps_key)
 
 @app.route("/cardapio/<slug>/api/pedido", methods=["POST"])
 @csrf.exempt
