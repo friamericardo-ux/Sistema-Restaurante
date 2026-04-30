@@ -1057,7 +1057,7 @@ def painel_delivery():
 @app.route("/api/pedidos/delivery")
 @login_required
 def listar_pedidos_delivery():
-    """Retorna todos os pedidos delivery (exceto entregues)"""
+    """Retorna todos os pedidos delivery"""
     db = get_connection()
     db.row_factory = sqlite3.Row
     cursor = db.cursor()
@@ -1067,7 +1067,7 @@ def listar_pedidos_delivery():
         SELECT id, cliente_nome, cliente_telefone, cliente_endereco,
                itens, total, status, criado_em
         FROM pedidos_delivery
-        WHERE status NOT IN ('entregue', 'cancelado')
+        WHERE status != 'cancelado'
         AND restaurante_id = ?
         ORDER BY criado_em DESC
     """, (rid,))
