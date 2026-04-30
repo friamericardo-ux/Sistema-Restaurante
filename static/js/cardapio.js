@@ -16,7 +16,7 @@ let catAtiva = 'todos';
 
 // ════ UTILS ══════════════════════════════════════════════════
 function getProd(id){ for(const c of cats){const p=c.prods.find(x=>x.id===id);if(p)return p;} }
-function fmt(v){ return 'R$ '+v.toFixed(2).replace('.',','); }
+function fmt(v){ const n=parseFloat(v);if(isNaN(n))return 'R$ 0,00';return 'R$ '+n.toFixed(2).replace('.',','); }
 function showToast(msg){ const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200); }
 function qtdNoCarrinho(id){ return carrinho.filter(i=>i.id===id).reduce((a,i)=>a+i.qtd,0); }
 
@@ -255,10 +255,12 @@ function alterarQtdCarrinho(idx,delta){
 }
 
 function renderResumo(){
-  const total=calcTotalCarrinho();
+  const sub=calcTotalCarrinho();
+  const frete=parseFloat(window._freteCalculado)||0;
+  const total=sub+frete;
   document.getElementById('carrResumo').innerHTML=`
-    <div class="resumo-linha"><span>Subtotal</span><span>${fmt(total)}</span></div>
-    <div class="resumo-linha"><span>Entrega</span><span>${window._freteCalculado > 0 ? 'R$ ' + parseFloat(window._freteCalculado).toFixed(2) : 'A combinar'}</span></div>
+    <div class="resumo-linha"><span>Subtotal</span><span>${fmt(sub)}</span></div>
+    <div class="resumo-linha"><span>Entrega</span><span>${frete>0?'R$ '+frete.toFixed(2).replace('.',','):'A combinar'}</span></div>
     <div class="resumo-total"><span>Total</span><span>${fmt(total)}</span></div>`;
 }
 
@@ -267,6 +269,26 @@ function selecionarPgto(p){
   document.querySelectorAll('.pgto-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById('pg-'+p).classList.add('on');
   document.getElementById('trocoWrap').style.display=p==='dinheiro'?'block':'none';
+}
+
+// ════ CÁLCULO DE FRETE ═══════════════════════════════════════
+async function calcularFrete(lat, lng){
+  const rid = parseInt(document.getElementById('restauranteId')?.value) || 1;
+  try {
+    const res = await fetch('/api/maps/calcular-frete', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({lat, lng, restaurante_id: rid})
+    });
+    const data = await res.json();
+    if (data.sucesso) {
+      window._freteCalculado = data.frete;
+      window._distanciaKm = data.distancia_km;
+      renderResumo();
+    }
+  } catch(e) {
+    console.error('Erro ao calcular frete:', e);
+  }
 }
 
 // ════ FINALIZAR ═══════════════════════════════════════════════
@@ -280,6 +302,7 @@ async function finalizarPedido(){
   if(!tel){showToast('⚠️ Informe seu telefone!');return;}
 
   const rid = parseInt(document.getElementById('restauranteId')?.value) || 1;
+  const frete = parseFloat(window._freteCalculado) || 0;
   try {
     await fetch(`${API_BASE}/api/pedido`, {
       method: 'POST',
@@ -289,7 +312,7 @@ async function finalizarPedido(){
         pagamento: pgtoSel,
         troco: pgtoSel === 'dinheiro' ? parseFloat(troco) || 0 : 0,
         restaurante_id: rid,
-        taxa_entrega: 0,
+        taxa_entrega: frete,
         itens: carrinho.map(i=>({
           nome: i.nome,
           preco: i.preco,
@@ -304,6 +327,8 @@ async function finalizarPedido(){
   }
 
   const pgtoNomes={pix:'Pix',dinheiro:'Dinheiro',credito:'Cartão de Crédito',debito:'Cartão de Débito'};
+  const subTotal=calcTotalCarrinho();
+  const totalFinal=subTotal+frete;
 
   let msg=`*🍽 Novo Pedido — Comanda Digital*\n\n`;
   msg+=`👤 *Cliente:* ${nome}\n`;
@@ -318,7 +343,8 @@ async function finalizarPedido(){
     if(item.obs) msg+=`\n  ↳ Obs: _${item.obs}_`;
   });
 
-  msg+=`\n\n💰 *Total: ${fmt(calcTotalCarrinho())}*`;
+  if(frete>0) msg+=`\n\n🚚 *Frete:* ${fmt(frete)}`;
+  msg+=`\n\n💰 *Total: ${fmt(totalFinal)}*`;
   msg+=`\n💳 *Pagamento:* ${pgtoNomes[pgtoSel]}`;
   if(pgtoSel==='dinheiro'&&troco) msg+=`\n🔄 *Troco para:* R$ ${troco}`;
   msg+=`\n\n_Pedido enviado pelo Comanda Digital_`;

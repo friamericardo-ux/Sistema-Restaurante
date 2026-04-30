@@ -1836,14 +1836,15 @@ def calcular_frete():
     cliente_lat = dados.get("lat")
     cliente_lng = dados.get("lng")
     endereco_destino = dados.get("endereco_destino")
+    rid = dados.get("restaurante_id", 1)
 
     if endereco_destino is None and (cliente_lat is None or cliente_lng is None):
         return jsonify({"sucesso": False, "erro": "Coordenadas não informadas!"})
 
-    frete_por_km = float(get_config("frete_por_km", Config.FRETE_POR_KM))
-    google_maps_key = get_config("google_maps_key", Config.GOOGLE_MAPS_KEY)
-    rest_lat = float(get_config("restaurante_lat", Config.RESTAURANTE_LAT))
-    rest_lng = float(get_config("restaurante_lng", Config.RESTAURANTE_LNG))
+    frete_por_km = float(get_config("frete_por_km", Config.FRETE_POR_KM, restaurante_id=rid))
+    google_maps_key = get_config("google_maps_key", Config.GOOGLE_MAPS_KEY, restaurante_id=rid)
+    rest_lat = float(get_config("restaurante_lat", Config.RESTAURANTE_LAT, restaurante_id=rid))
+    rest_lng = float(get_config("restaurante_lng", Config.RESTAURANTE_LNG, restaurante_id=rid))
 
     destinations = endereco_destino if endereco_destino else f"{cliente_lat},{cliente_lng}"
 
