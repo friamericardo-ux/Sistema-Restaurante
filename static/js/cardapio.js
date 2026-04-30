@@ -279,7 +279,7 @@ async function finalizarPedido(){
   if(!nome){showToast('⚠️ Informe seu nome!');return;}
   if(!tel){showToast('⚠️ Informe seu telefone!');return;}
 
-  // Salva no banco antes de abrir WhatsApp
+  const rid = parseInt(document.getElementById('restauranteId')?.value) || 1;
   try {
     await fetch(`${API_BASE}/api/pedido`, {
       method: 'POST',
@@ -288,6 +288,8 @@ async function finalizarPedido(){
         nome, telefone: tel, endereco: end,
         pagamento: pgtoSel,
         troco: pgtoSel === 'dinheiro' ? parseFloat(troco) || 0 : 0,
+        restaurante_id: rid,
+        taxa_entrega: 0,
         itens: carrinho.map(i=>({
           nome: i.nome,
           preco: i.preco,

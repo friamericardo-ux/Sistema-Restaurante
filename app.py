@@ -678,14 +678,23 @@ def route_fechar_mesa_id(mesa_id):
 @app.route("/cardapio")
 def cardapio_cliente():
     """Página do cardápio para clientes"""
-    if get_config("restaurante_ativo", "1") == "0":
+    try:
+        db = get_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT id FROM restaurantes WHERE ativo = 1 ORDER BY id LIMIT 1")
+        row = cursor.fetchone()
+        rid = row[0] if row else 1
+        db.close()
+    except Exception:
+        rid = 1
+    if get_config("restaurante_ativo", "1", restaurante_id=rid) == "0":
         return render_template("restaurante_inativo.html")
     return render_template("cardapio_cliente.html",
         slug=None,
-        restaurante_nome=get_config('nome_restaurante', 'Restaurante', 1),
-        restaurante_id=1,
-        whatsapp_restaurante=get_config('whatsapp_restaurante', '5500000000000', 1),
-        google_maps_key=get_config("google_maps_key", Config.GOOGLE_MAPS_KEY))
+        restaurante_nome=get_config('nome_restaurante', 'Restaurante', rid),
+        restaurante_id=rid,
+        whatsapp_restaurante=get_config('whatsapp_restaurante', Config.WHATSAPP_RESTAURANTE, rid),
+        google_maps_key=get_config("google_maps_key", Config.GOOGLE_MAPS_KEY, restaurante_id=rid))
 @app.route("/api/cardapio")
 def api_cardapio():
     """Retorna os produtos do cardápio"""
@@ -960,17 +969,17 @@ def superadmin_criar_restaurante():
 @app.route("/api/configuracoes")
 def api_configuracoes():
     """Retorna configs públicas para o frontend do cliente."""
-    nome_fallback = Config.RESTAURANTE_NOME if hasattr(Config, 'RESTAURANTE_NOME') else "Restaurante"
+    rid = request.args.get('restaurante_id', default=1, type=int)
     return jsonify({
         "sucesso": True,
-        "nome_restaurante": get_config("nome_restaurante", nome_fallback),
-        "taxa_entrega": float(get_config("taxa_entrega", Config.TAXA_ENTREGA)),
-        "frete_por_km": float(get_config("frete_por_km", Config.FRETE_POR_KM)),
-        "restaurante_lat": float(get_config("restaurante_lat", Config.RESTAURANTE_LAT)),
-        "restaurante_lng": float(get_config("restaurante_lng", Config.RESTAURANTE_LNG)),
-        "restaurante_ativo": get_config("restaurante_ativo", "1"),
-        "google_maps_key": get_config("google_maps_key", Config.GOOGLE_MAPS_KEY),
-        "whatsapp_restaurante": get_config("whatsapp_restaurante", Config.WHATSAPP_RESTAURANTE),
+        "nome_restaurante": get_config("nome_restaurante", "", restaurante_id=rid),
+        "taxa_entrega": float(get_config("taxa_entrega", Config.TAXA_ENTREGA, restaurante_id=rid)),
+        "frete_por_km": float(get_config("frete_por_km", Config.FRETE_POR_KM, restaurante_id=rid)),
+        "restaurante_lat": float(get_config("restaurante_lat", Config.RESTAURANTE_LAT, restaurante_id=rid)),
+        "restaurante_lng": float(get_config("restaurante_lng", Config.RESTAURANTE_LNG, restaurante_id=rid)),
+        "restaurante_ativo": get_config("restaurante_ativo", "1", restaurante_id=rid),
+        "google_maps_key": get_config("google_maps_key", Config.GOOGLE_MAPS_KEY, restaurante_id=rid),
+        "whatsapp_restaurante": get_config("whatsapp_restaurante", Config.WHATSAPP_RESTAURANTE, restaurante_id=rid),
     })
 
 
@@ -1878,8 +1887,17 @@ def calcular_frete():
 
 @app.route("/carrinho")
 def carrinho_cliente():
-    google_maps_key = get_config("google_maps_key", Config.GOOGLE_MAPS_KEY)
-    return render_template("carrinho_cliente.html", google_maps_key=google_maps_key)
+    try:
+        db = get_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT id FROM restaurantes WHERE ativo = 1 ORDER BY id LIMIT 1")
+        row = cursor.fetchone()
+        rid = row[0] if row else 1
+        db.close()
+    except Exception:
+        rid = 1
+    google_maps_key = get_config("google_maps_key", Config.GOOGLE_MAPS_KEY, restaurante_id=rid)
+    return render_template("carrinho_cliente.html", slug=None, restaurante_id=rid, google_maps_key=google_maps_key)
 
 # ========================
 # ROTAS MULTI-TENANT
@@ -1900,8 +1918,8 @@ def cardapio_por_slug(slug):
         return render_template("restaurante_inativo.html")
     return render_template("cardapio_cliente.html", slug=slug, restaurante_nome=nome,
         restaurante_id=restaurante_id,
-        whatsapp_restaurante=get_config('whatsapp_restaurante', '5500000000000', restaurante_id),
-        google_maps_key=get_config("google_maps_key", Config.GOOGLE_MAPS_KEY))
+        whatsapp_restaurante=get_config('whatsapp_restaurante', Config.WHATSAPP_RESTAURANTE, restaurante_id),
+        google_maps_key=get_config("google_maps_key", Config.GOOGLE_MAPS_KEY, restaurante_id=restaurante_id))
 
 @app.route("/cardapio/<slug>/api/cardapio")
 def api_cardapio_por_slug(slug):
@@ -1971,8 +1989,9 @@ def carrinho_por_slug(slug):
     db.close()
     if not row:
         abort(404)
-    google_maps_key = get_config("google_maps_key", Config.GOOGLE_MAPS_KEY)
-    return render_template("carrinho_cliente.html", slug=slug, google_maps_key=google_maps_key)
+    restaurante_id = row[0]
+    google_maps_key = get_config("google_maps_key", Config.GOOGLE_MAPS_KEY, restaurante_id=restaurante_id)
+    return render_template("carrinho_cliente.html", slug=slug, restaurante_id=restaurante_id, google_maps_key=google_maps_key)
 
 @app.route("/cardapio/<slug>/api/pedido", methods=["POST"])
 @csrf.exempt
@@ -1991,7 +2010,7 @@ def criar_pedido_por_slug(slug):
     dados = request.get_json()
     dados['restaurante_id'] = restaurante_id
     request._cached_json = (dados, dados)
-    return criar_pedido()
+    return route_criar_pedido()
 
 @app.route('/admin/adicionais')
 @admin_required

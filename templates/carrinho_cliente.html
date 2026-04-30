@@ -155,6 +155,7 @@ function calcularFrete(enderecoCliente) {
       </div>
     </div>
     <div class="toast" id="toast"></div>
+    <input type="hidden" id="restauranteId" value="{{ restaurante_id if restaurante_id is not none else 1 }}">
     <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&libraries=places&callback=initAutocomplete" async defer></script>
     <script src="/static/js/carrinho.js"></script>
 

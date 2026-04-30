@@ -5,7 +5,8 @@ let configsRestaurante = { whatsapp: '5567993487509' };
 
 async function carregarConfigs() {
   try {
-    const res = await fetch('/api/configuracoes');
+    const rid = document.getElementById('restauranteId')?.value || 1;
+    const res = await fetch(`/api/configuracoes?restaurante_id=${rid}`);
     const data = await res.json();
     if (data.sucesso) {
       taxaEntrega = parseFloat(window._freteCalculado) || 0;
@@ -126,12 +127,14 @@ function finalizarPedido() {
     return toast('Aguarde o cálculo do frete ou selecione um endereço válido');
   }
 
+  const rid = document.getElementById('restauranteId')?.value || 1;
   console.log('forma_pagamento:', pagamento, 'troco:', troco);
   fetch('/api/pedido', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       nome, telefone, endereco, observacao, pagamento, troco,
+      restaurante_id: parseInt(rid),
       taxa_entrega: freteAtual,
       itens: itens.map(i => ({
         nome: i.nome, preco: i.preco,
