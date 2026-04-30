@@ -1,97 +1,29 @@
-from data.db import get_connection
+# ═══════════════════════════════════════════════════════════════
+#  LEGADO — NÃO USAR EM PRODUÇÃO
+# ═══════════════════════════════════════════════════════════════
+#
+#  Este script está OBSOLETO e foi movido para:
+#       legacy/criar_tabela.py
+#
+#  Motivo:
+#       Cria schemas incorretos que divergem do schema oficial
+#       definido em data/db.py + migrations.
+#
+#  Consequência conhecida:
+#       - Coluna fantasma "nome" em adicional_categoria
+#       - PK errada (id) em adicional_categoria
+#       - Colunas faltando (restaurante_id, status, etc.)
+#       - Nomes de coluna errados (imagem → foto, password → password_hash)
+#
+#  Use exclusivamente init_db() → _run_migrations() para criar/atualizar
+#  o banco de dados.
+#
+# ═══════════════════════════════════════════════════════════════
 
-conn = get_connection()
-c = conn.cursor()
-
-tabelas = [
-    """CREATE TABLE IF NOT EXISTS users (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        username VARCHAR(100) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-
-    """CREATE TABLE IF NOT EXISTS produtos (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        nome VARCHAR(200) NOT NULL,
-        preco DECIMAL(10,2) NOT NULL,
-        descricao TEXT,
-        imagem VARCHAR(255),
-        categoria VARCHAR(100),
-        ativo TINYINT(1) DEFAULT 1
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-
-    """CREATE TABLE IF NOT EXISTS adicionais (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        nome VARCHAR(200) NOT NULL,
-        preco DECIMAL(10,2) NOT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-
-    """CREATE TABLE IF NOT EXISTS adicional_categoria (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        nome VARCHAR(200) NOT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-
-    """CREATE TABLE IF NOT EXISTS mesas (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        numero VARCHAR(50) NOT NULL,
-        status VARCHAR(50) DEFAULT 'livre'
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-
-    """CREATE TABLE IF NOT EXISTS itens (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        mesa_id INT,
-        produto_id INT,
-        quantidade INT DEFAULT 1,
-        preco_unitario DECIMAL(10,2)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-
-    """CREATE TABLE IF NOT EXISTS pedidos_delivery (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        cliente_nome VARCHAR(200),
-        status VARCHAR(50) DEFAULT 'pendente',
-        total DECIMAL(10,2)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-
-    """CREATE TABLE IF NOT EXISTS configuracoes (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        chave VARCHAR(100) UNIQUE NOT NULL,
-        valor TEXT
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-
-    """CREATE TABLE IF NOT EXISTS clientes_cache (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        telefone VARCHAR(50),
-        nome VARCHAR(200),
-        endereco TEXT
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-
-    """CREATE TABLE IF NOT EXISTS caixa_sessoes (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        aberto_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        fechado_em TIMESTAMP NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-
-    """CREATE TABLE IF NOT EXISTS caixa_fechamentos (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        sessao_id INT,
-        total DECIMAL(10,2)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-
-    """CREATE TABLE IF NOT EXISTS fechamentos_caixa (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        total DECIMAL(10,2)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-
-    """CREATE TABLE IF NOT EXISTS historico_mesas (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        mesa_id INT,
-        evento VARCHAR(100)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-]
-
-for tabela in tabelas:
-    c.execute(tabela)
-    
-conn.commit()
-conn.close()
-print("Tabelas criadas com sucesso!")
+import sys
+print("=" * 70)
+print("  ERRO: criar_tabela.py está OBSOLETO e NÃO deve ser usado.")
+print("  Use init_db() → _run_migrations() para criar/atualizar o banco.")
+print("  O arquivo original foi movido para: legacy/criar_tabela.py")
+print("=" * 70)
+sys.exit(1)

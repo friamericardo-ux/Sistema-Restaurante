@@ -154,7 +154,9 @@ def _init_sqlite():
     CREATE TABLE IF NOT EXISTS mesas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         numero TEXT UNIQUE,
-        total REAL DEFAULT 0
+        total REAL DEFAULT 0,
+        status TEXT DEFAULT 'livre',
+        restaurante_id INTEGER DEFAULT 1
     )
     """)
     cursor.execute("""
@@ -166,7 +168,8 @@ def _init_sqlite():
         emoji TEXT DEFAULT '🍽️',
         ativo INTEGER DEFAULT 1,
         foto TEXT DEFAULT NULL,
-        descricao TEXT DEFAULT NULL
+        descricao TEXT DEFAULT NULL,
+        restaurante_id INTEGER DEFAULT 1
     )
     """)
     cursor.execute("""
@@ -174,15 +177,17 @@ def _init_sqlite():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nome TEXT NOT NULL,
         preco REAL NOT NULL DEFAULT 0.0,
-        ativo INTEGER DEFAULT 1
+        ativo INTEGER DEFAULT 1,
+        restaurante_id INTEGER DEFAULT 1
     )
     """)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS adicional_categoria (
         adicional_id INTEGER NOT NULL,
         categoria TEXT NOT NULL,
+        restaurante_id INTEGER DEFAULT 1,
         PRIMARY KEY (adicional_id, categoria),
-        FOREIGN KEY (adicional_id) REFERENCES adicionais(id)
+        FOREIGN KEY (adicional_id) REFERENCES adicionais(id) ON DELETE CASCADE
     )
     """)
     cursor.execute("""
@@ -197,7 +202,8 @@ def _init_sqlite():
         troco REAL DEFAULT 0,
         forma_pagamento TEXT DEFAULT '',
         status TEXT DEFAULT 'novo',
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        restaurante_id INTEGER DEFAULT 1
     )
     """)
     cursor.execute("""
@@ -209,6 +215,7 @@ def _init_sqlite():
         quantidade INTEGER,
         observacao TEXT DEFAULT '',
         adicionado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        restaurante_id INTEGER DEFAULT 1,
         FOREIGN KEY (mesa_id) REFERENCES mesas(id)
     )
     """)
@@ -217,7 +224,10 @@ def _init_sqlite():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
-        role TEXT DEFAULT 'admin'
+        role TEXT DEFAULT 'admin',
+        restaurante_id INTEGER DEFAULT NULL,
+        licenca_vencimento TEXT DEFAULT NULL,
+        ativo INTEGER DEFAULT 1
     )
     """)
     cursor.execute("""
@@ -226,7 +236,8 @@ def _init_sqlite():
         mesa_numero TEXT,
         total REAL DEFAULT 0,
         itens TEXT,
-        fechado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        fechado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        restaurante_id INTEGER DEFAULT 1
     )
     """)
     cursor.execute("""
@@ -239,7 +250,8 @@ def _init_sqlite():
         qtd_pedidos_delivery INTEGER DEFAULT 0,
         qtd_mesas INTEGER DEFAULT 0,
         fechado_por TEXT,
-        fechado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        fechado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        restaurante_id INTEGER DEFAULT 1
     )
     """)
     cursor.execute("""
@@ -250,13 +262,33 @@ def _init_sqlite():
         total_pedidos INTEGER DEFAULT 0,
         total_entregas INTEGER DEFAULT 0,
         valor_entregas REAL DEFAULT 0,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        restaurante_id INTEGER DEFAULT 1
     )
     """)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS caixa_sessoes (
         id INTEGER PRIMARY KEY,
-        aberto_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        aberto_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        restaurante_id INTEGER DEFAULT 1
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS configuracoes (
+        chave TEXT NOT NULL,
+        valor TEXT,
+        restaurante_id INTEGER NOT NULL DEFAULT 1,
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (chave, restaurante_id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS clientes_cache (
+        telefone TEXT PRIMARY KEY,
+        nome TEXT,
+        endereco TEXT,
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        restaurante_id INTEGER DEFAULT 1
     )
     """)
 
@@ -272,7 +304,9 @@ def _init_mysql():
     CREATE TABLE IF NOT EXISTS mesas (
         id INT PRIMARY KEY AUTO_INCREMENT,
         numero VARCHAR(50) UNIQUE,
-        total DOUBLE DEFAULT 0
+        total DOUBLE DEFAULT 0,
+        status VARCHAR(50) DEFAULT 'livre',
+        restaurante_id INT DEFAULT 1
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
     cursor.execute("""
@@ -284,7 +318,8 @@ def _init_mysql():
         emoji VARCHAR(10) DEFAULT '🍽️',
         ativo TINYINT DEFAULT 1,
         foto VARCHAR(255) DEFAULT NULL,
-        descricao TEXT DEFAULT NULL
+        descricao TEXT DEFAULT NULL,
+        restaurante_id INT DEFAULT 1
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
     cursor.execute("""
@@ -292,15 +327,17 @@ def _init_mysql():
         id INT PRIMARY KEY AUTO_INCREMENT,
         nome VARCHAR(255) NOT NULL,
         preco DOUBLE NOT NULL DEFAULT 0.0,
-        ativo TINYINT DEFAULT 1
+        ativo TINYINT DEFAULT 1,
+        restaurante_id INT DEFAULT 1
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS adicional_categoria (
         adicional_id INT NOT NULL,
         categoria VARCHAR(100) NOT NULL,
+        restaurante_id INT DEFAULT 1,
         PRIMARY KEY (adicional_id, categoria),
-        FOREIGN KEY (adicional_id) REFERENCES adicionais(id)
+        FOREIGN KEY (adicional_id) REFERENCES adicionais(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
     cursor.execute("""
@@ -315,7 +352,8 @@ def _init_mysql():
         troco DOUBLE DEFAULT 0,
         forma_pagamento VARCHAR(50) DEFAULT '',
         status VARCHAR(50) DEFAULT 'novo',
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        restaurante_id INT DEFAULT 1
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
     cursor.execute("""
@@ -327,6 +365,7 @@ def _init_mysql():
         quantidade INT,
         observacao VARCHAR(500) DEFAULT '',
         adicionado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        restaurante_id INT DEFAULT 1,
         FOREIGN KEY (mesa_id) REFERENCES mesas(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
@@ -335,7 +374,10 @@ def _init_mysql():
         id INT PRIMARY KEY AUTO_INCREMENT,
         username VARCHAR(100) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
-        role VARCHAR(50) DEFAULT 'admin'
+        role VARCHAR(50) DEFAULT 'admin',
+        restaurante_id INT DEFAULT NULL,
+        licenca_vencimento DATE DEFAULT NULL,
+        ativo TINYINT DEFAULT 1
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
     cursor.execute("""
@@ -344,7 +386,8 @@ def _init_mysql():
         mesa_numero VARCHAR(50),
         total DOUBLE DEFAULT 0,
         itens TEXT,
-        fechado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        fechado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        restaurante_id INT DEFAULT 1
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
     cursor.execute("""
@@ -357,7 +400,8 @@ def _init_mysql():
         qtd_pedidos_delivery INT DEFAULT 0,
         qtd_mesas INT DEFAULT 0,
         fechado_por VARCHAR(100),
-        fechado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        fechado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        restaurante_id INT DEFAULT 1
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
     cursor.execute("""
@@ -368,13 +412,33 @@ def _init_mysql():
         total_pedidos INT DEFAULT 0,
         total_entregas INT DEFAULT 0,
         valor_entregas DOUBLE DEFAULT 0,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        restaurante_id INT DEFAULT 1
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS caixa_sessoes (
         id INT PRIMARY KEY AUTO_INCREMENT,
-        aberto_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        aberto_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        restaurante_id INT DEFAULT 1
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS configuracoes (
+        chave VARCHAR(100) NOT NULL,
+        valor TEXT,
+        restaurante_id INT NOT NULL DEFAULT 1,
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (chave, restaurante_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS clientes_cache (
+        telefone VARCHAR(20) PRIMARY KEY,
+        nome VARCHAR(100),
+        endereco VARCHAR(255),
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        restaurante_id INT DEFAULT 1
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
 
