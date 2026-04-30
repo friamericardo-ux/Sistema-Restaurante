@@ -6,7 +6,7 @@
 {% block page_subtitle %}Gerencie o fluxo de entregas em tempo real.{% endblock %}
 
 {% block top_actions %}
-<button onclick="carregarPedidos()" class="btn-status" style="background: var(--primary); color: white;">
+<button onclick="buscarPedidos()" class="btn-status" style="background: var(--primary); color: white;">
     Atualizar Agora
 </button>
 {% endblock %}
@@ -22,140 +22,51 @@
             </div>
             <span class="column-count" id="count-novo">0</span>
         </div>
-        <div class="column-body" id="list-novo"></div>
+        <div class="column-body" id="lista-novo"></div>
     </div>
 
     <!-- EM PREPARO -->
-    <div class="kanban-column" id="col-preparo">
+    <div class="kanban-column" id="col-em_preparo">
         <div class="column-header">
             <div class="column-title">
                 <div class="column-dot" style="background: var(--warning);"></div>
                 Em preparo
             </div>
-            <span class="column-count" id="count-preparo">0</span>
+            <span class="column-count" id="count-em_preparo">0</span>
         </div>
-        <div class="column-body" id="list-preparo"></div>
+        <div class="column-body" id="lista-em_preparo"></div>
     </div>
 
     <!-- SAIU PARA ENTREGA -->
-    <div class="kanban-column" id="col-entrega">
+    <div class="kanban-column" id="col-saiu_entrega">
         <div class="column-header">
             <div class="column-title">
                 <div class="column-dot" style="background: var(--primary);"></div>
                 Saiu p/ entrega
             </div>
-            <span class="column-count" id="count-entrega">0</span>
+            <span class="column-count" id="count-saiu_entrega">0</span>
         </div>
-        <div class="column-body" id="list-entrega"></div>
+        <div class="column-body" id="lista-saiu_entrega"></div>
     </div>
 
-    <!-- ENTREGUE (Finalizado) -->
-    <div class="kanban-column" id="col-finalizado">
+    <!-- ENTREGUE -->
+    <div class="kanban-column" id="col-entregue">
         <div class="column-header">
             <div class="column-title">
                 <div class="column-dot" style="background: var(--success);"></div>
                 Entregues
             </div>
-            <span class="column-count" id="count-finalizado">0</span>
+            <span class="column-count" id="count-entregue">0</span>
         </div>
-        <div class="column-body" id="list-finalizado"></div>
+        <div class="column-body" id="lista-entregue"></div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    async function carregarPedidos() {
-        try {
-            const resp = await fetch('/api/pedidos/delivery');
-            const data = await resp.json();
-            
-            if (data.sucesso) {
-                renderizarKanban(data.pedidos);
-            }
-        } catch (err) {
-            console.error("Erro ao carregar pedidos:", err);
-        }
-    }
-
-    function renderizarKanban(pedidos) {
-        const columns = {
-            'novo': document.getElementById('list-novo'),
-            'em_preparo': document.getElementById('list-preparo'),
-            'saiu_entrega': document.getElementById('list-entrega'),
-            'entregue': document.getElementById('list-finalizado')
-        };
-
-        const counts = {
-            'novo': 0,
-            'em_preparo': 0,
-            'saiu_entrega': 0,
-            'entregue': 0
-        };
-
-        // Limpar colunas
-        Object.values(columns).forEach(col => col.innerHTML = '');
-
-        pedidos.forEach(p => {
-            const status = p.status || 'novo';
-            if (columns[status]) {
-                counts[status]++;
-                const card = criarCard(p);
-                columns[status].appendChild(card);
-            }
-        });
-
-        // Atualizar contadores
-        Object.keys(counts).forEach(key => {
-            document.getElementById(`count-${key === 'entregue' ? 'finalizado' : key}`).textContent = counts[key];
-        });
-    }
-
-    function criarCard(p) {
-        const div = document.createElement('div');
-        div.className = 'kanban-card';
-        
-        const itensTxt = p.itens.map(i => `${i.quantidade}x ${i.nome}`).join(', ');
-        const total = parseFloat(p.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        
-        let btnAcao = '';
-        if (p.status === 'novo') {
-            btnAcao = `<button class="btn-status" onclick="mudarStatus(${p.id}, 'em_preparo')">Aceitar</button>`;
-        } else if (p.status === 'em_preparo') {
-            btnAcao = `<button class="btn-status" onclick="mudarStatus(${p.id}, 'saiu_entrega')">Despachar</button>`;
-        } else if (p.status === 'saiu_entrega') {
-            btnAcao = `<button class="btn-status" onclick="mudarStatus(${p.id}, 'entregue')" style="background: var(--success); color: white;">Concluir</button>`;
-        }
-
-        div.innerHTML = `
-            <span class="card-order-id">#${p.id}</span>
-            <span class="card-customer">${p.cliente_nome}</span>
-            <div class="card-items">${itensTxt}</div>
-            <div class="card-footer">
-                <span class="card-price">${total}</span>
-                ${btnAcao}
-            </div>
-        `;
-        return div;
-    }
-
-    async function mudarStatus(id, status) {
-        try {
-            const resp = await fetch('/api/pedido/status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pedido_id: id, status: status })
-            });
-            const data = await resp.json();
-            if (data.sucesso) {
-                carregarPedidos();
-            }
-        } catch (err) {
-            alert("Erro ao mudar status!");
-        }
-    }
-
-    carregarPedidos();
-    setInterval(carregarPedidos, 15000);
-</script>
+<div id="toast"></div>
+<div style="text-align:center;padding:0 0 16px;font-size:0.85rem;color:var(--text-muted);">
+    <span id="ultima-atualizacao"></span>
+</div>
+<script src="{{ url_for('static', filename='js/delivery.js') }}"></script>
 {% endblock %}
