@@ -129,13 +129,13 @@ async function buscarPedidos() {
         const listas = {
             'novo':         document.getElementById('lista-novo'),
             'em_preparo':   document.getElementById('lista-em_preparo'),
-            'saiu_entrega': document.getElementById('lista-saiu_entrega')
+            'saiu_entrega': document.getElementById('lista-saiu_entrega'),
+            'entregue':     document.getElementById('lista-entregue')
         };
 
         // Agrupar pedidos novos por status
         const pedidosNovos = {};
-        const pedidosPorStatus = { novo: [], em_preparo: [], saiu_entrega: [] };
-
+        const pedidosPorStatus = { novo: [], em_preparo: [], saiu_entrega: [], entregue: [] };
         data.pedidos.forEach(pedido => {
             pedidosNovos[pedido.id] = pedido;
             if (pedidosPorStatus[pedido.status]) {
