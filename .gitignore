@@ -5,5 +5,4 @@ data/database.db
 .venv/
 *.pyc
 security.log
-".env" 
-".env" 
+
