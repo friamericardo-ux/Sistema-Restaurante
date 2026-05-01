@@ -66,19 +66,26 @@
 {% block extra_js %}
 <script>
     let idsConhecidos = new Set();
-    let audioCtx = null;
 
     function tocarSom() {
         try {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.value = 880;
-            gain.gain.value = 0.3;
-            osc.start();
-            setTimeout(() => { osc.stop(); }, 300);
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const notas = [659, 784, 659, 523];
+            const duracoes = [0.15, 0.15, 0.15, 0.3];
+            let tempo = ctx.currentTime;
+            notas.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.4, tempo);
+                gain.gain.exponentialRampToValueAtTime(0.001, tempo + duracoes[i]);
+                osc.start(tempo);
+                osc.stop(tempo + duracoes[i]);
+                tempo += duracoes[i];
+            });
         } catch (e) {}
     }
 
