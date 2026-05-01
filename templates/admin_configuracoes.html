@@ -133,5 +133,25 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+function initAutocompleteAdmin() {
+  const input = document.getElementById('endereco_restaurante');
+  if (!input) return;
+  const autocomplete = new google.maps.places.Autocomplete(input, {
+    componentRestrictions: { country: 'br' },
+    fields: ['formatted_address']
+  });
+  autocomplete.addListener('place_changed', function() {
+    const place = autocomplete.getPlace();
+    if (place.formatted_address) {
+      input.value = place.formatted_address;
+    }
+  });
+}
+</script>
+<script 
+  src="https://maps.googleapis.com/maps/api/js?key={{ configs.google_maps_key }}&libraries=places&callback=initAutocompleteAdmin" 
+  async defer>
+</script>
 <script src="{{ url_for('static', filename='js/admin_configuracoes.js') }}"></script>
 {% endblock %}

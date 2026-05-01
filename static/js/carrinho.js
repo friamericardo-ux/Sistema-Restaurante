@@ -90,7 +90,7 @@ function mudarQtd(idx, delta) {
   renderizarCarrinho();
 }
 
-function finalizarPedido() {
+async function finalizarPedido() {
   const itens = lerCarrinho();
   if (!itens.length) return toast('Carrinho vazio');
 
@@ -124,7 +124,10 @@ function finalizarPedido() {
     return toast('Preencha todos os campos obrigatórios');
 
   if (window._freteCalculado == null && endereco) {
-    return toast('Aguarde o cálculo do frete ou selecione um endereço válido');
+    if (typeof calcularFrete === 'function') {
+       toast('Calculando frete, aguarde...');
+       await calcularFrete(endereco);
+    }
   }
 
   const rid = document.getElementById('restauranteId')?.value || 1;
