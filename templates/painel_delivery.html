@@ -101,7 +101,6 @@
                 data.pedidos.forEach(p => {
                     if (!antes.has(p.id) && p.status === 'novo') {
                         tocarSom();
-                        window.open('/delivery/imprimir/' + p.id + '?auto=1', '_blank');
                     }
                 });
             }

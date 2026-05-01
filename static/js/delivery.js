@@ -227,7 +227,6 @@ async function buscarPedidos() {
                     if (!pedidosAtuais[pedido.id] && pedido.status === 'novo') {
                         mostrarToast(`🔔 Novo pedido #${pedido.id} — ${pedido.cliente_nome}!`);
                         tocarSom();
-                        window.open('/delivery/imprimir/' + pedido.id + '?auto=1', '_blank');
                     }
                     lista.appendChild(criarCard(pedido));
                 }
