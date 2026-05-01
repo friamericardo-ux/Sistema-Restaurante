@@ -1018,14 +1018,23 @@ def admin_configuracoes():
                 geo_url = "https://maps.googleapis.com/maps/api/geocode/json"
                 geo_resp = req.get(geo_url, params={"address": endereco, "key": google_key})
                 geo_data = geo_resp.json()
+                print("DEBUG geocodificacao endereco:", endereco)
+                print("DEBUG geo_data status:", geo_data.get("status"))
                 if geo_data["status"] == "OK":
                     location = geo_data["results"][0]["geometry"]["location"]
-                    set_config("restaurante_lat", str(location["lat"]),
+                    lat = location["lat"]
+                    lng = location["lng"]
+                    print("DEBUG lat/lng:", lat, lng)
+                    set_config("restaurante_lat", str(lat),
                               restaurante_id=session['restaurante_id'])
-                    set_config("restaurante_lng", str(location["lng"]),
+                    set_config("restaurante_lng", str(lng),
                               restaurante_id=session['restaurante_id'])
-            except Exception:
-                pass  # mantém lat/lng anteriores se falhar
+                else:
+                    print("DEBUG geocodificacao ERRO status:", geo_data.get("status"), geo_data)
+            except Exception as e:
+                print("DEBUG geocodificacao EXCEPTION:", e)
+                import traceback
+                traceback.print_exc()
 
         sucesso = "Configurações salvas com sucesso!"
 
