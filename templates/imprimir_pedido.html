@@ -293,12 +293,15 @@
 <button class="btn-imprimir" onclick="window.print()">&#x1F5A8; Imprimir Comanda</button>
 
 <script>
-if (window.location.search.includes('auto=1')) {
-  window.onload = function() {
-    window.print();
-    setTimeout(function() { window.close(); }, 500);
-  };
-}
+window.onload = function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('auto') === '1') {
+    setTimeout(function() {
+      window.print();
+      window.close();
+    }, 800);
+  }
+};
 </script>
 
 </body>

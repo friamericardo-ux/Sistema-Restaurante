@@ -1202,6 +1202,43 @@ def delivery_imprimir(id):
     )
 
 
+@app.route('/mesa/comanda/<numero>')
+@login_required
+def mesa_comanda(numero):
+    from datetime import datetime
+    db = get_connection()
+    cursor = db.cursor()
+    ph = "%s" if is_mysql() else "?"
+    cursor.execute(f"SELECT id, numero, total, status FROM mesas WHERE numero = {ph} AND restaurante_id = {ph}", (numero, session.get('restaurante_id', 1)))
+    mesa = cursor.fetchone()
+    if not mesa:
+        return "Mesa não encontrada", 404
+    cursor.execute(f"SELECT id, nome, preco, quantidade, observacao FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa[0], session.get('restaurante_id', 1)))
+    itens_raw = cursor.fetchall()
+    db.close()
+    itens = []
+    for i in itens_raw:
+        itens.append({
+            "id": i[0], "nome": i[1], "preco": float(i[2]),
+            "quantidade": i[3], "observacao": i[4] or "",
+            "adicionais": []
+        })
+    return render_template('imprimir_pedido.html',
+        pedido_id="MESA-" + str(numero),
+        cliente_nome="Mesa " + str(numero),
+        cliente_telefone="",
+        cliente_endereco="Salão",
+        itens=itens,
+        taxa_entrega=0,
+        total=float(mesa[2]),
+        forma_pagamento="",
+        troco=0,
+        status=mesa[3] if mesa[3] else "aberta",
+        criado_em=datetime.now().strftime("%d/%m/%Y %H:%M"),
+        nome_restaurante=get_config("nome_restaurante", "Restaurante")
+    )
+
+
 # ========== MIGRAÇÃO DO BANCO ==========
 
 @app.route('/admin/migrar-banco')

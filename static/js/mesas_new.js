@@ -16,6 +16,7 @@
 /* ── Estado ────────────────────────────────────────────── */
 let _mesaAtual = null;   // número da mesa aberta no modal
 let _itemSelecionado = null;   // produto pendente de adicionais
+let _quantidadeSelecionada = 1;
 let _intervalId = null;   // ID do único setInterval de polling
 
 /* ── Helpers ────────────────────────────────────────────── */
@@ -100,11 +101,15 @@ async function renderizarMesas() {
         container.innerHTML = mesas.map(m => {
             const status = getStatusMesa(m);
             const qtdItens = m.itens ? m.itens.length : 0;
+            const btnPrint = qtdItens > 0
+                ? `<button class="btn-mesa-action" style="background:rgba(99,102,241,0.08);color:var(--primary);font-size:0.7rem;" onclick="event.stopPropagation(); window.open('/mesa/comanda/${m.numero}','_blank')" title="Imprimir Última Comanda">🖨️</button>`
+                : '';
             let botoes = '';
 
             if (status === 'conta_pedida') {
                 if (podeFechar) {
                     botoes = `
+                        ${btnPrint}
                         <button class="btn-mesa-action ver" onclick="event.stopPropagation(); abrirModal('${m.numero}')" title="Ver consumo">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                             Ver
@@ -114,6 +119,7 @@ async function renderizarMesas() {
                         </button>`;
                 } else {
                     botoes = `
+                        ${btnPrint}
                         <button class="btn-mesa-action ver" onclick="event.stopPropagation(); abrirModal('${m.numero}')" title="Ver consumo">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                             Ver
@@ -125,6 +131,7 @@ async function renderizarMesas() {
             } else if (status === 'ocupada' || status === 'aberta') {
                 if (podePedirConta) {
                     botoes = `
+                        ${btnPrint}
                         <button class="btn-mesa-action ver" onclick="event.stopPropagation(); abrirModal('${m.numero}')" title="Ver consumo">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                             Ver
@@ -134,6 +141,7 @@ async function renderizarMesas() {
                         </button>`;
                 } else {
                     botoes = `
+                        ${btnPrint}
                         <button class="btn-mesa-action ver" onclick="event.stopPropagation(); abrirModal('${m.numero}')" title="Ver consumo">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                             Ver
@@ -311,6 +319,7 @@ function fecharModal() {
     document.getElementById('modal-overlay').classList.remove('ativo');
     _mesaAtual = null;
     _itemSelecionado = null;
+    _quantidadeSelecionada = 1;
     renderizarMesas();
 }
 
@@ -348,14 +357,47 @@ async function montarCardapioModal() {
     }
 }
 
-/* ── Adicionais do produto selecionado ─────────────────── */
-async function selecionarProduto(produto) {
+/* ── Seletor de quantidade inline ──────────────────── */
+let _qtdSeletorHtml = null; // cache do HTML do seletor
+
+function montarSeletorQuantidade(produto) {
+    const nome = escapeHtml(produto.nome);
+    const preco = produto.preco;
     _itemSelecionado = { nome: produto.nome, preco: produto.preco };
-    document.getElementById('modal-adicionais-produto-label').textContent =
-        `${produto.nome}  —  ${fmtBRL(produto.preco)}`;
+    _quantidadeSelecionada = 1;
+
+    const label = document.getElementById('modal-adicionais-produto-label');
+    if (label) label.textContent = `${produto.nome}  —  ${fmtBRL(preco)}`;
+
     const lista = document.getElementById('modal-adicionais-lista');
-    lista.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Carregando adicionais...</span>';
+    if (!lista) return;
     document.getElementById('modal-adicionais-area').classList.add('ativo');
+
+    lista.innerHTML = `
+        <div class="qty-selector">
+            <div class="qty-selector-nome">${nome}</div>
+            <div class="qty-selector-preco">${fmtBRL(preco)}</div>
+            <div class="qty-selector-controls">
+                <button class="qty-btn" onclick="alterarQtd(-1)">−</button>
+                <span class="qty-valor" id="qty-valor">1</span>
+                <button class="qty-btn" onclick="alterarQtd(1)">+</button>
+            </div>
+            <button class="btn-continuar" onclick="confirmarQuantidade()">Continuar ➜</button>
+        </div>`;
+}
+
+function alterarQtd(delta) {
+    _quantidadeSelecionada = Math.max(1, _quantidadeSelecionada + delta);
+    const el = document.getElementById('qty-valor');
+    if (el) el.textContent = _quantidadeSelecionada;
+}
+
+async function confirmarQuantidade() {
+    if (!_itemSelecionado) return;
+    const produto = _itemSelecionado;
+    const lista = document.getElementById('modal-adicionais-lista');
+    if (!lista) return;
+    lista.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Carregando adicionais...</span>';
 
     try {
         const url = '/api/adicionais' + (produto.categoria ? `?categoria=${encodeURIComponent(produto.categoria)}` : '');
@@ -376,12 +418,33 @@ async function selecionarProduto(produto) {
                 ));
                 lista.appendChild(label);
             });
+            const btnConfirmar = document.createElement('button');
+            btnConfirmar.className = 'btn-continuar';
+            btnConfirmar.style.marginTop = '12px';
+            btnConfirmar.textContent = '✅ Adicionar ao Pedido';
+            btnConfirmar.onclick = confirmarItemComAdicionais;
+            lista.appendChild(btnConfirmar);
         } else {
             lista.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Sem adicionais para esta categoria.</span>';
+            const btnAdd = document.createElement('button');
+            btnAdd.className = 'btn-continuar';
+            btnAdd.style.marginTop = '12px';
+            btnAdd.textContent = '✅ Adicionar ao Pedido';
+            btnAdd.onclick = () => {
+                cancelarAdicionais();
+                enviarItem(_itemSelecionado.nome, _itemSelecionado.preco, _quantidadeSelecionada, null, '');
+            };
+            lista.appendChild(btnAdd);
         }
     } catch (e) {
         lista.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Erro ao carregar adicionais.</span>';
     }
+}
+
+/* ── Adicionais do produto selecionado ─────────────────── */
+async function selecionarProduto(produto) {
+    _itemSelecionado = { nome: produto.nome, preco: produto.preco, categoria: produto.categoria || '' };
+    montarSeletorQuantidade(produto);
 }
 
 /* Confirma item com adicionais marcados + observação */
@@ -401,11 +464,12 @@ function confirmarItemComAdicionais() {
     const observacao = (document.getElementById('modal-observacao')?.value || '').trim();
 
     cancelarAdicionais();
-    enviarItem(nomeCompleto, precoTotal, 1, null, observacao);
+    enviarItem(nomeCompleto, precoTotal, _quantidadeSelecionada, null, observacao);
 }
 
 function cancelarAdicionais() {
     _itemSelecionado = null;
+    _quantidadeSelecionada = 1;
     const area = document.getElementById('modal-adicionais-area');
     if (area) area.classList.remove('ativo');
     const lista = document.getElementById('modal-adicionais-lista');
