@@ -5,6 +5,7 @@ const _parts = window.location.pathname.split('/').filter(Boolean);
 // URL /cardapio        → parts = ['cardapio']          → SLUG = null
 const SLUG = (_parts[0] === 'cardapio' && _parts.length >= 2) ? _parts[1] : null;
 const API_BASE = SLUG ? `/cardapio/${SLUG}` : '';
+const RID = (document.getElementById('restauranteId')?.value) || 1;
 
 let cats = [];
 
@@ -361,7 +362,7 @@ document.getElementById('buscaInput').addEventListener('input',function(){
 
 async function init() {
   try {
-    const res = await fetch(`${API_BASE}/api/cardapio`);
+    const res = await fetch(`${API_BASE}/api/cardapio?restaurante_id=${RID}`);
     const data = await res.json();
 
     const grupos = {};
@@ -384,7 +385,7 @@ async function init() {
     const categoriasUnicas = Object.keys(grupos);
     const adsMap = {};
     await Promise.all(categoriasUnicas.map(async cat => {
-      const r = await fetch(`${API_BASE}/api/adicionais?categoria=${encodeURIComponent(cat)}`);
+      const r = await fetch(`${API_BASE}/api/adicionais?categoria=${encodeURIComponent(cat)}&restaurante_id=${RID}`);
       const d = await r.json();
       adsMap[cat] = d.adicionais || [];
     }));

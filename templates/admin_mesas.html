@@ -118,16 +118,18 @@ MODAL — Consumo da Mesa
                 <span style="color:var(--text-muted);font-size:12px;">Carregando…</span>
             </div>
 
-            {# ── Área de adicionais + Observação ───────── #}
-            <div class="modal-adicionais-area" id="modal-adicionais-area">
-                <span class="modal-adicionais-produto-label" id="modal-adicionais-produto-label"></span>
-                <div class="modal-adicionais-lista" id="modal-adicionais-lista"></div>
+            {# ── Observação (vale para todos itens selecionados) ── #}
+            <div class="modal-observacao-group">
+                <label for="modal-observacao">Observação (para todos os itens)</label>
+                <textarea id="modal-observacao" placeholder="Ex: sem cebola, carne mal passada, retirar tomate..." rows="2"></textarea>
+            </div>
 
-                <div class="modal-observacao-group">
-                    <label for="modal-observacao">Observação</label>
-                    <textarea id="modal-observacao" placeholder="Ex: sem cebola, carne mal passada, retirar tomate..." rows="2"></textarea>
-                </div>
-
+            {# ── Barra de seleção do cardápio ──────────── #}
+            <div class="selecao-bottom-bar" id="selecao-bottom-bar" style="display:none;">
+                <span id="selecao-info">0 itens selecionados</span>
+                <button class="btn-adicionar-selecao" onclick="adicionarSelecao()">
+                    ✅ Adicionar ao Pedido
+                </button>
             </div>
 
             <hr style="border:none;border-top:1px solid var(--border);margin:0 0 20px;">

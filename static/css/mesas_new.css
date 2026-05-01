@@ -361,30 +361,45 @@
 /* Cardápio no modal */
 .modal-cardapio-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 10px;
-    margin-bottom: 20px;
-    max-height: 200px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+    max-height: 280px;
     overflow-y: auto;
 }
 
-.modal-produto-btn {
+.modal-produto-card {
     display: flex;
-    flex-direction: column;
-    padding: 10px 12px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
     background: var(--bg);
     border: 1.5px solid var(--border);
     border-radius: var(--radius-md);
     cursor: pointer;
-    text-align: left;
     transition: all 0.2s;
     font-family: inherit;
-    gap: 4px;
+    gap: 8px;
+    min-height: 48px;
 }
 
-.modal-produto-btn:hover {
+.modal-produto-card:hover {
     border-color: var(--primary);
     background: var(--primary-soft);
+}
+
+.modal-produto-card.selecionado {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    box-shadow: 0 0 0 2px rgba(99,102,241,0.15);
+}
+
+.produto-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
 }
 
 .modal-produto-nome {
@@ -395,9 +410,93 @@
 }
 
 .modal-produto-preco {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     color: var(--primary);
     font-weight: 700;
+}
+
+.produto-qtd-inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.qtd-inline-btn {
+    width: 30px;
+    height: 30px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    font-family: inherit;
+    user-select: none;
+}
+
+.qtd-inline-btn:hover {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.qtd-inline-btn.add-btn {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-soft);
+}
+
+.qtd-inline-btn.add-btn:hover {
+    background: var(--primary);
+    color: #fff;
+}
+
+.qtd-inline-valor {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text-main);
+    min-width: 22px;
+    text-align: center;
+}
+
+/* ── Barra de seleção ── */
+.selecao-bottom-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--primary);
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.btn-adicionar-selecao {
+    padding: 8px 20px;
+    background: #fff;
+    color: var(--primary);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.btn-adicionar-selecao:hover {
+    background: rgba(255,255,255,0.9);
+    transform: scale(1.02);
 }
 
 /* Adicionais */
@@ -671,6 +770,13 @@
 
     .modal-cardapio-grid {
         grid-template-columns: repeat(2, 1fr);
+        min-width: 0;
+    }
+
+    .qtd-inline-btn {
+        width: 26px;
+        height: 26px;
+        font-size: 0.85rem;
     }
 }
 

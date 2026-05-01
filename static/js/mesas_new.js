@@ -17,6 +17,7 @@
 let _mesaAtual = null;   // número da mesa aberta no modal
 let _itemSelecionado = null;   // produto pendente de adicionais
 let _quantidadeSelecionada = 1;
+let _selecaoCardapio = {};   // { "nomeChave": { nome, preco, quantidade } }
 let _intervalId = null;   // ID do único setInterval de polling
 
 /* ── Helpers ────────────────────────────────────────────── */
@@ -296,15 +297,10 @@ function fecharMesaPorId(mesaId) {
 
 async function abrirModal(numMesa) {
     _mesaAtual = numMesa;
+    _selecaoCardapio = {};
     document.getElementById('modal-titulo').textContent = '🍽️ Mesa ' + numMesa;
-
-    // Zera área de adicionais
-    _itemSelecionado = null;
-    const adicionaisArea = document.getElementById('modal-adicionais-area');
-    if (adicionaisArea) {
-        adicionaisArea.classList.remove('ativo');
-        document.getElementById('modal-adicionais-lista').innerHTML = '';
-    }
+    const barra = document.getElementById('selecao-bottom-bar');
+    if (barra) barra.style.display = 'none';
 
     document.getElementById('modal-overlay').classList.add('ativo');
 
@@ -320,10 +316,68 @@ function fecharModal() {
     _mesaAtual = null;
     _itemSelecionado = null;
     _quantidadeSelecionada = 1;
+    _selecaoCardapio = {};
+    const barra = document.getElementById('selecao-bottom-bar');
+    if (barra) barra.style.display = 'none';
     renderizarMesas();
 }
 
-/* ── Cardápio no modal ─────────────────────────────────── */
+/* ── Cardápio no modal — multi-select com +/- inline ──── */
+function atualizarBarraSelecao() {
+    const nomes = Object.keys(_selecaoCardapio);
+    const totalItens = nomes.reduce((s, k) => s + _selecaoCardapio[k].quantidade, 0);
+    const barra = document.getElementById('selecao-bottom-bar');
+    const info = document.getElementById('selecao-info');
+    if (!barra || !info) return;
+    if (totalItens === 0) {
+        barra.style.display = 'none';
+        return;
+    }
+    barra.style.display = 'flex';
+    const tipos = nomes.length;
+    info.textContent = `${totalItens} item${totalItens !== 1 ? 's' : ''} (${tipos} tipo${tipos !== 1 ? 's' : ''})`;
+}
+
+function alterarQtdSelecao(nome, preco, delta) {
+    const chave = nome + '|' + preco;
+    const atual = _selecaoCardapio[chave];
+    if (!atual && delta > 0) {
+        _selecaoCardapio[chave] = { nome, preco, quantidade: 1 };
+    } else if (atual) {
+        const nova = atual.quantidade + delta;
+        if (nova <= 0) {
+            delete _selecaoCardapio[chave];
+        } else {
+            _selecaoCardapio[chave].quantidade = nova;
+        }
+    }
+    montarCardapioModal();
+    atualizarBarraSelecao();
+}
+
+function limparSelecao() {
+    _selecaoCardapio = {};
+    montarCardapioModal();
+    atualizarBarraSelecao();
+}
+
+function adicionarSelecao() {
+    const nomes = Object.keys(_selecaoCardapio);
+    if (nomes.length === 0) return;
+    const observacao = (document.getElementById('modal-observacao')?.value || '').trim();
+    let pendentes = nomes.length;
+    nomes.forEach(chave => {
+        const item = _selecaoCardapio[chave];
+        enviarItem(item.nome, item.preco, item.quantidade, () => {
+            pendentes--;
+            if (pendentes === 0) {
+                limparSelecao();
+                document.getElementById('modal-observacao').value = '';
+            }
+        }, observacao);
+    });
+}
+
 async function montarCardapioModal() {
     const grid = document.getElementById('modal-cardapio-grid');
     if (!grid) return;
@@ -337,143 +391,53 @@ async function montarCardapioModal() {
             return;
         }
         data.produtos.forEach(p => {
-            const btn = document.createElement('button');
-            btn.className = 'modal-produto-btn';
-            btn.dataset.nome = p.nome;
-            btn.dataset.preco = p.preco;
-            btn.dataset.categoria = p.categoria || '';
-            btn.dataset.descricao = p.descricao || '';
-            btn.innerHTML = `
-                <span class="modal-produto-nome">${escapeHtml((p.emoji ? p.emoji + ' ' : '') + p.nome)}</span>
-                <span class="modal-produto-preco">${fmtBRL(p.preco)}</span>`;
-            btn.addEventListener('click', () => selecionarProduto({
-                nome: p.nome, preco: parseFloat(p.preco),
-                categoria: p.categoria || '', descricao: p.descricao || ''
-            }));
-            grid.appendChild(btn);
+            const chave = p.nome + '|' + p.preco;
+            const selecionado = _selecaoCardapio[chave];
+            const qtd = selecionado ? selecionado.quantidade : 0;
+
+            const card = document.createElement('div');
+            card.className = 'modal-produto-card' + (qtd > 0 ? ' selecionado' : '');
+            card.dataset.chave = chave;
+
+            const nomeHtml = escapeHtml((p.emoji ? p.emoji + ' ' : '') + p.nome);
+            const nomeJs = p.nome.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+            if (qtd > 0) {
+                card.innerHTML = `
+                    <div class="produto-info">
+                        <span class="modal-produto-nome">${nomeHtml}</span>
+                        <span class="modal-produto-preco">${fmtBRL(p.preco)}</span>
+                    </div>
+                    <div class="produto-qtd-inline">
+                        <button class="qtd-inline-btn" onclick="event.stopPropagation(); alterarQtdSelecao('${nomeJs}', ${p.preco}, -1)">−</button>
+                        <span class="qtd-inline-valor">${qtd}</span>
+                        <button class="qtd-inline-btn" onclick="event.stopPropagation(); alterarQtdSelecao('${nomeJs}', ${p.preco}, 1)">+</button>
+                    </div>`;
+            } else {
+                card.innerHTML = `
+                    <div class="produto-info">
+                        <span class="modal-produto-nome">${nomeHtml}</span>
+                        <span class="modal-produto-preco">${fmtBRL(p.preco)}</span>
+                    </div>
+                    <div class="produto-qtd-inline">
+                        <button class="qtd-inline-btn add-btn" onclick="event.stopPropagation(); alterarQtdSelecao('${nomeJs}', ${p.preco}, 1)">+</button>
+                    </div>`;
+            }
+
+            card.addEventListener('click', () => {
+                alterarQtdSelecao(p.nome, parseFloat(p.preco), qtd > 0 ? -qtd : 1);
+            });
+
+            grid.appendChild(card);
         });
     } catch (e) {
         grid.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Erro ao carregar produtos.</span>';
     }
 }
 
-/* ── Seletor de quantidade inline ──────────────────── */
-let _qtdSeletorHtml = null; // cache do HTML do seletor
-
-function montarSeletorQuantidade(produto) {
-    const nome = escapeHtml(produto.nome);
-    const preco = produto.preco;
-    _itemSelecionado = { nome: produto.nome, preco: produto.preco };
-    _quantidadeSelecionada = 1;
-
-    const label = document.getElementById('modal-adicionais-produto-label');
-    if (label) label.textContent = `${produto.nome}  —  ${fmtBRL(preco)}`;
-
-    const lista = document.getElementById('modal-adicionais-lista');
-    if (!lista) return;
-    document.getElementById('modal-adicionais-area').classList.add('ativo');
-
-    lista.innerHTML = `
-        <div class="qty-selector">
-            <div class="qty-selector-nome">${nome}</div>
-            <div class="qty-selector-preco">${fmtBRL(preco)}</div>
-            <div class="qty-selector-controls">
-                <button class="qty-btn" onclick="alterarQtd(-1)">−</button>
-                <span class="qty-valor" id="qty-valor">1</span>
-                <button class="qty-btn" onclick="alterarQtd(1)">+</button>
-            </div>
-            <button class="btn-continuar" onclick="confirmarQuantidade()">Continuar ➜</button>
-        </div>`;
-}
-
-function alterarQtd(delta) {
-    _quantidadeSelecionada = Math.max(1, _quantidadeSelecionada + delta);
-    const el = document.getElementById('qty-valor');
-    if (el) el.textContent = _quantidadeSelecionada;
-}
-
-async function confirmarQuantidade() {
-    if (!_itemSelecionado) return;
-    const produto = _itemSelecionado;
-    const lista = document.getElementById('modal-adicionais-lista');
-    if (!lista) return;
-    lista.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Carregando adicionais...</span>';
-
-    try {
-        const url = '/api/adicionais' + (produto.categoria ? `?categoria=${encodeURIComponent(produto.categoria)}` : '');
-        const res = await fetch(url);
-        const data = await res.json();
-        lista.innerHTML = '';
-        if (data.sucesso && data.adicionais.length > 0) {
-            data.adicionais.forEach(a => {
-                const label = document.createElement('label');
-                label.className = 'modal-adicional-chip';
-                const cb = document.createElement('input');
-                cb.type = 'checkbox';
-                cb.dataset.nome = a.nome;
-                cb.dataset.preco = a.preco;
-                label.appendChild(cb);
-                label.appendChild(document.createTextNode(
-                    a.nome + (parseFloat(a.preco) > 0 ? `  +${fmtBRL(a.preco)}` : '')
-                ));
-                lista.appendChild(label);
-            });
-            const btnConfirmar = document.createElement('button');
-            btnConfirmar.className = 'btn-continuar';
-            btnConfirmar.style.marginTop = '12px';
-            btnConfirmar.textContent = '✅ Adicionar ao Pedido';
-            btnConfirmar.onclick = confirmarItemComAdicionais;
-            lista.appendChild(btnConfirmar);
-        } else {
-            lista.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Sem adicionais para esta categoria.</span>';
-            const btnAdd = document.createElement('button');
-            btnAdd.className = 'btn-continuar';
-            btnAdd.style.marginTop = '12px';
-            btnAdd.textContent = '✅ Adicionar ao Pedido';
-            btnAdd.onclick = () => {
-                cancelarAdicionais();
-                enviarItem(_itemSelecionado.nome, _itemSelecionado.preco, _quantidadeSelecionada, null, '');
-            };
-            lista.appendChild(btnAdd);
-        }
-    } catch (e) {
-        lista.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Erro ao carregar adicionais.</span>';
-    }
-}
-
-/* ── Adicionais do produto selecionado ─────────────────── */
-async function selecionarProduto(produto) {
-    _itemSelecionado = { nome: produto.nome, preco: produto.preco, categoria: produto.categoria || '' };
-    montarSeletorQuantidade(produto);
-}
-
-/* Confirma item com adicionais marcados + observação */
-function confirmarItemComAdicionais() {
-    if (!_itemSelecionado) return;
-    const checks = document.querySelectorAll('#modal-adicionais-lista input[type=checkbox]:checked');
-    const adicionais = Array.from(checks).map(cb => ({ nome: cb.dataset.nome, preco: parseFloat(cb.dataset.preco) }));
-
-    let nomeCompleto = _itemSelecionado.nome;
-    let precoTotal = _itemSelecionado.preco;
-
-    if (adicionais.length > 0) {
-        nomeCompleto += ' (+ ' + adicionais.map(a => a.nome).join(', ') + ')';
-        precoTotal += adicionais.reduce((s, a) => s + a.preco, 0);
-    }
-
-    const observacao = (document.getElementById('modal-observacao')?.value || '').trim();
-
-    cancelarAdicionais();
-    enviarItem(nomeCompleto, precoTotal, _quantidadeSelecionada, null, observacao);
-}
-
+/* ── Cancela seleção ── */
 function cancelarAdicionais() {
-    _itemSelecionado = null;
-    _quantidadeSelecionada = 1;
-    const area = document.getElementById('modal-adicionais-area');
-    if (area) area.classList.remove('ativo');
-    const lista = document.getElementById('modal-adicionais-lista');
-    if (lista) lista.innerHTML = '';
+    limparSelecao();
     const obs = document.getElementById('modal-observacao');
     if (obs) obs.value = '';
 }
