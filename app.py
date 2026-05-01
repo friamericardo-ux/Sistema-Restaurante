@@ -1011,6 +1011,7 @@ def admin_configuracoes():
                 set_config(campo, valor, restaurante_id=session['restaurante_id'])
 
         endereco = request.form.get("endereco_restaurante", "").strip()
+        print("DEBUG endereco recebido:", repr(endereco))
         if endereco:
             try:
                 import requests as req
