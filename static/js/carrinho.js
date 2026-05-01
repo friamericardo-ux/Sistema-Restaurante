@@ -99,6 +99,17 @@ async function finalizarPedido() {
   const endereco = document.getElementById('endereco').value.trim();
   const observacao = document.getElementById('observacao').value.trim();
   const pagamento = document.querySelector('input[name="pagamento"]:checked')?.value;
+
+  if (!nome || !telefone || !endereco || !pagamento)
+    return toast('Preencha todos os campos obrigatórios');
+
+  if (window._freteCalculado == null && endereco) {
+    if (typeof calcularFrete === 'function') {
+       toast('Calculando frete, aguarde...');
+       await calcularFrete(endereco);
+    }
+  }
+
   const freteAtual = parseFloat(window._freteCalculado) || parseFloat(window.taxaEntrega) || 0;
 
   let troco = 0;
@@ -117,16 +128,6 @@ async function finalizarPedido() {
       }
     } else {
       trocoTexto = 'Não precisa de troco';
-    }
-  }
-
-  if (!nome || !telefone || !endereco || !pagamento)
-    return toast('Preencha todos os campos obrigatórios');
-
-  if (window._freteCalculado == null && endereco) {
-    if (typeof calcularFrete === 'function') {
-       toast('Calculando frete, aguarde...');
-       await calcularFrete(endereco);
     }
   }
 
