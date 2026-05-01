@@ -1100,7 +1100,7 @@ def atualizar_status_pedido():
     pedido_id = dados.get("pedido_id")
     novo_status = dados.get("status")
 
-    status_validos = ["novo", "em_preparo", "saiu_entrega", "entregue"]
+    status_validos = ["novo", "em_preparo", "saiu_entrega", "entregue", "rejeitado"]
     if novo_status not in status_validos:
         return jsonify({"sucesso": False, "erro": "Status inválido!"})
 
@@ -1167,6 +1167,40 @@ def imprimir_pedido(id):
         criado_em=pedido[10],
         nome_restaurante=get_config("nome_restaurante", "Comanda Digital")
     )
+
+
+@app.route('/delivery/imprimir/<int:id>')
+@login_required
+def delivery_imprimir(id):
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute(
+        "SELECT id, cliente_nome, cliente_telefone, cliente_endereco, itens, taxa_entrega, total, forma_pagamento, troco, status, criado_em FROM pedidos_delivery WHERE id = ? AND restaurante_id = ?",
+        (id, session.get('restaurante_id', 1))
+    )
+    pedido = cursor.fetchone()
+    db.close()
+
+    if not pedido:
+        return "Pedido não encontrado", 404
+
+    itens = json.loads(pedido[4]) if pedido[4] else []
+
+    return render_template('imprimir_pedido.html',
+        pedido_id=pedido[0],
+        cliente_nome=pedido[1],
+        cliente_telefone=pedido[2],
+        cliente_endereco=pedido[3],
+        itens=itens,
+        taxa_entrega=pedido[5],
+        total=pedido[6],
+        forma_pagamento=pedido[7],
+        troco=pedido[8],
+        status=pedido[9],
+        criado_em=pedido[10],
+        nome_restaurante=get_config("nome_restaurante", "Comanda Digital")
+    )
+
 
 # ========== MIGRAÇÃO DO BANCO ==========
 

@@ -65,13 +65,38 @@
 
 {% block extra_js %}
 <script>
+    let idsConhecidos = new Set();
+    let audioCtx = null;
+
+    function tocarSom() {
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 880;
+            gain.gain.value = 0.3;
+            osc.start();
+            setTimeout(() => { osc.stop(); }, 300);
+        } catch (e) {}
+    }
+
     async function carregarPedidos() {
         try {
             const resp = await fetch('/api/pedidos/delivery');
             const data = await resp.json();
             
             if (data.sucesso) {
+                const antes = new Set(idsConhecidos);
+                data.pedidos.forEach(p => idsConhecidos.add(p.id));
                 renderizarKanban(data.pedidos);
+                data.pedidos.forEach(p => {
+                    if (!antes.has(p.id) && p.status === 'novo') {
+                        tocarSom();
+                        window.open('/delivery/imprimir/' + p.id + '?auto=1', '_blank');
+                    }
+                });
             }
         } catch (err) {
             console.error("Erro ao carregar pedidos:", err);
@@ -133,22 +158,28 @@
         const itensTxt = p.itens.map(i => `${i.quantidade}x ${i.nome}`).join(', ');
         const total = parseFloat(p.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         
-        let btnAcao = '';
+        let botoes = '';
         if (p.status === 'novo') {
-            btnAcao = `<button class="btn-status" onclick="mudarStatus(${p.id}, 'em_preparo')">Aceitar</button>`;
+            botoes = `
+                <button class="btn-status" onclick="mudarStatus(${p.id}, 'em_preparo')">Aceitar</button>
+                <button class="btn-status" style="background:var(--danger,var(--red,#dc3545));color:white;" onclick="rejeitarPedido(${p.id})">Rejeitar</button>
+            `;
         } else if (p.status === 'em_preparo') {
-            btnAcao = `<button class="btn-status" onclick="mudarStatus(${p.id}, 'saiu_entrega')">Despachar</button>`;
+            botoes = `<button class="btn-status" onclick="mudarStatus(${p.id}, 'saiu_entrega')">Despachar</button>`;
         } else if (p.status === 'saiu_entrega') {
-            btnAcao = `<button class="btn-status" onclick="mudarStatus(${p.id}, 'entregue')" style="background: var(--success); color: white;">Concluir</button>`;
+            botoes = `<button class="btn-status" onclick="mudarStatus(${p.id}, 'entregue')" style="background: var(--success); color: white;">Concluir</button>`;
         }
 
         div.innerHTML = `
             <span class="card-order-id">#${p.id}</span>
             <span class="card-customer">${p.cliente_nome}</span>
             <div class="card-items">${itensTxt}</div>
+            <div class="card-actions" style="display:flex;gap:6px;margin-top:8px;">
+                <button class="btn-status" style="background:#555;font-size:11px;padding:4px 8px;" onclick="window.open('/delivery/imprimir/${p.id}','_blank')">🖨️</button>
+            </div>
             <div class="card-footer">
                 <span class="card-price">${total}</span>
-                ${btnAcao}
+                ${botoes}
             </div>
         `;
         return div;
@@ -167,6 +198,26 @@
             }
         } catch (err) {
             alert("Erro ao mudar status!");
+        }
+    }
+
+    async function rejeitarPedido(id) {
+        if (!confirm('Rejeitar pedido #' + id + '?')) return;
+        try {
+            const resp = await fetch('/api/pedido/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pedido_id: id, status: 'rejeitado' })
+            });
+            const data = await resp.json();
+            if (data.sucesso) {
+                idsConhecidos.delete(id);
+                const card = document.querySelector('.kanban-card .card-order-id');
+                if (card) card.closest('.kanban-card')?.remove();
+                carregarPedidos();
+            }
+        } catch (err) {
+            alert("Erro ao rejeitar pedido!");
         }
     }
 

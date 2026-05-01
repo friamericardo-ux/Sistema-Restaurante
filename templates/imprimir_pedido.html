@@ -163,8 +163,24 @@
 
   <!-- ══ 1. CABEÇALHO ══ -->
   <div class="cabecalho">
+    {% set tp = tipo_pedido|default('delivery') %}
+    {% set mn = mesa_numero|default('') %}
+    {% if nome_restaurante and nome_restaurante != "Comanda Digital" %}
     <div class="nome-estabelecimento">{{ nome_restaurante }}</div>
-    <div class="titulo-comanda">*** COMANDA DE PEDIDO ***</div>
+    {% endif %}
+    <div class="titulo-comanda">
+      {% if tp == "delivery" %}
+        🛵 Pedido para Entrega
+      {% elif tp == "retirada" %}
+        🏃 Pedido para Retirada no Local
+      {% elif tp == "balcao" %}
+        🧾 Pedido de Balcão
+      {% elif tp == "mesa" and mn %}
+        🍽️ Pedido da Mesa {{ mn }}
+      {% else %}
+        🛵 Pedido para Entrega
+      {% endif %}
+    </div>
     <div class="cabecalho-sub">{{ criado_em }}</div>
   </div>
 
@@ -269,13 +285,21 @@
   <!-- ══ 5. RODAPÉ FIXO ══ -->
   <div class="rodape">
     --------------------------------<br>
-    Obrigado pela prefer&#x00EA;ncia!<br>
-    Pedido gerado pelo Comanda Digital
+    Muito obrigado pela prefer&#x00EA;ncia! 😊
   </div>
 
 </div>
 
 <button class="btn-imprimir" onclick="window.print()">&#x1F5A8; Imprimir Comanda</button>
+
+<script>
+if (window.location.search.includes('auto=1')) {
+  window.onload = function() {
+    window.print();
+    setTimeout(function() { window.close(); }, 500);
+  };
+}
+</script>
 
 </body>
 </html>
