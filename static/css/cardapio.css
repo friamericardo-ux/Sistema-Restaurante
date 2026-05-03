@@ -216,6 +216,11 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--texto)
   width:110px !important;
   min-width:110px;
 }
+.card > div:first-child img {
+  width:110px !important;
+  height:110px !important;
+  object-fit:cover;
+}
 .card-badge {
   position:absolute;
   top:8px;
