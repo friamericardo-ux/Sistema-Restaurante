@@ -665,6 +665,16 @@ def desativar_adicional(id, restaurante_id):
     conn.commit()
     conn.close()
 
+def excluir_adicional(id, restaurante_id):
+    """Exclui permanentemente um adicional e seus vínculos de categoria."""
+    ph = "%s" if is_mysql() else "?"
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(f"DELETE FROM adicional_categoria WHERE adicional_id = {ph} AND restaurante_id = {ph}", (id, restaurante_id))
+    cursor.execute(f"DELETE FROM adicionais WHERE id = {ph} AND restaurante_id = {ph}", (id, restaurante_id))
+    conn.commit()
+    conn.close()
+
 
 # ========== PEDIDOS DELIVERY ==========
 

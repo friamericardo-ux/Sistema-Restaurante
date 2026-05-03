@@ -54,15 +54,27 @@
   <span style="font-size:42px;">🎉</span>
 </div>
 
+<!-- ══ TELA CARDÁPIO ══ -->
+<div id="telaCardapio" class="tela ativa">
 
-<div class="stats-row">
-  <div class="stat">
-    <span class="stat-value">⭐ 4.9</span>
-    <span class="stat-label">Avaliação</span>
-  </div>
-  <div class="stat">
-    <span class="stat-value">🛵 Delivery</span>
-    <span class="stat-label">Disponível</span>
+<div class="busca">
+  <input type="text" placeholder="Buscar no cardápio..." id="buscaInput">
+</div>
+<div class="cats" id="catsWrap"></div>
+<div id="conteudo"></div>
+
+  <!-- Footer fixo -->
+  <div class="footer">
+    <button class="footer-btn" id="footerBtn" onclick="irCarrinho()">
+      <div class="footer-esq">
+        <div class="footer-badge" id="fBadge">0</div>
+        <div class="footer-resumo">
+          <div id="fLinhas"></div>
+          <div class="footer-total-rodape" id="fTotalRodape"></div>
+        </div>
+      </div>
+      <div class="footer-dir">Avançar →</div>
+    </button>
   </div>
 </div>
 

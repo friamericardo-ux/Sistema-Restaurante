@@ -14,6 +14,13 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // ── Proteção double-submit no formulário de cadastro ──
+  document.getElementById('formAdicionar').addEventListener('submit', function () {
+    const btn = document.getElementById('btnAdicionar');
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+  });
+
   // ── Abrir modal de edição ──
   document.querySelectorAll('.btn-editar').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -58,6 +65,36 @@ document.addEventListener('DOMContentLoaded', function () {
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') fecharModal();
+  });
+
+  // ── Excluir adicional via fetch ──
+  document.querySelectorAll('.btn-excluir').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const id   = this.dataset.id;
+      const nome = this.dataset.nome;
+
+      if (!confirm('Tem certeza que deseja excluir "' + nome + '" permanentemente?')) return;
+
+      const csrfToken = document.querySelector('[name=csrf_token]').value;
+
+      fetch('/admin/adicionais/excluir/' + id, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken
+        }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.sucesso) {
+            // Remove o item da tela
+            var item = btn.closest('.adicional-item');
+            if (item) item.remove();
+          }
+        })
+        .catch(function () {
+          alert('Erro ao excluir adicional. Tente novamente.');
+        });
+    });
   });
 
 });

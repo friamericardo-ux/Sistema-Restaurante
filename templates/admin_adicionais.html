@@ -278,7 +278,7 @@
   <!-- FORMULÁRIO NOVO ADICIONAL -->
   <div class="form-box">
     <h2>+ Novo Adicional</h2>
-    <form method="POST" action="/admin/adicionais/adicionar">
+    <form method="POST" action="/admin/adicionais/adicionar" id="formAdicionar">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
       <div class="form-row">
@@ -308,7 +308,7 @@
       </div>
 
       <div style="margin-top: 18px;">
-        <button type="submit" class="btn-add">Adicionar</button>
+        <button type="submit" class="btn-add" id="btnAdicionar">Adicionar</button>
       </div>
     </form>
   </div>
@@ -342,6 +342,9 @@
           <button type="submit" class="btn-del btn-del--danger"
             onclick="return confirm('Desativar {{ a.nome }}?')">Desativar</button>
         </form>
+        <button class="btn-del btn-excluir" data-id="{{ a.id }}" data-nome="{{ a.nome }}">
+          Excluir
+        </button>
         {% else %}
         <span class="status-inativo">Inativo</span>
         {% endif %}

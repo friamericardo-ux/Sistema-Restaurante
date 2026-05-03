@@ -6,7 +6,7 @@ import sqlite3
 from repository import (
     listar_adicionais, listar_adicionais_com_categorias,
     listar_produtos, adicionar_produto, editar_produto, desativar_produto,
-    adicionar_adicional, editar_adicional, desativar_adicional,
+    adicionar_adicional, editar_adicional, desativar_adicional, excluir_adicional,
     listar_categorias_produtos, obter_resumo_dashboard,
     listar_mesas_com_itens, abrir_mesa as repo_abrir_mesa,
     adicionar_item_mesa, remover_item_mesa,
@@ -2127,6 +2127,12 @@ def editar_adicional_route(id):
 def desativar_adicional_route(id):
     desativar_adicional(id, session['restaurante_id'])
     return redirect('/admin/adicionais')
+
+@app.route('/admin/adicionais/excluir/<int:id>', methods=['POST'])
+@admin_required
+def excluir_adicional_route(id):
+    excluir_adicional(id, session['restaurante_id'])
+    return jsonify({"sucesso": True})
 
 @app.route('/api/categorias')
 def api_categorias():

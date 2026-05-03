@@ -17,7 +17,7 @@
 }
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent }
-body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--texto); min-height:100vh; overflow-x:hidden }
+body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--texto); min-height:100vh; overflow-x:hidden; max-width:480px; margin:0 auto }
 
 .tela { display:none; min-height:100vh }
 .tela.ativa { display:block }
@@ -719,3 +719,25 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--texto)
   to   { opacity:1; transform:translateY(0) }
 }
 .card { animation:slideUp 0.3s ease both }
+
+/* ══ DESKTOP: centraliza o app em largura máxima de 480px ══ */
+@media (min-width:481px) {
+  .footer, .btn-finalizar {
+    left:50% !important;
+    transform:translateX(-50%) !important;
+    width:480px !important;
+    right:auto !important;
+  }
+  .toast {
+    left:50% !important;
+    transform:translateX(-50%) !important;
+  }
+  .overlay {
+    display:flex;
+    justify-content:center;
+  }
+  .overlay.on .modal {
+    max-width:480px;
+    margin:0 auto;
+  }
+}
