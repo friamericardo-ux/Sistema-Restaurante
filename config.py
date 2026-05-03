@@ -26,3 +26,5 @@ class Config:
     RESTAURANTE_LAT = float(os.getenv('RESTAURANTE_LAT', '-20.4697'))
     RESTAURANTE_LNG = float(os.getenv('RESTAURANTE_LNG', '-54.6201'))
     FRETE_POR_KM = float(os.getenv('FRETE_POR_KM', '2.00'))
+
+

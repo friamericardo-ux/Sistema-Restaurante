@@ -181,7 +181,8 @@
             <span class="card-customer">${p.cliente_nome}</span>
             <div class="card-items">${itensTxt}</div>
             <div class="card-actions" style="display:flex;gap:6px;margin-top:8px;">
-                <button class="btn-status" style="background:#555;font-size:11px;padding:4px 8px;" onclick="window.open('/delivery/imprimir/${p.id}','_blank')">🖨️</button>
+                <button class="btn-status" style="background:#555;font-size:11px;padding:4px 8px;" onclick="window.open('/delivery/imprimir/${p.id}','_blank')" title="Imprimir Navegador">🖨️</button>
+                <button class="btn-status" style="background:#222;font-size:11px;padding:4px 8px;" onclick="imprimirThermal(${p.id})" title="Imprimir Térmica ESC/POS">🧾</button>
             </div>
             <div class="card-footer">
                 <span class="card-price">${total}</span>
@@ -225,6 +226,40 @@
         } catch (err) {
             alert("Erro ao rejeitar pedido!");
         }
+    }
+
+    function mostrarToast(msg, tipo) {
+      let t = document.getElementById('toast-thermal');
+      if (!t) {
+        t = document.createElement('div');
+        t.id = 'toast-thermal';
+        t.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:8px;font-size:13px;z-index:9999;max-width:380px;box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:opacity 0.3s;';
+        document.body.appendChild(t);
+      }
+      t.style.background = tipo === 'erro' ? '#d32f2f' : '#2e7d32';
+      t.style.color = '#fff';
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.opacity = '0'; setTimeout(() => { t.style.display = 'none'; t.style.opacity = '1'; }, 400); }, 5000);
+    }
+
+    async function imprimirThermal(id) {
+      mostrarToast('Enviando para impressora térmica...', 'ok');
+      try {
+        const resp = await fetch('/api/imprimir/' + id, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        });
+        const data = await resp.json();
+        if (data.sucesso) {
+          mostrarToast('✅ ' + data.mensagem, 'ok');
+        } else {
+          mostrarToast('❌ ' + data.erro, 'erro');
+        }
+      } catch (e) {
+        mostrarToast('❌ Erro de conexão com o servidor.', 'erro');
+      }
     }
 
     carregarPedidos();

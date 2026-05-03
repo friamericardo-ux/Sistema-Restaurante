@@ -150,10 +150,23 @@
 
     /* ── Impressão ── */
     @media print {
-      body { background: #fff; padding: 0; margin: 0; }
-      .comanda { padding: 0; width: 80mm; }
+      body { background: #fff; padding: 0; margin: 0; font-size: 8px; font-family: 'Courier New', Courier, monospace; }
+      .comanda { padding: 0; width: 58mm; }
       .btn-imprimir { display: none !important; }
-      @page { size: 80mm auto; margin: 2mm; }
+      #thermalStatus { display: none !important; }
+      .sep { margin: 3px 0; }
+      .item-descricao { max-width: 32ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .linha-kv { font-size: 8px; }
+      .sec-titulo { font-size: 8px; }
+      .item-valor { font-size: 8px; }
+      .item-detalhe { font-size: 7px; }
+      .cliente-dados { font-size: 8px; }
+      .total-final { font-size: 10px; }
+      .cabecalho-sub { font-size: 8px; }
+      .titulo-comanda { font-size: 8px; }
+      .nome-estabelecimento { font-size: 11px; }
+      .rodape { font-size: 7px; }
+      @page { size: 58mm auto; margin: 2mm; }
     }
   </style>
 </head>
@@ -290,9 +303,52 @@
 
 </div>
 
-<button class="btn-imprimir" onclick="window.print()">&#x1F5A8; Imprimir Comanda</button>
+<button class="btn-imprimir" onclick="window.print()">&#x1F5A8; Imprimir (Navegador)</button>
+<button class="btn-imprimir" id="btnImprimirThermal" style="background:#222;margin-top:8px;" onclick="imprimirThermal()">&#x1F5A8; Imprimir</button>
+<div id="thermalStatus" style="display:none;margin-top:10px;padding:8px;border-radius:6px;text-align:center;width:80mm;font-family:'Courier New',monospace;font-size:11px;"></div>
 
 <script>
+var THERMAL_PEDIDO_ID = {{ pedido_id if pedido_id is number else 0 }};
+
+function showStatus(msg, tipo) {
+  var el = document.getElementById('thermalStatus');
+  el.style.display = 'block';
+  el.style.background = tipo === 'erro' ? '#fce4e4' : '#e4fce4';
+  el.style.color = tipo === 'erro' ? '#b71c1c' : '#1b5e20';
+  el.style.border = '1px solid ' + (tipo === 'erro' ? '#b71c1c' : '#1b5e20');
+  el.textContent = msg;
+}
+
+async function imprimirThermal() {
+  if (!THERMAL_PEDIDO_ID) {
+    showStatus('&#x274C; Impressão térmica disponível apenas para pedidos delivery.', 'erro');
+    return;
+  }
+  var btn = document.getElementById('btnImprimirThermal');
+  btn.disabled = true;
+  btn.textContent = 'Imprimindo...';
+  showStatus('Enviando para impressora...', 'ok');
+
+  try {
+    var resp = await fetch('/api/imprimir/' + THERMAL_PEDIDO_ID, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}'
+    });
+    var data = await resp.json();
+    if (data.sucesso) {
+      showStatus('✅ ' + data.mensagem, 'ok');
+    } else {
+      showStatus('&#x274C; ' + data.erro, 'erro');
+    }
+  } catch (e) {
+    showStatus('&#x274C; Erro de conex\u00E3o com o servidor.', 'erro');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '\u{1F5A8} Imprimir';
+  }
+}
+
 window.onload = function() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('auto') === '1') {

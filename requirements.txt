@@ -2,6 +2,7 @@ flask
 flask-wtf
 flask-limiter
 flask-talisman
+python-escpos
 bcrypt
 python-dotenv
 Pillow

@@ -97,6 +97,7 @@ def inject_global_vars():
 EXTENSOES_PERMITIDAS = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
+UPLOAD_FOLDER = os.path.join(app.static_folder, 'uploads')
 
 def extensao_valida(filename):
     return os.path.splitext(filename)[1].lower() in EXTENSOES_PERMITIDAS
@@ -112,6 +113,7 @@ app.config.update(
 )
 # Inicia o banco usando o db.py
 init_db()
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def _garantir_fechamentos_caixa():
     db = get_connection()
@@ -1239,6 +1241,29 @@ def mesa_comanda(numero):
     )
 
 
+# ========== IMPRESSÃO ESC/POS ==========
+
+@app.route('/api/imprimir/<int:pedido_id>', methods=["POST"])
+@csrf.exempt
+@login_required
+def api_imprimir_escpos(pedido_id):
+    """Imprime comanda em impressora térmica via ESC/POS"""
+    restaurante_id = session.get('restaurante_id', 1)
+
+    from services.impressao_service import imprimir_comanda
+
+    try:
+        imprimir_comanda(pedido_id=pedido_id, restaurante_id=restaurante_id)
+        return jsonify({"sucesso": True, "mensagem": "Impressão enviada com sucesso!"})
+    except ValueError as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 404
+    except ConnectionError as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 502
+    except Exception as e:
+        logger.error(f"Erro ao imprimir pedido #{pedido_id}: {e}")
+        return jsonify({"sucesso": False, "erro": "Erro inesperado ao imprimir."}), 500
+
+
 # ========== MIGRAÇÃO DO BANCO ==========
 
 @app.route('/admin/migrar-banco')
@@ -1301,16 +1326,11 @@ def adicionar_produto_route():
             if not extensao_valida(arquivo.filename):
                 return redirect('/admin/produtos')
             nome_seguro = secure_filename(arquivo.filename)
-            caminho_salvar = f'static/img/produtos/{nome_seguro}'
- 
-
+            caminho_salvar = os.path.join(UPLOAD_FOLDER, nome_seguro)
             img = Image.open(arquivo)
-            img.thumbnail((800, 800))  # redimensiona mantendo proporção
-
-        # Converte para RGB se necessário (PNG com transparência, etc)
+            img.thumbnail((800, 800))
             if img.mode in ("RGBA", "P"):
                 img = img.convert("RGB")
-
             img.save(caminho_salvar, optimize=True, quality=75)
             foto = nome_seguro
 
@@ -1333,7 +1353,7 @@ def editar_produto_route(id):
             if not extensao_valida(arquivo.filename):
                 return redirect('/admin/produtos')
             nome_seguro = secure_filename(arquivo.filename)
-            caminho_salvar = f'static/img/produtos/{nome_seguro}'
+            caminho_salvar = os.path.join(UPLOAD_FOLDER, nome_seguro)
             arquivo.save(caminho_salvar)
             foto = nome_seguro
 

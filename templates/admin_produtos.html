@@ -440,7 +440,7 @@
       <tr>
         <td>
           {% if p[5] and p[5] != '' %}
-          <img src="/static/img/produtos/{{ p[5] }}" class="thumb" alt="Foto de {{ p[1] }}"
+          <img src="{{ url_for('static', filename='uploads/' + p[5]) }}" class="thumb" alt="Foto de {{ p[1] }}"
             onerror="this.onerror=null;this.src='https://via.placeholder.com/46?text=?'">
           {% else %}
           <span class="no-image">Sem foto</span>
