@@ -12,29 +12,34 @@
 <input type="hidden" id="restauranteId" value="{{ restaurante_id if restaurante_id is not none else 1 }}">
 
 <!-- ══ TELA CARDÁPIO ══ -->
-<div id="telaCardapio" class="tela ativa">
-
-  <div class="header">
-    <div class="header-logo">🍽 {{ restaurante_nome or 'Cardápio' }}</div>
-    <div class="header-tag" id="headerTag">Pedido online</div>
+<div class="header">
+  <!-- linha topo: logo + botão -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;position:relative;z-index:2;">
+    <div class="header-logo">🍽️ {{ restaurante_nome or 'Cardápio' }}</div>
+    <div class="header-tag">🛒 Pedido online</div>
   </div>
-
-  <div class="busca"><input type="text" placeholder="Buscar no cardápio..." id="buscaInput"></div>
-  <div class="cats" id="catsWrap"></div>
-  <div id="conteudo"></div>
-
-  <!-- Footer fixo -->
-  <div class="footer">
-    <button class="footer-btn" id="footerBtn" onclick="irCarrinho()">
-      <div class="footer-esq">
-        <div class="footer-badge" id="fBadge">0</div>
-        <div class="footer-resumo">
-          <div id="fLinhas"></div>
-          <div class="footer-total-rodape" id="fTotalRodape"></div>
-        </div>
+  <!-- info do restaurante -->
+  <div style="display:flex;align-items:center;gap:12px;position:relative;z-index:2;">
+    <div style="width:60px;height:60px;background:#fff;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 4px 16px rgba(0,0,0,0.12);flex-shrink:0;">🍔</div>
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;color:#fff;line-height:1.1;">{{ restaurante_nome or 'Cardápio' }}</div>
+      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+        <span style="background:#4CAF50;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">● Aberto</span>
+        <span style="background:rgba(255,255,255,0.2);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">Delivery</span>
       </div>
-      <div class="footer-dir">Avançar →</div>
-    </button>
+    </div>
+  </div>
+</div>
+
+
+<div class="stats-row">
+  <div class="stat">
+    <span class="stat-value">⭐ 4.9</span>
+    <span class="stat-label">Avaliação</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value">🛵 Delivery</span>
+    <span class="stat-label">Disponível</span>
   </div>
 </div>
 
