@@ -67,33 +67,37 @@ document.addEventListener('DOMContentLoaded', function () {
     if (e.key === 'Escape') fecharModal();
   });
 
-  // ── Excluir adicional via fetch ──
-  document.querySelectorAll('.btn-excluir').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      const id   = this.dataset.id;
-      const nome = this.dataset.nome;
+  // ── Excluir adicional via fetch (delegação) ──
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-excluir');
+    if (!btn) return;
 
-      if (!confirm('Tem certeza que deseja excluir "' + nome + '" permanentemente?')) return;
+    var id   = btn.dataset.id;
+    var nome = btn.dataset.nome;
 
-      const csrfToken = document.querySelector('[name=csrf_token]').value;
+    if (!confirm('Tem certeza que deseja excluir "' + nome + '" permanentemente?')) return;
 
-      fetch('/admin/adicionais/excluir/' + id, {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': csrfToken
+    var csrfToken = document.querySelector('[name=csrf_token]');
+    if (!csrfToken) return;
+    csrfToken = csrfToken.value;
+
+    fetch('/admin/adicionais/excluir/' + id, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': csrfToken
+      }
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.sucesso) {
+          var item = btn.closest('.adicional-item');
+          if (item) item.remove();
         }
       })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          if (data.sucesso) {
-            // Remove o item da tela
-            var item = btn.closest('.adicional-item');
-            if (item) item.remove();
-          }
-        })
-        .catch(function () {
-          alert('Erro ao excluir adicional. Tente novamente.');
-        });
+      .catch(function () {
+        alert('Erro ao excluir adicional. Tente novamente.');
+      });
+  });
     });
   });
 
