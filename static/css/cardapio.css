@@ -744,7 +744,7 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--texto)
 
 @media (min-width: 600px) {
   body {
-    max-width: 480px;
+    max-width: 720px;
     margin: 0 auto;
     box-shadow: 0 0 40px rgba(0,0,0,0.15);
     min-height: 100vh;
