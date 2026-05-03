@@ -98,7 +98,5 @@ document.addEventListener('DOMContentLoaded', function () {
         alert('Erro ao excluir adicional. Tente novamente.');
       });
   });
-    });
-  });
 
 });
