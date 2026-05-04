@@ -97,7 +97,7 @@ def inject_global_vars():
 EXTENSOES_PERMITIDAS = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
-UPLOAD_FOLDER = os.path.join(app.static_folder, 'uploads')
+UPLOAD_FOLDER = os.path.join(app.static_folder, 'uploads', 'produtos')
 
 def extensao_valida(filename):
     return os.path.splitext(filename)[1].lower() in EXTENSOES_PERMITIDAS
@@ -1332,7 +1332,7 @@ def adicionar_produto_route():
             if img.mode in ("RGBA", "P"):
                 img = img.convert("RGB")
             img.save(caminho_salvar, optimize=True, quality=75)
-            foto = nome_seguro
+            foto = os.path.join('uploads', 'produtos', nome_seguro)
 
     descricao = request.form.get('descricao', '').strip() or None
     adicionar_produto(nome, preco, categoria, emoji, session['restaurante_id'], foto, descricao)
@@ -1355,7 +1355,7 @@ def editar_produto_route(id):
             nome_seguro = secure_filename(arquivo.filename)
             caminho_salvar = os.path.join(UPLOAD_FOLDER, nome_seguro)
             arquivo.save(caminho_salvar)
-            foto = nome_seguro
+            foto = os.path.join('uploads', 'produtos', nome_seguro)
 
     editar_produto(id, nome, preco, categoria, emoji, session['restaurante_id'], foto)
     return redirect('/admin/produtos')

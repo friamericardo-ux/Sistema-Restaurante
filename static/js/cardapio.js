@@ -52,7 +52,7 @@ function renderProds(busca=''){
     prods.forEach(p=>{
       const qc=qtdNoCarrinho(p.id);
       const fotoHtml = p.foto 
-        ? `<img src="/static/uploads/${p.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        ? `<img src="/static/${p.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
         : '';
       const fallbackHtml = `<div style="width:100%;height:100%;display:${p.foto?'none':'flex'};align-items:center;justify-content:center;font-size:40px;background:#f8f9fa;border-radius:inherit">${p.emoji || '🍽️'}</div>`;
 
@@ -93,7 +93,7 @@ function abrirModal(id){
   pAtual=getProd(id); qtd=1; adsSel=[];
   const foto=document.getElementById('mFoto');
   if(pAtual.foto){
-    foto.style.backgroundImage = `url(/static/uploads/${pAtual.foto})`;
+    foto.style.backgroundImage = `url(/static/${pAtual.foto})`;
     foto.innerHTML = `<button class="modal-fechar" onclick="fecharModal()">✕</button>`;
   } else {
     foto.style.backgroundImage = 'none';
