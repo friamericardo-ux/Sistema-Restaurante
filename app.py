@@ -143,8 +143,8 @@ def verificar_licenca_global():
         'login_web', 'logout', 'static',
         'cardapio_cliente', 'api_cardapio', 'api_adicionais',
         'criar_pedido', 'api_configuracoes',
+        'api_restaurante_por_slug',
         'superadmin_pin', 'superadmin_pin_post',
-        
     }
 
     if request.endpoint is None:
@@ -335,6 +335,36 @@ def set_config(chave, valor, restaurante_id=1):
         """, (chave, valor, restaurante_id))
     db.commit()
     db.close()
+
+
+DIAS_ORDEM = ['Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado', 'Domingo']
+
+def formatar_dias(dias):
+    if not dias:
+        return ''
+    selecionados = [d for d in DIAS_ORDEM if d in dias]
+    if not selecionados:
+        return ''
+    if len(selecionados) == len(DIAS_ORDEM):
+        return 'Todos os dias'
+    indices = [DIAS_ORDEM.index(d) for d in selecionados]
+    indices.sort()
+    if len(indices) == indices[-1] - indices[0] + 1:
+        return f"{selecionados[0]} a {selecionados[-1]}"
+    return ', '.join(selecionados)
+
+def parsear_dias(texto):
+    if not texto:
+        return []
+    if texto == 'Todos os dias':
+        return DIAS_ORDEM[:]
+    if ' a ' in texto:
+        partes = texto.split(' a ')
+        if partes[0] in DIAS_ORDEM and partes[1] in DIAS_ORDEM:
+            inicio = DIAS_ORDEM.index(partes[0])
+            fim = DIAS_ORDEM.index(partes[1])
+            return DIAS_ORDEM[inicio:fim+1]
+    return [d.strip() for d in texto.split(',')]
 
 
 def _get_sessao_inicio(cursor, restaurante_id=1):
@@ -1039,6 +1069,10 @@ def admin_configuracoes():
                 import traceback
                 traceback.print_exc()
 
+        dias = request.form.getlist('dias_funcionamento')
+        dias_str = formatar_dias(dias)
+        set_config("dias_funcionamento", dias_str, restaurante_id=session['restaurante_id'])
+
         sucesso = "Configurações salvas com sucesso!"
 
     configs = {
@@ -1052,6 +1086,8 @@ def admin_configuracoes():
         "google_maps_key": Config.GOOGLE_MAPS_KEY,
         "restaurante_ativo": get_config("restaurante_ativo", "1", restaurante_id=session['restaurante_id']),
         "endereco_restaurante": get_config("endereco_restaurante", "", restaurante_id=session['restaurante_id']),
+        "dias_funcionamento": get_config("dias_funcionamento", "", restaurante_id=session['restaurante_id']),
+        "dias_selecionados": parsear_dias(get_config("dias_funcionamento", "", restaurante_id=session['restaurante_id'])),
     }
     return render_template("admin_configuracoes.html", configs=configs, sucesso=sucesso, erro=erro)
 
@@ -2115,6 +2151,52 @@ def criar_pedido_por_slug(slug):
     dados['restaurante_id'] = restaurante_id
     request._cached_json = (dados, dados)
     return route_criar_pedido()
+
+@app.route("/api/restaurante/<slug>")
+def api_restaurante_por_slug(slug):
+    from data.db import get_connection
+    from datetime import datetime
+
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, nome, ativo FROM restaurantes WHERE slug = %s", (slug,))
+    row = cursor.fetchone()
+    db.close()
+
+    if not row:
+        return jsonify({"sucesso": False, "erro": "Restaurante não encontrado"}), 404
+
+    restaurante_id, nome, ativo_db = row[0], row[1], row[2]
+
+    horario_abertura = get_config("horario_abertura", "18:00", restaurante_id)
+    horario_fechamento = get_config("horario_fechamento", "23:00", restaurante_id)
+    dias_funcionamento = get_config("dias_funcionamento", "", restaurante_id)
+    restaurante_ativo = get_config("restaurante_ativo", "1", restaurante_id)
+
+    if restaurante_ativo == "0" or not ativo_db:
+        status = "fechado"
+    else:
+        try:
+            agora = datetime.now().time()
+            abertura = datetime.strptime(horario_abertura, "%H:%M").time()
+            fechamento = datetime.strptime(horario_fechamento, "%H:%M").time()
+            status = "aberto" if abertura <= agora <= fechamento else "fechado"
+        except Exception:
+            status = "fechado"
+
+    base_url = request.host_url.rstrip('/')
+    link_cardapio = f"{base_url}/cardapio/{slug}"
+
+    return jsonify({
+        "nome": nome,
+        "slug": slug,
+        "horario_abertura": horario_abertura,
+        "horario_fechamento": horario_fechamento,
+        "dias_funcionamento": dias_funcionamento,
+        "status": status,
+        "link_cardapio": link_cardapio,
+    })
+
 
 @app.route('/admin/adicionais')
 @admin_required

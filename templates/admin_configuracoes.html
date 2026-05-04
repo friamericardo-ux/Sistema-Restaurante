@@ -85,6 +85,23 @@
           <input type="time" name="horario_fechamento" value="{{ configs.horario_fechamento }}">
         </div>
       </div>
+      <div class="form-group" style="margin-top:16px;">
+        <label>Dias de Funcionamento</label>
+        <div class="dias-grid">
+          {% for dia in ['Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado', 'Domingo'] %}
+          <label class="dia-checkbox">
+            <input type="checkbox" name="dias_funcionamento" value="{{ dia }}"
+              {{ 'checked' if dia in configs.dias_selecionados else '' }}>
+            <span>{{ dia }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        {% if configs.dias_funcionamento %}
+        <div class="field-hint" style="margin-top:8px;">
+          Atual: <strong>{{ configs.dias_funcionamento }}</strong>
+        </div>
+        {% endif %}
+      </div>
     </div>
 
     <button type="submit" class="btn-salvar">💾 Salvar Configurações</button>

@@ -104,6 +104,47 @@
   text-decoration: none;
 }
 
+/* Grid de dias da semana */
+.dias-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dia-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #121212;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  user-select: none;
+  font-size: 0.85rem;
+  color: #ccc;
+}
+
+.dia-checkbox:hover {
+  border-color: #ff8c00;
+  background: #1a1a1a;
+}
+
+.dia-checkbox input[type="checkbox"] {
+  accent-color: #ff8c00;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.dia-checkbox:has(input:checked) {
+  border-color: #ff8c00;
+  background: #1e1e1e;
+  color: #ff8c00;
+  font-weight: 600;
+}
+
 /* Toggle switch */
 .toggle-row {
   display: flex;
