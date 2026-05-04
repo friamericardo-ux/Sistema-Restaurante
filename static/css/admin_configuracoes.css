@@ -107,14 +107,14 @@
 /* Grid de dias da semana */
 .dias-grid {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .dia-checkbox {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: #121212;
   border: 1px solid #333;
   border-radius: 8px;
@@ -124,7 +124,6 @@
   user-select: none;
   font-size: 0.85rem;
   color: #ccc;
-  width: fit-content;
 }
 
 .dia-checkbox:hover {
