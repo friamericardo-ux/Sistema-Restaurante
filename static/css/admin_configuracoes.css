@@ -107,14 +107,14 @@
 /* Grid de dias da semana */
 .dias-grid {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .dia-checkbox {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 10px;
   background: #121212;
   border: 1px solid #333;
   border-radius: 8px;
@@ -124,6 +124,7 @@
   user-select: none;
   font-size: 0.85rem;
   color: #ccc;
+  width: fit-content;
 }
 
 .dia-checkbox:hover {
@@ -133,9 +134,11 @@
 
 .dia-checkbox input[type="checkbox"] {
   accent-color: #ff8c00;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .dia-checkbox:has(input:checked) {
