@@ -804,13 +804,45 @@ def cardapio_cliente():
         db.close()
     except Exception:
         rid = 1
+    from datetime import datetime
+    horario_abertura = get_config("horario_abertura", "18:00", restaurante_id=rid)
+    horario_fechamento = get_config("horario_fechamento", "23:00", restaurante_id=rid)
+    dias_funcionamento = get_config("dias_funcionamento", "", restaurante_id=rid)
+    restaurante_ativo = get_config("restaurante_ativo", "1", restaurante_id=rid)
     verificar_horario_funcionamento(rid)
-    if get_config("restaurante_ativo", "1", restaurante_id=rid) == "0":
-        return render_template("restaurante_inativo.html")
+    if restaurante_ativo == "0":
+        status_loja = "fechado"
+    else:
+        try:
+            try:
+                import zoneinfo
+                tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+            except ImportError:
+                from datetime import timezone, timedelta
+                tz = timezone(timedelta(hours=-3))
+            agora = datetime.now(tz)
+            hora_agora = agora.time()
+            dia_idx = agora.weekday()
+            dias_abertos = parsear_dias(dias_funcionamento)
+            dia_hoje = DIAS_ORDEM[dia_idx] if dia_idx < len(DIAS_ORDEM) else ""
+            dia_ok = dia_hoje in dias_abertos
+            ab = datetime.strptime(horario_abertura, "%H:%M").time()
+            fe = datetime.strptime(horario_fechamento, "%H:%M").time()
+            if ab <= fe:
+                hora_ok = ab <= hora_agora <= fe
+            else:
+                hora_ok = hora_agora >= ab or hora_agora <= fe
+            status_loja = "aberto" if (dia_ok and hora_ok) else "fechado"
+        except:
+            status_loja = "fechado"
     return render_template("cardapio_cliente.html",
         slug=None,
         restaurante_nome=get_config('nome_restaurante', 'Restaurante', rid),
         restaurante_id=rid,
+        status_loja=status_loja,
+        horario_abertura=horario_abertura,
+        horario_fechamento=horario_fechamento,
+        dias_funcionamento=dias_funcionamento,
         whatsapp_restaurante=get_config('whatsapp_restaurante', Config.WHATSAPP_RESTAURANTE, rid),
         google_maps_key=Config.GOOGLE_MAPS_KEY)
 @app.route("/api/cardapio")
@@ -1185,7 +1217,13 @@ def admin_configuracoes():
     else:
         try:
             from datetime import datetime as _dt
-            _agora = _dt.now()
+            try:
+                import zoneinfo
+                _tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+            except ImportError:
+                from datetime import timezone, timedelta
+                _tz = timezone(timedelta(hours=-3))
+            _agora = _dt.now(_tz)
             _hora = _agora.time()
             _dia_idx = _agora.weekday()
             _dias_abertos = parsear_dias(_dias_func)
