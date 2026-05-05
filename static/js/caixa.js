@@ -104,10 +104,10 @@ async function carregarGrafico() {
     if (!data.sucesso) return;
 
     const container = document.getElementById('grafico-horas');
-    const maxValor = Math.max(...data.horas.map(h => h.total), 1);
+    const maxValor = Math.max(...data.horas.map(h => Number(h.total) || 0), 1);
 
     container.innerHTML = data.horas.map(h => {
-      const pct = (h.total / maxValor) * 100;
+      const pct = (Number(h.total) / maxValor) * 100;
       const alturaMin = h.total > 0 ? Math.max(pct, 3) : 0;
       const valorLabel = h.total > 0 ? formatarReais(h.total) : '';
       return `<div class="barra-hora">

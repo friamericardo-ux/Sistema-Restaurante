@@ -144,12 +144,7 @@
 }
 
 /* ── Section titles ── */
-.section-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #f0f0f0;
-  margin: 28px 0 14px;
-}
+.section-title { font-size: 16px; font-weight: 700; color: #f0f0f0 !important; margin: 28px 0 14px; display: block !important; }
 
 /* ── Gráfico por hora ── */
 .caixa-grafico-container {
@@ -161,33 +156,11 @@
   overflow-x: auto;
 }
 
-.caixa-grafico {
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  height: 160px;
-  min-width: 500px;
-}
+.caixa-grafico { display: flex; align-items: flex-end; gap: 4px; height: 160px; min-width: 500px; }
 
-.barra-hora {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  height: 100%;
-  min-width: 18px;
-}
+.barra-hora { flex: 1; display: flex; flex-direction: column; align-items: center; height: 160px; min-width: 18px; justify-content: flex-end; }
 
-.barra-fill {
-  width: 100%;
-  max-width: 28px;
-  background: linear-gradient(to top, #6366F1, #818cf8);
-  border-radius: 4px 4px 0 0;
-  transition: height 0.5s ease;
-  min-height: 0;
-  position: relative;
-}
+.barra-fill { width: 80%; max-width: 28px; background: linear-gradient(to top, #6366F1, #818cf8); border-radius: 4px 4px 0 0; transition: height 0.5s ease; flex-shrink: 0; }
 
 .barra-fill:hover {
   opacity: 0.85;
