@@ -2236,7 +2236,13 @@ def cardapio_por_slug(slug):
         status_loja = "fechado"
     else:
         try:
-            agora = datetime.now()
+            try:
+                import zoneinfo
+                tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+            except ImportError:
+                from datetime import timezone, timedelta
+                tz = timezone(timedelta(hours=-3))
+            agora = datetime.now(tz)
             hora_agora = agora.time()
             dia_idx = agora.weekday()
             dias_abertos = parsear_dias(dias_funcionamento)
@@ -2376,7 +2382,13 @@ def api_restaurante_por_slug(slug):
         status = "fechado"
     else:
         try:
-            agora = datetime.now()
+            try:
+                import zoneinfo
+                tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+            except ImportError:
+                from datetime import timezone, timedelta
+                tz = timezone(timedelta(hours=-3))
+            agora = datetime.now(tz)
             hora_agora = agora.time()
 
             dia_idx = agora.weekday()
