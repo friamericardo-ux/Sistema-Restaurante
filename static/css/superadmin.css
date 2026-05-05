@@ -54,9 +54,9 @@ body {
 
 /* MAIN */
 .sa-main {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 40px 24px;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .sa-page-header {
