@@ -424,3 +424,15 @@ async function init() {
 }
 
 init();
+
+if (SLUG) {
+  setInterval(async () => {
+    try {
+      const r = await fetch(`/api/restaurante/${SLUG}`);
+      const d = await r.json();
+      const fechado = document.querySelector('#conteudo div[style*="Estamos fechados"]');
+      if (fechado && d.status === 'aberto') location.reload();
+      if (!fechado && d.status === 'fechado') location.reload();
+    } catch (e) {}
+  }, 30000);
+}

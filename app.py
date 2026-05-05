@@ -392,9 +392,44 @@ def parsear_dias(texto):
 
 _ultima_verificacao_status = {}
 
-def verificar_horario_funcionamento(restaurant_id):
-    from datetime import datetime
 
+def get_status_restaurante(restaurant_id):
+    """Retorna 'aberto' ou 'fechado' com base nas configurações do restaurante.
+    Suporta horário noturno (ex: 22:00 às 02:00) e verificação de dias da semana."""
+    horario_abertura = get_config("horario_abertura", "18:00", restaurante_id=restaurant_id)
+    horario_fechamento = get_config("horario_fechamento", "23:00", restaurante_id=restaurant_id)
+    dias_funcionamento = get_config("dias_funcionamento", "", restaurante_id=restaurant_id)
+    restaurante_ativo = get_config("restaurante_ativo", "1", restaurante_id=restaurant_id)
+
+    if restaurante_ativo == "0":
+        return "fechado"
+
+    try:
+        import zoneinfo
+        tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+    except ImportError:
+        from datetime import timezone, timedelta
+        tz = timezone(timedelta(hours=-3))
+
+    agora = datetime.now(tz)
+    hora_agora = agora.time()
+
+    dias_abertos = parsear_dias(dias_funcionamento)
+    dia_hoje = DIAS_ORDEM[agora.weekday()] if agora.weekday() < len(DIAS_ORDEM) else ""
+    if not dias_abertos or dia_hoje not in dias_abertos:
+        return "fechado"
+
+    try:
+        abertura = datetime.strptime(horario_abertura, "%H:%M").time()
+        fechamento = datetime.strptime(horario_fechamento, "%H:%M").time()
+        if abertura <= fechamento:
+            return "aberto" if abertura <= hora_agora <= fechamento else "fechado"
+        return "aberto" if hora_agora >= abertura or hora_agora <= fechamento else "fechado"
+    except Exception:
+        return "fechado"
+
+
+def verificar_horario_funcionamento(restaurant_id):
     agora_dt = datetime.now()
     chave = f"status_{restaurant_id}"
     ultima = _ultima_verificacao_status.get(chave)
@@ -402,42 +437,7 @@ def verificar_horario_funcionamento(restaurant_id):
         return
 
     try:
-        horario_abertura = get_config("horario_abertura", "18:00", restaurante_id=restaurant_id)
-        horario_fechamento = get_config("horario_fechamento", "23:00", restaurante_id=restaurant_id)
-        dias_funcionamento = get_config("dias_funcionamento", "", restaurante_id=restaurant_id)
-        restaurante_ativo = get_config("restaurante_ativo", "1", restaurante_id=restaurant_id)
-
-        if restaurante_ativo == "0":
-            novo_status = "fechado"
-        else:
-            try:
-                import zoneinfo
-                tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
-            except ImportError:
-                from datetime import timezone, timedelta
-                tz = timezone(timedelta(hours=-3))
-
-            agora = datetime.now(tz)
-
-            dias = parsear_dias(dias_funcionamento)
-
-            mapa = {
-                "Monday": "Segunda", "Tuesday": "Terca", "Wednesday": "Quarta",
-                "Thursday": "Quinta", "Friday": "Sexta", "Saturday": "Sabado", "Sunday": "Domingo"
-            }
-            dia_atual = mapa.get(agora.strftime("%A"), "")
-
-            if not dias or dia_atual not in dias:
-                novo_status = "fechado"
-            else:
-                try:
-                    abertura = datetime.strptime(horario_abertura, "%H:%M").time()
-                    fechamento = datetime.strptime(horario_fechamento, "%H:%M").time()
-                    hora_atual = agora.time()
-                    novo_status = "aberto" if abertura <= hora_atual <= fechamento else "fechado"
-                except Exception:
-                    novo_status = "fechado"
-
+        novo_status = get_status_restaurante(restaurant_id)
         db = get_connection()
         cursor = db.cursor()
         if is_mysql():
@@ -446,7 +446,6 @@ def verificar_horario_funcionamento(restaurant_id):
             cursor.execute("UPDATE restaurantes SET status = ? WHERE id = ?", (novo_status, restaurant_id))
         db.commit()
         db.close()
-
         _ultima_verificacao_status[chave] = datetime.now()
     except Exception:
         pass
@@ -804,37 +803,8 @@ def cardapio_cliente():
         db.close()
     except Exception:
         rid = 1
-    from datetime import datetime
-    horario_abertura = get_config("horario_abertura", "18:00", restaurante_id=rid)
-    horario_fechamento = get_config("horario_fechamento", "23:00", restaurante_id=rid)
-    dias_funcionamento = get_config("dias_funcionamento", "", restaurante_id=rid)
-    restaurante_ativo = get_config("restaurante_ativo", "1", restaurante_id=rid)
     verificar_horario_funcionamento(rid)
-    if restaurante_ativo == "0":
-        status_loja = "fechado"
-    else:
-        try:
-            try:
-                import zoneinfo
-                tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
-            except ImportError:
-                from datetime import timezone, timedelta
-                tz = timezone(timedelta(hours=-3))
-            agora = datetime.now(tz)
-            hora_agora = agora.time()
-            dia_idx = agora.weekday()
-            dias_abertos = parsear_dias(dias_funcionamento)
-            dia_hoje = DIAS_ORDEM[dia_idx] if dia_idx < len(DIAS_ORDEM) else ""
-            dia_ok = dia_hoje in dias_abertos
-            ab = datetime.strptime(horario_abertura, "%H:%M").time()
-            fe = datetime.strptime(horario_fechamento, "%H:%M").time()
-            if ab <= fe:
-                hora_ok = ab <= hora_agora <= fe
-            else:
-                hora_ok = hora_agora >= ab or hora_agora <= fe
-            status_loja = "aberto" if (dia_ok and hora_ok) else "fechado"
-        except:
-            status_loja = "fechado"
+    status_loja = get_status_restaurante(rid)
     return render_template("cardapio_cliente.html",
         slug=None,
         restaurante_nome=get_config('nome_restaurante', 'Restaurante', rid),
@@ -885,6 +855,9 @@ def route_criar_pedido():
     """Cria um novo pedido delivery"""
     try:
         dados = request.get_json()
+        restaurante_id = int(dados.get("restaurante_id") or 1)
+        if get_status_restaurante(restaurante_id) == "fechado":
+            return jsonify({"sucesso": False, "erro": "Restaurante está fechado no momento"}), 403
         resultado = criar_pedido_delivery(dados)
         
         # Gera resumo para o WhatsApp
@@ -1140,6 +1113,7 @@ def admin_toggle_status():
     atual = get_config("restaurante_ativo", "1", restaurante_id=session['restaurante_id'])
     novo = "0" if atual == "1" else "1"
     set_config("restaurante_ativo", novo, restaurante_id=session['restaurante_id'])
+    _ultima_verificacao_status.pop(f"status_{session['restaurante_id']}", None)
     return jsonify({"restaurante_ativo": novo})
 
 
@@ -1191,6 +1165,7 @@ def admin_configuracoes():
         dias_str = formatar_dias(dias)
         set_config("dias_funcionamento", dias_str, restaurante_id=session['restaurante_id'])
 
+        _ultima_verificacao_status.pop(f"status_{session['restaurante_id']}", None)
         sucesso = "Configurações salvas com sucesso!"
 
     configs = {
@@ -1208,36 +1183,7 @@ def admin_configuracoes():
         "dias_selecionados": parsear_dias(get_config("dias_funcionamento", "", restaurante_id=session['restaurante_id'])),
     }
 
-    _ativo = get_config("restaurante_ativo", "1", restaurante_id=session['restaurante_id'])
-    _abertura = get_config("horario_abertura", "18:00", restaurante_id=session['restaurante_id'])
-    _fechamento = get_config("horario_fechamento", "23:00", restaurante_id=session['restaurante_id'])
-    _dias_func = get_config("dias_funcionamento", "", restaurante_id=session['restaurante_id'])
-    if _ativo == "0":
-        configs["status_real"] = "fechado"
-    else:
-        try:
-            from datetime import datetime as _dt
-            try:
-                import zoneinfo
-                _tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
-            except ImportError:
-                from datetime import timezone, timedelta
-                _tz = timezone(timedelta(hours=-3))
-            _agora = _dt.now(_tz)
-            _hora = _agora.time()
-            _dia_idx = _agora.weekday()
-            _dias_abertos = parsear_dias(_dias_func)
-            _dia_hoje = DIAS_ORDEM[_dia_idx] if _dia_idx < len(DIAS_ORDEM) else ""
-            _dia_ok = _dia_hoje in _dias_abertos
-            _ab = _dt.strptime(_abertura, "%H:%M").time()
-            _fe = _dt.strptime(_fechamento, "%H:%M").time()
-            if _ab <= _fe:
-                _hora_ok = _ab <= _hora <= _fe
-            else:
-                _hora_ok = _hora >= _ab or _hora <= _fe
-            configs["status_real"] = "aberto" if (_dia_ok and _hora_ok) else "fechado"
-        except:
-            configs["status_real"] = "fechado"
+    configs["status_real"] = get_status_restaurante(session['restaurante_id'])
 
     return render_template("admin_configuracoes.html", configs=configs, sucesso=sucesso, erro=erro)
 
@@ -2265,36 +2211,7 @@ def cardapio_por_slug(slug):
     restaurante_id, nome, ativo = row[0], row[1], row[2]
     if not ativo:
         return render_template("restaurante_inativo.html")
-    from datetime import datetime
-    horario_abertura = get_config("horario_abertura", "18:00", restaurante_id)
-    horario_fechamento = get_config("horario_fechamento", "23:00", restaurante_id)
-    dias_funcionamento = get_config("dias_funcionamento", "", restaurante_id)
-    restaurante_ativo = get_config("restaurante_ativo", "1", restaurante_id)
-    if restaurante_ativo == "0":
-        status_loja = "fechado"
-    else:
-        try:
-            try:
-                import zoneinfo
-                tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
-            except ImportError:
-                from datetime import timezone, timedelta
-                tz = timezone(timedelta(hours=-3))
-            agora = datetime.now(tz)
-            hora_agora = agora.time()
-            dia_idx = agora.weekday()
-            dias_abertos = parsear_dias(dias_funcionamento)
-            dia_hoje = DIAS_ORDEM[dia_idx] if dia_idx < len(DIAS_ORDEM) else ""
-            dia_ok = dia_hoje in dias_abertos
-            ab = datetime.strptime(horario_abertura, "%H:%M").time()
-            fe = datetime.strptime(horario_fechamento, "%H:%M").time()
-            if ab <= fe:
-                hora_ok = ab <= hora_agora <= fe
-            else:
-                hora_ok = hora_agora >= ab or hora_agora <= fe
-            status_loja = "aberto" if (dia_ok and hora_ok) else "fechado"
-        except:
-            status_loja = "fechado"
+    status_loja = get_status_restaurante(restaurante_id)
     return render_template("cardapio_cliente.html", slug=slug, restaurante_nome=nome,
         restaurante_id=restaurante_id,
         status_loja=status_loja,
@@ -2398,7 +2315,6 @@ def criar_pedido_por_slug(slug):
 @app.route("/api/restaurante/<slug>")
 def api_restaurante_por_slug(slug):
     from data.db import get_connection
-    from datetime import datetime
 
     db = get_connection()
     cursor = db.cursor()
@@ -2411,39 +2327,14 @@ def api_restaurante_por_slug(slug):
 
     restaurante_id, nome, ativo_db = row[0], row[1], row[2]
 
+    if not ativo_db:
+        status = "fechado"
+    else:
+        status = get_status_restaurante(restaurante_id)
+
     horario_abertura = get_config("horario_abertura", "18:00", restaurante_id)
     horario_fechamento = get_config("horario_fechamento", "23:00", restaurante_id)
     dias_funcionamento = get_config("dias_funcionamento", "", restaurante_id)
-    restaurante_ativo = get_config("restaurante_ativo", "1", restaurante_id)
-
-    if restaurante_ativo == "0" or not ativo_db:
-        status = "fechado"
-    else:
-        try:
-            try:
-                import zoneinfo
-                tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
-            except ImportError:
-                from datetime import timezone, timedelta
-                tz = timezone(timedelta(hours=-3))
-            agora = datetime.now(tz)
-            hora_agora = agora.time()
-
-            dia_idx = agora.weekday()
-            dias_abertos = parsear_dias(dias_funcionamento)
-            dia_hoje = DIAS_ORDEM[dia_idx] if dia_idx < len(DIAS_ORDEM) else ""
-            dia_ok = dia_hoje in dias_abertos
-
-            abertura = datetime.strptime(horario_abertura, "%H:%M").time()
-            fechamento = datetime.strptime(horario_fechamento, "%H:%M").time()
-            if abertura <= fechamento:
-                hora_ok = abertura <= hora_agora <= fechamento
-            else:
-                hora_ok = hora_agora >= abertura or hora_agora <= fechamento
-
-            status = "aberto" if (dia_ok and hora_ok) else "fechado"
-        except Exception:
-            status = "fechado"
 
     base_url = request.host_url.rstrip('/')
     link_cardapio = f"{base_url}/cardapio/{slug}"
