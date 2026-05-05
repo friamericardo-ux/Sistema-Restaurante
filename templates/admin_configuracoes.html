@@ -113,10 +113,10 @@
     <div class="status-body">
       <div class="status-info">
         <div class="status-badge" id="status-badge">
-          {% if configs.restaurante_ativo == "1" %}
+          {% if configs.status_real == "aberto" %}
           <span class="badge-aberto">🟢 Aberto — recebendo pedidos</span>
           {% else %}
-          <span class="badge-fechado">🔴 Fechado — não recebe pedidos</span>
+          <span class="badge-fechado">🔴 Fechado — fora do horário ou desativado</span>
           {% endif %}
         </div>
         <p class="status-dica">Fechar o estabelecimento bloqueia novos pedidos imediatamente.</p>

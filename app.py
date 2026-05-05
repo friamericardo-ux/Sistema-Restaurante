@@ -1175,6 +1175,32 @@ def admin_configuracoes():
         "dias_funcionamento": get_config("dias_funcionamento", "", restaurante_id=session['restaurante_id']),
         "dias_selecionados": parsear_dias(get_config("dias_funcionamento", "", restaurante_id=session['restaurante_id'])),
     }
+
+    _ativo = get_config("restaurante_ativo", "1", restaurante_id=session['restaurante_id'])
+    _abertura = get_config("horario_abertura", "18:00", restaurante_id=session['restaurante_id'])
+    _fechamento = get_config("horario_fechamento", "23:00", restaurante_id=session['restaurante_id'])
+    _dias_func = get_config("dias_funcionamento", "", restaurante_id=session['restaurante_id'])
+    if _ativo == "0":
+        configs["status_real"] = "fechado"
+    else:
+        try:
+            from datetime import datetime as _dt
+            _agora = _dt.now()
+            _hora = _agora.time()
+            _dia_idx = _agora.weekday()
+            _dias_abertos = parsear_dias(_dias_func)
+            _dia_hoje = DIAS_ORDEM[_dia_idx] if _dia_idx < len(DIAS_ORDEM) else ""
+            _dia_ok = _dia_hoje in _dias_abertos
+            _ab = _dt.strptime(_abertura, "%H:%M").time()
+            _fe = _dt.strptime(_fechamento, "%H:%M").time()
+            if _ab <= _fe:
+                _hora_ok = _ab <= _hora <= _fe
+            else:
+                _hora_ok = _hora >= _ab or _hora <= _fe
+            configs["status_real"] = "aberto" if (_dia_ok and _hora_ok) else "fechado"
+        except:
+            configs["status_real"] = "fechado"
+
     return render_template("admin_configuracoes.html", configs=configs, sucesso=sucesso, erro=erro)
 
 
