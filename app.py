@@ -809,6 +809,9 @@ def cardapio_cliente():
         rid = 1
     verificar_horario_funcionamento(rid)
     status_loja = get_status_restaurante(rid)
+    horario_abertura = get_config('horario_abertura', '18:00', rid)
+    horario_fechamento = get_config('horario_fechamento', '23:00', rid)
+    dias_funcionamento = get_config('dias_funcionamento', '', rid)
     return render_template("cardapio_cliente.html",
         slug=None,
         restaurante_nome=get_config('nome_restaurante', 'Restaurante', rid),
