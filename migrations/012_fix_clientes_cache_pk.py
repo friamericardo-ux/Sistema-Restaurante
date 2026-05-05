@@ -51,11 +51,35 @@ def _upgrade_mysql(cursor, conn):
         print("[migration 012] PK de clientes_cache ja e composta — nada a fazer")
         return
 
-    # 3. Drop PK antiga (telefone) e cria composta (telefone, restaurante_id)
+    # 3. Encontra coluna AUTO_INCREMENT (MySQL exige que esteja em uma chave)
+    cursor.execute("""
+        SELECT COLUMN_NAME, COLUMN_TYPE
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'clientes_cache'
+          AND EXTRA LIKE '%%auto_increment%%'
+    """)
+    auto_row = cursor.fetchone()
+    auto_col = auto_row[0] if auto_row else None
+
+    # 4. Remove AUTO_INCREMENT temporariamente para poder dropar a PK
+    if auto_col:
+        cursor.execute(
+            f"ALTER TABLE clientes_cache MODIFY COLUMN {auto_col} INT NOT NULL"
+        )
+
+    # 5. Drop PK antiga e cria composta
     cursor.execute("ALTER TABLE clientes_cache DROP PRIMARY KEY")
     cursor.execute(
         "ALTER TABLE clientes_cache ADD PRIMARY KEY (telefone, restaurante_id)"
     )
+
+    # 6. Restaura AUTO_INCREMENT se existia
+    if auto_col:
+        cursor.execute(
+            f"ALTER TABLE clientes_cache MODIFY COLUMN {auto_col} INT NOT NULL AUTO_INCREMENT"
+        )
+
     conn.commit()
     print("[migration 012] PK de clientes_cache alterada para (telefone, restaurante_id) [MySQL]")
 
