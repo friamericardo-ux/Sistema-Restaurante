@@ -202,7 +202,7 @@ body {
 .sa-form-row {
   display: flex;
   gap: 16px;
-  align-items: flex-end;
+  align-items: flex-start;
   flex-wrap: wrap;
 }
 
@@ -262,6 +262,7 @@ body {
   transition: opacity 0.2s;
   white-space: nowrap;
   align-self: flex-end;
+  margin-top: 22px;
 }
 
 .btn-criar-restaurante:hover { opacity: 0.85; }
