@@ -362,6 +362,24 @@ document.getElementById('buscaInput').addEventListener('input',function(){
 
 async function init() {
   try {
+    if (SLUG) {
+      const resStatus = await fetch(`/api/restaurante/${SLUG}`);
+      const dataStatus = await resStatus.json();
+      if (dataStatus.status === 'fechado') {
+        document.getElementById('conteudo').innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center;gap:16px">
+            <div style="font-size:64px">🔒</div>
+            <div style="font-size:22px;font-weight:700;color:var(--text,#fff)">Estamos fechados</div>
+            <div style="font-size:15px;color:var(--text-muted,#aaa)">
+              Horário: <strong>${dataStatus.horario_abertura} às ${dataStatus.horario_fechamento}</strong>
+            </div>
+            <div style="font-size:14px;color:var(--text-muted,#aaa)">${dataStatus.dias_funcionamento}</div>
+          </div>`;
+        document.getElementById('footerBtn')?.style && (document.getElementById('footerBtn').style.display = 'none');
+        return;
+      }
+    }
+
     const res = await fetch(`${API_BASE}/api/cardapio?restaurante_id=${RID}`);
     const data = await res.json();
 
