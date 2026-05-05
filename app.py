@@ -1207,29 +1207,64 @@ def api_novos_pedidos():
 @app.route("/api/pedidos/delivery")
 @login_required
 def listar_pedidos_delivery():
-    """Retorna todos os pedidos delivery"""
+    """Retorna pedidos delivery ativos + entregues hoje (por sessão de caixa)"""
     db = get_connection()
-    db.row_factory = sqlite3.Row
     cursor = db.cursor()
     rid = session.get('restaurante_id', 1)
+    ph = "%s" if is_mysql() else "?"
 
-    cursor.execute("""
-        SELECT id, cliente_nome, cliente_telefone, cliente_endereco,
-               itens, total, status, criado_em
-        FROM pedidos_delivery
-        WHERE status != 'cancelado'
-        AND restaurante_id = ?
-        ORDER BY criado_em DESC
-    """, (rid,))
+    cursor.execute(
+        f"SELECT sessao_inicio FROM caixa_sessoes WHERE restaurante_id = {ph} AND aberto = 1 ORDER BY sessao_inicio DESC LIMIT 1",
+        (rid,)
+    )
+    row_sessao = cursor.fetchone()
+    sessao_inicio = row_sessao[0] if row_sessao else None
 
-    pedidos = []
-    for row in cursor.fetchall():
-        p = dict(row)
-        p["itens"] = json.loads(p["itens"]) if p.get("itens") else []
-        pedidos.append(p)
+    cursor.execute(
+        f"""SELECT id, cliente_nome, cliente_telefone, cliente_endereco,
+                   itens, total, status, criado_em
+            FROM pedidos_delivery
+            WHERE restaurante_id = {ph}
+            AND status NOT IN ('cancelado', 'rejeitado', 'entregue')
+            ORDER BY criado_em DESC""",
+        (rid,)
+    )
+    cols = [c[0] for c in cursor.description]
+    pedidos = [dict(zip(cols, row)) for row in cursor.fetchall()]
 
+    if sessao_inicio:
+        cursor.execute(
+            f"""SELECT id, cliente_nome, cliente_telefone, cliente_endereco,
+                       itens, total, status, criado_em
+                FROM pedidos_delivery
+                WHERE restaurante_id = {ph}
+                AND status = 'entregue'
+                AND criado_em >= {ph}
+                ORDER BY criado_em DESC""",
+            (rid, sessao_inicio)
+        )
+    else:
+        cursor.execute(
+            f"""SELECT id, cliente_nome, cliente_telefone, cliente_endereco,
+                       itens, total, status, criado_em
+                FROM pedidos_delivery
+                WHERE restaurante_id = {ph}
+                AND status = 'entregue'
+                AND DATE(criado_em) = CURDATE()
+                ORDER BY criado_em DESC""",
+            (rid,)
+        )
+
+    cols = [c[0] for c in cursor.description]
+    entregues = [dict(zip(cols, row)) for row in cursor.fetchall()]
     db.close()
-    return jsonify({"sucesso": True, "pedidos": pedidos})
+
+    for p in pedidos + entregues:
+        p["itens"] = json.loads(p["itens"]) if p.get("itens") else []
+        if p.get("criado_em") and hasattr(p["criado_em"], "isoformat"):
+            p["criado_em"] = p["criado_em"].isoformat()
+
+    return jsonify({"sucesso": True, "pedidos": pedidos + entregues})
 
 @app.route("/api/pedido/status", methods=["POST"])
 @csrf.exempt
@@ -1246,8 +1281,9 @@ def atualizar_status_pedido():
 
     db = get_connection()
     cursor = db.cursor()
+    ph = "%s" if is_mysql() else "?"
     cursor.execute(
-        "UPDATE pedidos_delivery SET status = ? WHERE id = ? AND restaurante_id = ?",
+        f"UPDATE pedidos_delivery SET status = {ph} WHERE id = {ph} AND restaurante_id = {ph}",
         (novo_status, pedido_id, session.get('restaurante_id', 1))
     )
     db.commit()
@@ -1259,11 +1295,11 @@ def atualizar_status_pedido():
 @csrf.exempt
 @login_required
 def cancelar_pedido(id):
-    """Cancela um pedido delivery (muda status para 'cancelado')"""
     db = get_connection()
     cursor = db.cursor()
+    ph = "%s" if is_mysql() else "?"
     cursor.execute(
-        "UPDATE pedidos_delivery SET status = 'cancelado' WHERE id = ? AND status = 'novo' AND restaurante_id = ?",
+        f"UPDATE pedidos_delivery SET status = 'cancelado' WHERE id = {ph} AND status = 'novo' AND restaurante_id = {ph}",
         (id, session.get('restaurante_id', 1))
     )
     alterado = cursor.rowcount
@@ -2288,10 +2324,22 @@ def api_restaurante_por_slug(slug):
         status = "fechado"
     else:
         try:
-            agora = datetime.now().time()
+            agora = datetime.now()
+            hora_agora = agora.time()
+
+            dia_idx = agora.weekday()
+            dias_abertos = parsear_dias(dias_funcionamento)
+            dia_hoje = DIAS_ORDEM[dia_idx] if dia_idx < len(DIAS_ORDEM) else ""
+            dia_ok = dia_hoje in dias_abertos
+
             abertura = datetime.strptime(horario_abertura, "%H:%M").time()
             fechamento = datetime.strptime(horario_fechamento, "%H:%M").time()
-            status = "aberto" if abertura <= agora <= fechamento else "fechado"
+            if abertura <= fechamento:
+                hora_ok = abertura <= hora_agora <= fechamento
+            else:
+                hora_ok = hora_agora >= abertura or hora_agora <= fechamento
+
+            status = "aberto" if (dia_ok and hora_ok) else "fechado"
         except Exception:
             status = "fechado"
 
