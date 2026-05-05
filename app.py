@@ -1277,6 +1277,8 @@ def imprimir_pedido(id):
 
     itens = json.loads(pedido[4]) if pedido[4] else []
 
+    tipo = "retirada" if not pedido[3] or pedido[3].strip().lower() in ["retirada no local", "retirada", "balcao", "balcão"] else "delivery"
+
     return render_template('imprimir_pedido.html',
         pedido_id=pedido[0],
         cliente_nome=pedido[1],
@@ -1289,7 +1291,8 @@ def imprimir_pedido(id):
         troco=pedido[8],
         status=pedido[9],
         criado_em=pedido[10],
-        nome_restaurante=get_config("nome_restaurante", "Comanda Digital")
+        nome_restaurante=get_config("nome_restaurante", "Comanda Digital"),
+        tipo_pedido=tipo,
     )
 
 
@@ -1310,6 +1313,8 @@ def delivery_imprimir(id):
 
     itens = json.loads(pedido[4]) if pedido[4] else []
 
+    tipo = "retirada" if not pedido[3] or pedido[3].strip().lower() in ["retirada no local", "retirada", "balcao", "balcão"] else "delivery"
+
     return render_template('imprimir_pedido.html',
         pedido_id=pedido[0],
         cliente_nome=pedido[1],
@@ -1322,7 +1327,8 @@ def delivery_imprimir(id):
         troco=pedido[8],
         status=pedido[9],
         criado_em=pedido[10],
-        nome_restaurante=get_config("nome_restaurante", "Comanda Digital")
+        nome_restaurante=get_config("nome_restaurante", "Comanda Digital"),
+        tipo_pedido=tipo,
     )
 
 
@@ -1359,7 +1365,9 @@ def mesa_comanda(numero):
         troco=0,
         status=mesa[3] if mesa[3] else "aberta",
         criado_em=datetime.now().strftime("%d/%m/%Y %H:%M"),
-        nome_restaurante=get_config("nome_restaurante", "Restaurante")
+        nome_restaurante=get_config("nome_restaurante", "Restaurante"),
+        tipo_pedido="mesa",
+        mesa_numero=str(numero),
     )
 
 
