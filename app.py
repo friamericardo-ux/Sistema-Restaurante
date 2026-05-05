@@ -1196,7 +1196,7 @@ def api_novos_pedidos():
     cursor = db.cursor()
     ph = "%s" if is_mysql() else "?"
     cursor.execute(
-        f"SELECT COUNT(*) FROM pedidos_delivery WHERE restaurante_id = {ph} AND status = 'pendente'",
+        f"SELECT COUNT(*) FROM pedidos_delivery WHERE restaurante_id = {ph} AND status = 'novo'",
         (restaurante_id,)
     )
     total = cursor.fetchone()[0]

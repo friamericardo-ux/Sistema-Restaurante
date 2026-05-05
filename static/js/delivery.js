@@ -6,22 +6,20 @@
 function tocarSom() {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const notas = [659, 784, 659, 523];
-        const duracoes = [0.15, 0.15, 0.15, 0.3];
-        let tempo = ctx.currentTime;
-        notas.forEach((freq, i) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.type = 'sine';
-            osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0.4, tempo);
-            gain.gain.exponentialRampToValueAtTime(0.001, tempo + duracoes[i]);
-            osc.start(tempo);
-            osc.stop(tempo + duracoes[i]);
-            tempo += duracoes[i];
-        });
+        function beep(freq, start, dur) {
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            o.frequency.value = freq;
+            o.type = 'sine';
+            g.gain.setValueAtTime(0.4, ctx.currentTime + start);
+            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+            o.start(ctx.currentTime + start);
+            o.stop(ctx.currentTime + start + dur + 0.05);
+        }
+        beep(880, 0,    0.15);
+        beep(1100, 0.2, 0.15);
+        beep(880, 0.4,  0.15);
     } catch (e) {}
 }
 
