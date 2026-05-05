@@ -1188,6 +1188,22 @@ def painel_delivery():
     """Página do painel de pedidos delivery"""
     return render_template("painel_delivery.html")
 
+@app.route("/api/novos-pedidos")
+@login_required
+def api_novos_pedidos():
+    restaurante_id = session.get('restaurante_id', 1)
+    db = get_connection()
+    cursor = db.cursor()
+    ph = "%s" if is_mysql() else "?"
+    cursor.execute(
+        f"SELECT COUNT(*) FROM pedidos_delivery WHERE restaurante_id = {ph} AND status = 'pendente'",
+        (restaurante_id,)
+    )
+    total = cursor.fetchone()[0]
+    db.close()
+    return jsonify({"pendentes": total})
+
+
 @app.route("/api/pedidos/delivery")
 @login_required
 def listar_pedidos_delivery():
