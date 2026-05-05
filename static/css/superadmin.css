@@ -1,18 +1,19 @@
-/* superadmin.css */
+/* Migrado para paleta admin_new.css — 2026-05-05 */
+@import url('../css/admin_new.css');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: #0d0d0d;
-  color: #e0e0e0;
+  background: var(--bg);
+  color: var(--text-main);
   font-family: 'DM Sans', sans-serif;
   min-height: 100vh;
 }
 
 /* HEADER */
 .sa-header {
-  background: #141414;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
   padding: 0 32px;
   height: 60px;
   display: flex;
@@ -23,7 +24,7 @@ body {
 .sa-logo {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #ff7a2f;
+  color: var(--primary);
   letter-spacing: -0.01em;
 }
 
@@ -35,13 +36,13 @@ body {
 
 .sa-user {
   font-size: 0.88rem;
-  color: #888;
+  color: var(--text-muted);
 }
 
 .btn-sair {
-  background: #1e1e1e;
-  color: #ccc;
-  border: 1px solid #2a2a2a;
+  background: rgba(0,0,0,0.04);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px 14px;
   font-size: 0.85rem;
@@ -50,7 +51,7 @@ body {
   transition: background 0.2s;
 }
 
-.btn-sair:hover { background: #2a2a2a; }
+.btn-sair:hover { background: var(--border); }
 
 /* MAIN */
 .sa-main {
@@ -66,19 +67,19 @@ body {
 .sa-page-header h1 {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-main);
   margin-bottom: 6px;
 }
 
 .sa-page-header p {
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 /* TABELA */
 .sa-table-wrap {
-  background: #141414;
-  border: 1px solid #1f1f1f;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   overflow-x: auto;
 }
@@ -90,7 +91,7 @@ body {
 }
 
 .sa-table thead tr {
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--border);
 }
 
 .sa-table th {
@@ -98,46 +99,46 @@ body {
   text-align: left;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #555;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .sa-table tbody tr {
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid var(--border);
   transition: background 0.15s;
 }
 
 .sa-table tbody tr:last-child { border-bottom: none; }
-.sa-table tbody tr:hover { background: #191919; }
+.sa-table tbody tr:hover { background: rgba(99, 102, 241, 0.04); }
 
 .sa-table td {
   padding: 14px 16px;
   vertical-align: middle;
 }
 
-.sa-id { color: #444; font-size: 0.8rem; }
+.sa-id { color: var(--text-muted); font-size: 0.8rem; }
 
 .sa-username {
   font-weight: 600;
-  color: #e0e0e0;
+  color: var(--text-main);
 }
 
-.sa-vencimento { color: #888; font-size: 0.88rem; }
+.sa-vencimento { color: var(--text-muted); font-size: 0.88rem; }
 
-.sem-data { color: #333; }
+.sem-data { color: var(--text-muted); }
 
 .sa-vazio {
   text-align: center;
-  color: #444;
+  color: var(--text-muted);
   padding: 40px;
 }
 
 /* BADGES ROLE */
 .badge-role {
-  background: #1e1e1e;
-  border: 1px solid #2a2a2a;
-  color: #888;
+  background: rgba(0,0,0,0.04);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
   border-radius: 6px;
   padding: 3px 10px;
   font-size: 0.78rem;
@@ -154,10 +155,10 @@ body {
   white-space: nowrap;
 }
 
-.badge-ativo  { background: #1a3a1a; color: #66bb6a; }
-.badge-alerta { background: #3a2e00; color: #f5c518; }
-.badge-vencido{ background: #3a1010; color: #ef5350; }
-.badge-sem    { background: #1e1e1e; color: #666; }
+.badge-ativo  { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+.badge-alerta { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+.badge-vencido{ background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+.badge-sem    { background: rgba(0,0,0,0.04); color: var(--text-muted); }
 
 /* BOTÕES DE AÇÃO */
 .sa-acoes {
@@ -179,14 +180,14 @@ body {
 
 .btn-renovar:hover, .btn-bloquear:hover { opacity: 0.8; }
 
-.btn-30 { background: #ff7a2f; color: #fff; }
-.btn-60 { background: #4a9eff; color: #fff; }
-.btn-bloquear { background: #3a1010; color: #ef5350; border: 1px solid #5a1a1a; }
+.btn-30 { background: var(--primary); color: #fff; }
+.btn-60 { background: var(--info); color: #fff; }
+.btn-bloquear { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
 
 /* NOVO RESTAURANTE */
 .sa-novo-restaurante {
-  background: #141414;
-  border: 1px solid #1f1f1f;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 24px;
@@ -195,7 +196,7 @@ body {
 .sa-novo-restaurante h2 {
   font-size: 1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-main);
   margin-bottom: 18px;
 }
 
@@ -217,17 +218,17 @@ body {
 .sa-form-group label {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #555;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .sa-form-group input {
-  background: #0d0d0d;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 9px 12px;
-  color: #e0e0e0;
+  color: var(--text-main);
   font-size: 0.9rem;
   font-family: inherit;
   outline: none;
@@ -235,22 +236,22 @@ body {
 }
 
 .sa-form-group input:focus {
-  border-color: #6366F1;
+  border-color: var(--primary);
 }
 
 .sa-form-group input::placeholder {
-  color: #333;
+  color: var(--text-muted);
 }
 
 .sa-slug-preview {
   font-size: 0.78rem;
-  color: #6366F1;
+  color: var(--primary);
   min-height: 16px;
   font-family: monospace;
 }
 
 .btn-criar-restaurante {
-  background: #6366F1;
+  background: var(--primary);
   color: #fff;
   border: none;
   border-radius: 8px;
