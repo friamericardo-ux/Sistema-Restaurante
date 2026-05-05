@@ -2211,6 +2211,9 @@ def cardapio_por_slug(slug):
     restaurante_id, nome, ativo = row[0], row[1], row[2]
     if not ativo:
         return render_template("restaurante_inativo.html")
+    horario_abertura = get_config("horario_abertura", "18:00", restaurante_id)
+    horario_fechamento = get_config("horario_fechamento", "23:00", restaurante_id)
+    dias_funcionamento = get_config("dias_funcionamento", "", restaurante_id)
     status_loja = get_status_restaurante(restaurante_id)
     return render_template("cardapio_cliente.html", slug=slug, restaurante_nome=nome,
         restaurante_id=restaurante_id,
