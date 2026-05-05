@@ -186,6 +186,10 @@ def verificar_licenca_global():
     except Exception:
         pass
 
+    rid = session.get('restaurante_id')
+    if rid:
+        verificar_horario_funcionamento(rid)
+
 
 
 def _garantir_caixa_sessoes():
@@ -299,6 +303,25 @@ def _garantir_configuracoes():
 _garantir_configuracoes()
 
 
+def _garantir_coluna_status():
+    db = get_connection()
+    cursor = db.cursor()
+    if is_mysql():
+        cursor.execute("SHOW COLUMNS FROM restaurantes LIKE 'status'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE restaurantes ADD COLUMN status VARCHAR(20) DEFAULT 'fechado'")
+            db.commit()
+    else:
+        cursor.execute("PRAGMA table_info(restaurantes)")
+        cols = [r[1] for r in cursor.fetchall()]
+        if 'status' not in cols:
+            cursor.execute("ALTER TABLE restaurantes ADD COLUMN status TEXT DEFAULT 'fechado'")
+            db.commit()
+    db.close()
+
+_garantir_coluna_status()
+
+
 # NOVO — Helpers de configuração
 def get_config(chave, fallback=None, restaurante_id=1):
     """Lê uma configuração do banco. Usa fallback se não encontrar."""
@@ -365,6 +388,68 @@ def parsear_dias(texto):
             fim = DIAS_ORDEM.index(partes[1])
             return DIAS_ORDEM[inicio:fim+1]
     return [d.strip() for d in texto.split(',')]
+
+
+_ultima_verificacao_status = {}
+
+def verificar_horario_funcionamento(restaurant_id):
+    from datetime import datetime
+
+    agora_dt = datetime.now()
+    chave = f"status_{restaurant_id}"
+    ultima = _ultima_verificacao_status.get(chave)
+    if ultima and (agora_dt - ultima).total_seconds() < 300:
+        return
+
+    try:
+        horario_abertura = get_config("horario_abertura", "18:00", restaurante_id=restaurant_id)
+        horario_fechamento = get_config("horario_fechamento", "23:00", restaurante_id=restaurant_id)
+        dias_funcionamento = get_config("dias_funcionamento", "", restaurante_id=restaurant_id)
+        restaurante_ativo = get_config("restaurante_ativo", "1", restaurante_id=restaurant_id)
+
+        if restaurante_ativo == "0":
+            novo_status = "fechado"
+        else:
+            try:
+                import zoneinfo
+                tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+            except ImportError:
+                from datetime import timezone, timedelta
+                tz = timezone(timedelta(hours=-3))
+
+            agora = datetime.now(tz)
+
+            dias = parsear_dias(dias_funcionamento)
+
+            mapa = {
+                "Monday": "Segunda", "Tuesday": "Terca", "Wednesday": "Quarta",
+                "Thursday": "Quinta", "Friday": "Sexta", "Saturday": "Sabado", "Sunday": "Domingo"
+            }
+            dia_atual = mapa.get(agora.strftime("%A"), "")
+
+            if not dias or dia_atual not in dias:
+                novo_status = "fechado"
+            else:
+                try:
+                    abertura = datetime.strptime(horario_abertura, "%H:%M").time()
+                    fechamento = datetime.strptime(horario_fechamento, "%H:%M").time()
+                    hora_atual = agora.time()
+                    novo_status = "aberto" if abertura <= hora_atual <= fechamento else "fechado"
+                except Exception:
+                    novo_status = "fechado"
+
+        db = get_connection()
+        cursor = db.cursor()
+        if is_mysql():
+            cursor.execute("UPDATE restaurantes SET status = %s WHERE id = %s", (novo_status, restaurant_id))
+        else:
+            cursor.execute("UPDATE restaurantes SET status = ? WHERE id = ?", (novo_status, restaurant_id))
+        db.commit()
+        db.close()
+
+        _ultima_verificacao_status[chave] = datetime.now()
+    except Exception:
+        pass
 
 
 def _get_sessao_inicio(cursor, restaurante_id=1):
@@ -719,6 +804,7 @@ def cardapio_cliente():
         db.close()
     except Exception:
         rid = 1
+    verificar_horario_funcionamento(rid)
     if get_config("restaurante_ativo", "1", restaurante_id=rid) == "0":
         return render_template("restaurante_inativo.html")
     return render_template("cardapio_cliente.html",
@@ -2056,6 +2142,7 @@ def cardapio_por_slug(slug):
     restaurante_id, nome, ativo = row[0], row[1], row[2]
     if not ativo:
         return render_template("restaurante_inativo.html")
+    verificar_horario_funcionamento(restaurante_id)
     return render_template("cardapio_cliente.html", slug=slug, restaurante_nome=nome,
         restaurante_id=restaurante_id,
         whatsapp_restaurante=get_config('whatsapp_restaurante', Config.WHATSAPP_RESTAURANTE, restaurante_id),
@@ -2196,6 +2283,21 @@ def api_restaurante_por_slug(slug):
         "status": status,
         "link_cardapio": link_cardapio,
     })
+
+
+@app.route("/api/check-status/<int:restaurant_id>")
+def api_check_status(restaurant_id):
+    verificar_horario_funcionamento(restaurant_id)
+    db = get_connection()
+    cursor = db.cursor()
+    if is_mysql():
+        cursor.execute("SELECT status FROM restaurantes WHERE id = %s", (restaurant_id,))
+    else:
+        cursor.execute("SELECT status FROM restaurantes WHERE id = ?", (restaurant_id,))
+    row = cursor.fetchone()
+    db.close()
+    status = row[0] if row else "fechado"
+    return jsonify({"status": status})
 
 
 @app.route('/admin/adicionais')
