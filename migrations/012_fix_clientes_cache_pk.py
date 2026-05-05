@@ -52,12 +52,14 @@ def _upgrade_mysql(cursor, conn):
         return
 
     # 3. Encontra coluna AUTO_INCREMENT (MySQL exige que esteja em uma chave)
+    #    Usa LOCATE em vez de LIKE para evitar que o wrapper _MySQLCursor
+    #    dobre os %% e corrompa o padrao
     cursor.execute("""
         SELECT COLUMN_NAME, COLUMN_TYPE
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_SCHEMA = DATABASE()
           AND TABLE_NAME = 'clientes_cache'
-          AND EXTRA LIKE '%%auto_increment%%'
+          AND LOCATE('auto_increment', EXTRA) > 0
     """)
     auto_row = cursor.fetchone()
     auto_col = auto_row[0] if auto_row else None
