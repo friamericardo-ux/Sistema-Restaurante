@@ -1156,7 +1156,7 @@ def admin_configuracoes():
             "nome_restaurante", "whatsapp_restaurante",
             "frete_por_km", "endereco_restaurante",
             "horario_abertura", "horario_fechamento",
-            "restaurante_ativo", "cor_primaria"
+            "cor_primaria"
         ]
         for campo in campos:
             valor = request.form.get(campo, "").strip()
