@@ -2212,8 +2212,7 @@ def carrinho_cliente():
 # ========================
 # ROTAS MULTI-TENANT
 # ========================
-# ROTAS MULTI-TENANT
-# ========================
+
 
 @app.route("/cardapio/<slug>")
 def cardapio_por_slug(slug):
@@ -2228,9 +2227,36 @@ def cardapio_por_slug(slug):
     restaurante_id, nome, ativo = row[0], row[1], row[2]
     if not ativo:
         return render_template("restaurante_inativo.html")
-    verificar_horario_funcionamento(restaurante_id)
+    from datetime import datetime
+    horario_abertura = get_config("horario_abertura", "18:00", restaurante_id)
+    horario_fechamento = get_config("horario_fechamento", "23:00", restaurante_id)
+    dias_funcionamento = get_config("dias_funcionamento", "", restaurante_id)
+    restaurante_ativo = get_config("restaurante_ativo", "1", restaurante_id)
+    if restaurante_ativo == "0":
+        status_loja = "fechado"
+    else:
+        try:
+            agora = datetime.now()
+            hora_agora = agora.time()
+            dia_idx = agora.weekday()
+            dias_abertos = parsear_dias(dias_funcionamento)
+            dia_hoje = DIAS_ORDEM[dia_idx] if dia_idx < len(DIAS_ORDEM) else ""
+            dia_ok = dia_hoje in dias_abertos
+            ab = datetime.strptime(horario_abertura, "%H:%M").time()
+            fe = datetime.strptime(horario_fechamento, "%H:%M").time()
+            if ab <= fe:
+                hora_ok = ab <= hora_agora <= fe
+            else:
+                hora_ok = hora_agora >= ab or hora_agora <= fe
+            status_loja = "aberto" if (dia_ok and hora_ok) else "fechado"
+        except:
+            status_loja = "fechado"
     return render_template("cardapio_cliente.html", slug=slug, restaurante_nome=nome,
         restaurante_id=restaurante_id,
+        status_loja=status_loja,
+        horario_abertura=horario_abertura,
+        horario_fechamento=horario_fechamento,
+        dias_funcionamento=dias_funcionamento,
         whatsapp_restaurante=get_config('whatsapp_restaurante', Config.WHATSAPP_RESTAURANTE, restaurante_id),
         google_maps_key=Config.GOOGLE_MAPS_KEY)
 

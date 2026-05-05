@@ -18,12 +18,28 @@
     <div>
       <div style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;color:#fff;line-height:1.1;">{{ restaurante_nome or 'Cardápio' }}</div>
       <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+        {% if status_loja == 'aberto' %}
         <span style="background:#4CAF50;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">● Aberto</span>
+        {% else %}
+        <span style="background:#f44336;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">● Fechado</span>
+        {% endif %}
         <span style="background:rgba(255,255,255,0.2);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">Delivery</span>
       </div>
     </div>
   </div>
 </div>
+
+{% if status_loja == 'fechado' %}
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center;gap:16px;min-height:50vh">
+  <div style="font-size:64px">🔒</div>
+  <div style="font-size:22px;font-weight:700;">Estamos fechados</div>
+  <div style="font-size:15px;color:#888;">
+    Horário: <strong>{{ horario_abertura }} às {{ horario_fechamento }}</strong><br>
+    {{ dias_funcionamento }}
+  </div>
+</div>
+<style>#telaCardapio,#telaCarrinho{display:none!important}</style>
+{% endif %}
 
 <!-- ══ STATS ROW ══ -->
 <div class="stats-row">
