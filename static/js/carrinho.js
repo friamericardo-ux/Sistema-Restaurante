@@ -5,8 +5,8 @@ let configsRestaurante = { whatsapp: '5567993487509' };
 
 async function carregarConfigs() {
   try {
-    const rid = document.getElementById('restauranteId')?.value || 1;
-    const res = await fetch(`/api/configuracoes?restaurante_id=${rid}`);
+    const slug = document.getElementById('restauranteSlug')?.value || '';
+    const res = await fetch(`/api/configuracoes?slug=${encodeURIComponent(slug)}`);
     const data = await res.json();
     if (data.sucesso) {
       taxaEntrega = parseFloat(window._freteCalculado) || 0;
@@ -132,13 +132,14 @@ async function finalizarPedido() {
   }
 
   const rid = document.getElementById('restauranteId')?.value || 1;
+  const slug = document.getElementById('restauranteSlug')?.value || '';
   console.log('forma_pagamento:', pagamento, 'troco:', troco);
   fetch('/api/pedido', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       nome, telefone, endereco, observacao, pagamento, troco,
-      restaurante_id: parseInt(rid),
+      slug,
       taxa_entrega: freteAtual,
       itens: itens.map(i => ({
         nome: i.nome, preco: i.preco,
@@ -151,7 +152,7 @@ async function finalizarPedido() {
       fetch('/api/cliente', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telefone, nome, endereco })
+        body: JSON.stringify({ telefone, nome, endereco, slug })
       }).catch(() => {});
 
       const subtotal = itens.reduce((s, i) => s + parseFloat(i.preco) * i.quantidade, 0);
@@ -246,7 +247,8 @@ window.onload = function () {
   document.getElementById('telefone').addEventListener('blur', function () {
     const tel = this.value.trim();
     if (!tel) return;
-    fetch(`/api/cliente/${encodeURIComponent(tel)}`)
+    const slug = document.getElementById('restauranteSlug')?.value || '';
+    fetch(`/api/cliente/${encodeURIComponent(tel)}?slug=${encodeURIComponent(slug)}`)
       .then(r => r.json())
       .then(data => {
         if (data.sucesso) {

@@ -312,7 +312,7 @@ async function finalizarPedido(){
         nome, telefone: tel, endereco: end,
         pagamento: pgtoSel,
         troco: pgtoSel === 'dinheiro' ? parseFloat(troco) || 0 : 0,
-        restaurante_id: rid,
+        slug: SLUG || '',
         taxa_entrega: frete,
         itens: carrinho.map(i=>({
           nome: i.nome,
@@ -380,7 +380,7 @@ async function init() {
       }
     }
 
-    const res = await fetch(`${API_BASE}/api/cardapio?restaurante_id=${RID}`);
+    const res = await fetch(`${API_BASE}/api/cardapio?slug=${encodeURIComponent(SLUG || '')}`);
     const data = await res.json();
 
     const grupos = {};
@@ -403,7 +403,7 @@ async function init() {
     const categoriasUnicas = Object.keys(grupos);
     const adsMap = {};
     await Promise.all(categoriasUnicas.map(async cat => {
-      const r = await fetch(`${API_BASE}/api/adicionais?categoria=${encodeURIComponent(cat)}&restaurante_id=${RID}`);
+      const r = await fetch(`${API_BASE}/api/adicionais?categoria=${encodeURIComponent(cat)}&slug=${encodeURIComponent(SLUG || '')}`);
       const d = await r.json();
       adsMap[cat] = d.adicionais || [];
     }));

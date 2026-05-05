@@ -284,11 +284,12 @@ def _init_sqlite():
     """)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS clientes_cache (
-        telefone TEXT PRIMARY KEY,
+        telefone TEXT NOT NULL,
         nome TEXT,
         endereco TEXT,
         atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        restaurante_id INTEGER DEFAULT 1
+        restaurante_id INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY (telefone, restaurante_id)
     )
     """)
 
@@ -434,11 +435,12 @@ def _init_mysql():
     """)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS clientes_cache (
-        telefone VARCHAR(20) PRIMARY KEY,
+        telefone VARCHAR(20) NOT NULL,
         nome VARCHAR(100),
         endereco VARCHAR(255),
         atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        restaurante_id INT DEFAULT 1
+        restaurante_id INT NOT NULL DEFAULT 1,
+        PRIMARY KEY (telefone, restaurante_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     """)
 

@@ -221,19 +221,23 @@ def _garantir_clientes_cache():
     if is_mysql():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS clientes_cache (
-                telefone VARCHAR(20) PRIMARY KEY,
+                telefone VARCHAR(20),
                 nome VARCHAR(100),
                 endereco VARCHAR(255),
-                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                restaurante_id INT NOT NULL DEFAULT 1,
+                PRIMARY KEY (telefone, restaurante_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
     else:
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS clientes_cache (
-                telefone TEXT PRIMARY KEY,
+                telefone TEXT,
                 nome TEXT,
                 endereco TEXT,
-                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                restaurante_id INTEGER NOT NULL DEFAULT 1,
+                PRIMARY KEY (telefone, restaurante_id)
             )
         """)
     db.commit()
@@ -819,7 +823,13 @@ def cardapio_cliente():
 def api_cardapio():
     """Retorna os produtos do cardápio"""
     try:
-        rid = request.args.get('restaurante_id', 1)
+        slug = request.args.get('slug', '').strip()
+        if slug:
+            rid = _get_rid_from_slug(slug)
+        else:
+            rid = session.get('restaurante_id')
+        if not rid:
+            return jsonify({"sucesso": False, "erro": "slug ou sessao necessaria"}), 400
         produtos = listar_produtos(rid)
         resultado = []
         for p in produtos:
@@ -840,7 +850,13 @@ def api_cardapio():
 @app.route("/api/adicionais")
 def api_adicionais():
     try:
-        rid = request.args.get('restaurante_id', 1)
+        slug = request.args.get('slug', '').strip()
+        if slug:
+            rid = _get_rid_from_slug(slug)
+        else:
+            rid = session.get('restaurante_id')
+        if not rid:
+            return jsonify({"sucesso": False, "erro": "slug ou sessao necessaria"}), 400
         categoria = request.args.get('categoria', None)
         adicionais = listar_adicionais(rid, categoria=categoria)
         resultado = [{"id": a[0], "nome": a[1], "preco": float(a[2])} for a in adicionais]
@@ -855,9 +871,13 @@ def route_criar_pedido():
     """Cria um novo pedido delivery"""
     try:
         dados = request.get_json()
-        restaurante_id = int(dados.get("restaurante_id") or 1)
+        slug = (dados.get("slug") or "").strip()
+        restaurante_id = _get_rid_from_slug(slug)
+        if not restaurante_id:
+            return jsonify({"sucesso": False, "erro": "slug invalido ou ausente"}), 400
         if get_status_restaurante(restaurante_id) == "fechado":
             return jsonify({"sucesso": False, "erro": "Restaurante está fechado no momento"}), 403
+        dados['restaurante_id'] = restaurante_id
         resultado = criar_pedido_delivery(dados)
         
         # Gera resumo para o WhatsApp
@@ -1092,7 +1112,13 @@ def superadmin_criar_restaurante():
 @app.route("/api/configuracoes")
 def api_configuracoes():
     """Retorna configs públicas para o frontend do cliente."""
-    rid = request.args.get('restaurante_id', default=1, type=int)
+    slug = request.args.get('slug', '').strip()
+    if slug:
+        rid = _get_rid_from_slug(slug)
+    else:
+        rid = session.get('restaurante_id')
+    if not rid:
+        return jsonify({"sucesso": False, "erro": "slug ou sessao necessaria"}), 400
     return jsonify({
         "sucesso": True,
         "nome_restaurante": get_config("nome_restaurante", "", restaurante_id=rid),
@@ -2430,14 +2456,30 @@ def pdv():
 # CACHE DE CLIENTES
 # ========================
 
+def _get_rid_from_slug(slug):
+    """Resolve slug -> restaurante_id. Retorna None se invalido."""
+    if not slug:
+        return None
+    db = get_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT id FROM restaurantes WHERE slug = %s AND ativo = 1", (slug,))
+    row = cursor.fetchone()
+    db.close()
+    return row[0] if row else None
+
+
 @app.route("/api/cliente/<telefone>")
 @csrf.exempt
 def get_cliente(telefone):
+    slug = request.args.get('slug', '').strip()
+    restaurante_id = _get_rid_from_slug(slug)
+    if not restaurante_id:
+        return jsonify({"sucesso": False, "erro": "slug invalido ou ausente"}), 400
     db = get_connection()
     cursor = db.cursor()
     cursor.execute(
-        "SELECT nome, endereco FROM clientes_cache WHERE telefone = ?",
-        (telefone,)
+        "SELECT nome, endereco FROM clientes_cache WHERE telefone = ? AND restaurante_id = ?",
+        (telefone, restaurante_id)
     )
     row = cursor.fetchone()
     db.close()
@@ -2453,22 +2495,26 @@ def salvar_cliente():
     telefone = dados.get("telefone", "").strip()
     nome = dados.get("nome", "").strip()
     endereco = dados.get("endereco", "").strip()
+    slug = (dados.get("slug") or "").strip()
+    restaurante_id = _get_rid_from_slug(slug)
     if not telefone:
         return jsonify({"sucesso": False})
+    if not restaurante_id:
+        return jsonify({"sucesso": False, "erro": "slug invalido ou ausente"}), 400
     db = get_connection()
     cursor = db.cursor()
     if is_mysql():
         cursor.execute("""
-            INSERT INTO clientes_cache (telefone, nome, endereco)
-            VALUES (%s, %s, %s)
+            INSERT INTO clientes_cache (telefone, nome, endereco, restaurante_id)
+            VALUES (%s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE nome=%s, endereco=%s
-        """, (telefone, nome, endereco, nome, endereco))
+        """, (telefone, nome, endereco, restaurante_id, nome, endereco))
     else:
         cursor.execute("""
-            INSERT INTO clientes_cache (telefone, nome, endereco)
-            VALUES (?, ?, ?)
-            ON CONFLICT(telefone) DO UPDATE SET nome=excluded.nome, endereco=excluded.endereco
-        """, (telefone, nome, endereco))
+            INSERT INTO clientes_cache (telefone, nome, endereco, restaurante_id)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(telefone, restaurante_id) DO UPDATE SET nome=excluded.nome, endereco=excluded.endereco
+        """, (telefone, nome, endereco, restaurante_id))
     db.commit()
     db.close()
     return jsonify({"sucesso": True})
