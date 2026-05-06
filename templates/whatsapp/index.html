@@ -10,10 +10,11 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container" style="max-width: 800px; margin: 0 auto;">
+
   <div class="card-config">
     <div class="card-config-titulo">Status da Conexão</div>
-    <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
       <div id="status-indicator" style="width: 14px; height: 14px; border-radius: 50%; background: #6B7280;"></div>
       <span id="status-text" style="font-weight: 600;">Verificando...</span>
     </div>
@@ -36,11 +37,7 @@
       Quando ativado, o robô responde automaticamente às mensagens dos clientes via WhatsApp.
     </p>
     <div style="display: flex; align-items: center; gap: 16px;">
-      <button id="btn-toggle" type="button"
-        class="btn-toggle-status"
-        style="min-width: 160px;">
-        Ativando...
-      </button>
+      <button id="btn-toggle" type="button" class="btn-toggle-status" style="min-width: 160px;">Ativando...</button>
       <span id="toggle-status" style="font-size: 0.85rem; color: var(--text-muted);"></span>
     </div>
   </div>
