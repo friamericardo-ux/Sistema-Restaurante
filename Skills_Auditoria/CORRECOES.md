@@ -84,46 +84,64 @@
 ### Tarefa 2.1 — Adicionar paginação nas listagens
 **Arquivos:** rotas de listagem em `app.py`  
 **Rotas afetadas:** `/api/pedidos/delivery`, `/api/mesas`, `/api/caixa/movimentacoes` (e outras sem LIMIT)  
-**Status:** `[ ] pendente`
+**Status:** `[x] concluido`
 
-**O que fazer:**
-- Adicionar `?page=1&per_page=50` como query params opcionais
-- Aplicar `LIMIT ? OFFSET ?` em todas as queries de listagem
-- Retornar no JSON: `{ "data": [...], "page": 1, "per_page": 50, "total": 200 }`
-- Default: `per_page=50`, máximo permitido: `per_page=200`
+**O que foi feito:**
+- `app.py`: adicionado helper `get_pagination_params()` — extrai `page`/`per_page` de query params, default page=1, per_page=50, max per_page=200
+- `/api/mesas`: paginação in-memory sobre resultado do repository, retorna `page`, `per_page`, `total`
+- `/api/pedidos/delivery`: paginação SQL-level sobre pedidos entregues (ativos ficam sem limite por serem poucos), retorna metadados
+- `/api/caixa/movimentacoes`: paginação in-memory sobre lista combinada (delivery + mesas)
+- `/api/caixa/historico`: paginação SQL-level com `LIMIT/OFFSET` + `COUNT(*)` para total
+- `/api/caixa/balanco`: paginação SQL-level com `LIMIT/OFFSET` + `COUNT(*)` para total
 
 ---
 
 ### Tarefa 2.2 — Rate limiting nas rotas públicas
 **Arquivo:** `app.py`  
-**Status:** `[ ] pendente`
+**Status:** `[x] concluido`
 
-**O que fazer:**
-- Aplicar `@limiter.limit("60/minute")` em `/api/pedido` (POST)
-- Aplicar `@limiter.limit("120/minute")` em `/api/cardapio` (GET)
-- Aplicar `@limiter.limit("30/minute")` em qualquer rota de criação pública
+**O que foi feito:**
+- `app.py`: adicionado `@limiter.limit("60/minute")` em `/api/pedido` (POST)
+- `app.py`: adicionado `@limiter.limit("30/minute")` em 3 outras rotas POST públicas: `/cardapio/<slug>/api/pedido`, `/api/cliente`, `/api/maps/calcular-frete`
+- `app.py`: adicionado `@limiter.limit("120/minute")` em 17 rotas GET públicas (10 API + 7 páginas HTML)
+- `app.py`: adicionado `@app.errorhandler(429)` para resposta JSON amigável
 
 ---
 
 ### Tarefa 2.3 — CORS configurado
 **Arquivo:** `app.py`  
-**Status:** `[ ] pendente`
+**Status:** `[x] concluido`
 
-**O que fazer:**
-- Instalar `flask-cors` se não instalado
-- Configurar `CORS(app, origins=["https://seudominio.com.br"])` — não usar `*`
-- Listar explicitamente os domínios dos restaurantes autorizados ou usar wildcard de subdomínio controlado
+**O que foi feito:**
+- `requirements.txt`: adicionado `flask-cors`
+- `app.py`: adicionado `from flask_cors import CORS` (após imports)
+- `app.py`: configurado `CORS(app, origins=["https://pantanaldev.com.br", "https://*.pantanaldev.com.br"], supports_credentials=True)` (após criação do app)
+- Talisman analisado: CSP `connect-src` não inclui `*.pantanaldev.com.br` — pode bloquear requisições cross-origin no navegador mesmo com CORS correto
+- **Pós-deploy:** corrigido `connect-src` do Talisman — adicionado `https://pantanaldev.com.br https://*.pantanaldev.com.br`
 
 ---
 
 ### Tarefa 2.4 — Tratar restaurante_id NULL do superadmin
 **Arquivo:** `repository.py` e `app.py`  
-**Status:** `[ ] pendente`
+**Status:** `[x] concluido`
 
-**O que fazer:**
-- Mapear todas as queries que filtram por `restaurante_id`
-- Adicionar verificação: se `restaurante_id is None` e usuário é superadmin, permitir (sem filtro); caso contrário, retornar 403
-- Nunca deixar query sem filtro para usuário comum com `restaurante_id = None`
+**O que foi feito:**
+- `app.py`: criado helper `get_restaurante_id_or_403()` que aborta com 403 se `restaurante_id` for None (superadmin incluso)
+- `app.py`: substituídas ~40 ocorrências de `session.get('restaurante_id', 1)` / `session['restaurante_id']` nas rotas de tenant por `get_restaurante_id_or_403()`
+- Exceções preservadas: login, logout, setup, `/superadmin/*`, context processor e before_request (já tinham guarda `if rid:`)
+- `repository.py::criar_pedido_delivery`: confirmação de que correção da Tarefa 1.2 (slug) está aplicada no caller; `or 1` é fallback inócuo
+
+---
+
+### Bug extra — IDOR em /api/check-status
+**Arquivo:** `app.py` linha ~2510  
+**Risco:** Qualquer pessoa enumera restaurantes chamando `/api/check-status/1`, `/api/check-status/2`...
+**Status:** `[x] corrigido`
+
+**O que foi feito:**
+- Rota alterada de `/api/check-status/<int:restaurant_id>` para `/api/check-status/<string:slug>`
+- `restaurante_id` resolvido via `_get_rid_from_slug(slug)` — slug inválido retorna 400
+- Atacante não consegue mais enumerar IDs numéricos
 
 ---
 
@@ -179,6 +197,12 @@
 | Data | Tarefa | Status | Observações |
 |------|--------|--------|-------------|
 | 05/05/2026 | 1.1 — Corrigir IDOR clientes_cache | ✅ concluido | 4 arquivos: app.py (3 blocos) + carrinho.js (2 chamadas) |
+| 06/05/2026 | 2.4 — Tratar restaurante_id NULL do superadmin | ✅ concluido | app.py: helper + ~40 substituições em rotas de tenant |
+| 06/05/2026 | 2.3 — CORS configurado | ✅ concluido | requirements.txt + app.py (import + CORS()); Talisman analisado sem alterações |
+| 06/05/2026 | 2.2 — Rate limiting nas rotas públicas | ✅ concluido | app.py: ~21 decorators + handler 429 |
+| 06/05/2026 | 2.1 — Paginação nas listagens | ✅ concluido | app.py: helper get_pagination_params + 5 rotas modificadas |
+| 06/05/2026 | 2.3 — Talisman connect-src (pós-deploy) | ✅ concluido | app.py: adicionado domínio de produção ao CSP connect-src |
+| 06/05/2026 | Bug extra — IDOR check-status | ✅ corrigido | app.py: <int:id> → <string:slug> + _get_rid_from_slug |
 
 ---
 

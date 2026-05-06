@@ -1,6 +1,7 @@
 flask
 flask-wtf
 flask-limiter
+flask-cors
 flask-talisman
 python-escpos
 bcrypt

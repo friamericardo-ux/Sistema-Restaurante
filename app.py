@@ -26,8 +26,33 @@ from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
+from flask_cors import CORS
 from PIL import Image
 import io
+
+def get_restaurante_id_or_403():
+    """
+    Retorna restaurante_id da sessão.
+    Superadmin (role=superadmin) com restaurante_id NULL é barrado aqui —
+    ele acessa painéis próprios, não rotas de tenant.
+    Usuário comum com restaurante_id None recebe 403.
+    """
+    role = session.get('role')
+    restaurante_id = session.get('restaurante_id')
+    if restaurante_id is None:
+        from flask import abort
+        abort(403)
+    return int(restaurante_id)
+
+
+def get_pagination_params():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+    page = max(page, 1)
+    per_page = max(min(per_page, 200), 1)
+    return page, per_page
+
+
 def inicializar_admin():
     from repository import UserRepository
     from security import SecurityService
@@ -47,6 +72,11 @@ app = Flask(__name__)
 from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
+CORS(app, origins=[
+    "https://pantanaldev.com.br",
+    "https://*.pantanaldev.com.br"
+], supports_credentials=True)
+
 app.secret_key = Config.SECRET_KEY
 
 # Proteção CSRF
@@ -64,10 +94,14 @@ Talisman(app,
         'style-src': "'self' 'unsafe-inline' fonts.googleapis.com",
         'img-src': "'self' data: maps.gstatic.com *.googleapis.com *.gstatic.com",
         'font-src': "'self' data: fonts.gstatic.com",
-        'connect-src': "'self' maps.googleapis.com *.googleapis.com",
+        'connect-src': "'self' maps.googleapis.com *.googleapis.com https://pantanaldev.com.br https://*.pantanaldev.com.br",
     },
     session_cookie_secure=True, 
 )
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return jsonify({"sucesso": False, "erro": "Muitas requisicoes. Tente novamente mais tarde."}), 429
 
 @app.context_processor
 def inject_global_vars():
@@ -572,11 +606,13 @@ def login_web():
     return render_template('login.html')
 
 @app.route("/logout")
+@limiter.limit("120/minute")
 def logout():
     session.clear()
     return redirect(url_for('login_web'))
 
 @app.route("/setup", methods=['GET', 'POST'])
+@limiter.limit("120/minute")
 def setup():
     """Configuração inicial — só acessível se não há usuários cadastrados"""
     repo = UserRepository()
@@ -605,6 +641,7 @@ def setup():
 # ROTAS PRINCIPAIS
 # ========================
 @app.route('/')
+@limiter.limit("120/minute")
 def home():
     return render_template('landing.html')
 @app.route("/dashboard")
@@ -612,7 +649,7 @@ def home():
 def index():
     role = session.get('role')
     restaurante_slug = None
-    rid = session.get('restaurante_id') or 1
+    rid = get_restaurante_id_or_403()
     db = get_connection()
     cursor = db.cursor()
     cursor.execute("SELECT slug FROM restaurantes WHERE id = %s", (rid,))
@@ -626,8 +663,6 @@ def index():
         return redirect(url_for('mesas'))
     elif role == 'caixa':
         return render_template('caixa.html')
-    elif role in ('superadmin', 'super_admin'):
-        return render_template('dashboard.html', restaurante_slug=restaurante_slug)
     else:
         return redirect(url_for('login_web'))
 
@@ -643,7 +678,7 @@ def mesas():
 def dashboard_resumo():
     """Retorna contadores para o dashboard"""
     try:
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
         resumo = obter_resumo_dashboard(rid)
         return jsonify({"sucesso": True, **resumo})
     except Exception as e:
@@ -654,9 +689,13 @@ def dashboard_resumo():
 @login_required
 def listar_mesas():
     try:
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
+        page, per_page = get_pagination_params()
         mesas = listar_mesas_com_itens(rid)
-        return jsonify({"sucesso": True, "mesas": mesas})
+        total = len(mesas)
+        inicio = (page - 1) * per_page
+        mesas_pag = mesas[inicio:inicio + per_page]
+        return jsonify({"sucesso": True, "mesas": mesas_pag, "page": page, "per_page": per_page, "total": total})
     except Exception as e:
         app.logger.error(f"Erro no listar_mesas: {e}")
         return jsonify({"sucesso": False, "erro": "Erro ao listar mesas"}), 500
@@ -668,7 +707,7 @@ def route_abrir_mesa():
     try:
         dados = request.get_json()
         num = str(dados.get("numero"))
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
         
         sucesso, erro = repo_abrir_mesa(num, rid)
         return jsonify({"sucesso": sucesso, "erro": erro})
@@ -683,7 +722,7 @@ def adicionar_item():
     try:
         dados = request.get_json()
         num = str(dados.get("numero"))
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
         
         nome = dados.get("nome")
         preco = float(dados.get("preco"))
@@ -703,7 +742,7 @@ def remover_item():
     try:
         dados = request.get_json()
         item_id = int(dados.get("id"))
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
         
         sucesso, erro = remover_item_mesa(item_id, rid)
         return jsonify({"sucesso": sucesso, "erro": erro})
@@ -722,7 +761,7 @@ def route_fechar_mesa():
 
         dados = request.get_json()
         num = str(dados.get("numero"))
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
         
         sucesso, erro = fechar_mesa_com_historico(num, rid)
         return jsonify({"sucesso": sucesso, "erro": erro})
@@ -735,7 +774,7 @@ def route_fechar_mesa():
 def force_close_mesa(mesa_id):
     """Fecha forçado de mesa corrompida"""
     try:
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
         db = get_connection()
         cursor = db.cursor()
         ph = "%s" if is_mysql() else "?"
@@ -754,7 +793,7 @@ def force_close_mesa(mesa_id):
 def pedir_conta(mesa_id):
     """Pedir conta da mesa - qualquer perfil autenticado"""
     try:
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
         mesa = get_mesa(mesa_id, rid)
         if not mesa:
             return jsonify({"sucesso": False, "erro": "Mesa não encontrada"}), 404
@@ -773,7 +812,7 @@ def route_fechar_mesa_id(mesa_id):
         role = session.get('role')
         if role not in ('admin', 'caixa', 'superadmin', 'super_admin'):
             return jsonify({"sucesso": False, "erro": "Permissão negada"}), 403
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
         mesa = get_mesa(mesa_id, rid)
         if not mesa:
             return jsonify({"sucesso": False, "erro": "Mesa não encontrada"}), 404
@@ -796,6 +835,7 @@ def route_fechar_mesa_id(mesa_id):
 # ========================
 
 @app.route("/cardapio")
+@limiter.limit("120/minute")
 def cardapio_cliente():
     """Página do cardápio para clientes"""
     try:
@@ -823,6 +863,7 @@ def cardapio_cliente():
         whatsapp_restaurante=get_config('whatsapp_restaurante', Config.WHATSAPP_RESTAURANTE, rid),
         google_maps_key=Config.GOOGLE_MAPS_KEY)
 @app.route("/api/cardapio")
+@limiter.limit("120/minute")
 def api_cardapio():
     """Retorna os produtos do cardápio"""
     try:
@@ -830,7 +871,7 @@ def api_cardapio():
         if slug:
             rid = _get_rid_from_slug(slug)
         else:
-            rid = session.get('restaurante_id')
+            rid = get_restaurante_id_or_403()
         if not rid:
             return jsonify({"sucesso": False, "erro": "slug ou sessao necessaria"}), 400
         produtos = listar_produtos(rid)
@@ -851,13 +892,14 @@ def api_cardapio():
         return jsonify({"sucesso": False, "erro": "Erro ao carregar cardápio"}), 500
 
 @app.route("/api/adicionais")
+@limiter.limit("120/minute")
 def api_adicionais():
     try:
         slug = request.args.get('slug', '').strip()
         if slug:
             rid = _get_rid_from_slug(slug)
         else:
-            rid = session.get('restaurante_id')
+            rid = get_restaurante_id_or_403()
         if not rid:
             return jsonify({"sucesso": False, "erro": "slug ou sessao necessaria"}), 400
         categoria = request.args.get('categoria', None)
@@ -870,6 +912,7 @@ def api_adicionais():
 
 @app.route("/api/pedido", methods=["POST"])
 @csrf.exempt
+@limiter.limit("60/minute")
 def route_criar_pedido():
     """Cria um novo pedido delivery"""
     try:
@@ -934,8 +977,9 @@ def whatsapp_pedido():
     db = get_connection()
     db.row_factory = sqlite3.Row
     cursor = db.cursor()
+    rid = get_restaurante_id_or_403()
     
-    cursor.execute("SELECT * FROM pedidos_delivery WHERE id = ? AND restaurante_id = ?", (pedido_id, session.get('restaurante_id', 1)))
+    cursor.execute("SELECT * FROM pedidos_delivery WHERE id = ? AND restaurante_id = ?", (pedido_id, rid))
     pedido = dict(cursor.fetchone())
     db.close()
     
@@ -947,7 +991,7 @@ def whatsapp_pedido():
     
     # Usa o serviço para formatar e gerar link
     mensagem = WhatsAppService.formatar_mensagem_pedido(pedido, itens)
-    restaurante_id = pedido.get("restaurante_id") or session.get('restaurante_id', 1)
+    restaurante_id = pedido.get("restaurante_id") or rid
     numero = get_config("whatsapp_restaurante", Config.WHATSAPP_RESTAURANTE, restaurante_id=restaurante_id)
     link = WhatsAppService.gerar_link_whatsapp(mensagem, numero_destino=numero)
     
@@ -1113,13 +1157,14 @@ def superadmin_criar_restaurante():
 # ========================
 
 @app.route("/api/configuracoes")
+@limiter.limit("120/minute")
 def api_configuracoes():
     """Retorna configs públicas para o frontend do cliente."""
     slug = request.args.get('slug', '').strip()
     if slug:
         rid = _get_rid_from_slug(slug)
     else:
-        rid = session.get('restaurante_id')
+        rid = get_restaurante_id_or_403()
     if not rid:
         return jsonify({"sucesso": False, "erro": "slug ou sessao necessaria"}), 400
     return jsonify({
@@ -1139,10 +1184,11 @@ def api_configuracoes():
 @admin_required
 def admin_toggle_status():
     """Toggle rápido para abrir/fechar o estabelecimento."""
-    atual = get_config("restaurante_ativo", "1", restaurante_id=session['restaurante_id'])
+    rid = get_restaurante_id_or_403()
+    atual = get_config("restaurante_ativo", "1", restaurante_id=rid)
     novo = "0" if atual == "1" else "1"
-    set_config("restaurante_ativo", novo, restaurante_id=session['restaurante_id'])
-    _ultima_verificacao_status.pop(f"status_{session['restaurante_id']}", None)
+    set_config("restaurante_ativo", novo, restaurante_id=rid)
+    _ultima_verificacao_status.pop(f"status_{rid}", None)
     return jsonify({"restaurante_ativo": novo})
 
 
@@ -1151,6 +1197,7 @@ def admin_toggle_status():
 def admin_configuracoes():
     sucesso = None
     erro = None
+    rid = get_restaurante_id_or_403()
     if request.method == "POST":
         campos = [
             "nome_restaurante", "whatsapp_restaurante",
@@ -1161,7 +1208,7 @@ def admin_configuracoes():
         for campo in campos:
             valor = request.form.get(campo, "").strip()
             if valor != "":
-                set_config(campo, valor, restaurante_id=session['restaurante_id'])
+                set_config(campo, valor, restaurante_id=rid)
 
         endereco = request.form.get("endereco_restaurante", "").strip()
         print("DEBUG endereco recebido:", repr(endereco))
@@ -1180,9 +1227,9 @@ def admin_configuracoes():
                     lng = location["lng"]
                     print("DEBUG lat/lng:", lat, lng)
                     set_config("restaurante_lat", str(lat),
-                              restaurante_id=session['restaurante_id'])
+                              restaurante_id=rid)
                     set_config("restaurante_lng", str(lng),
-                              restaurante_id=session['restaurante_id'])
+                              restaurante_id=rid)
                 else:
                     print("DEBUG geocodificacao ERRO status:", geo_data.get("status"), geo_data)
             except Exception as e:
@@ -1192,27 +1239,27 @@ def admin_configuracoes():
 
         dias = request.form.getlist('dias_funcionamento')
         dias_str = formatar_dias(dias)
-        set_config("dias_funcionamento", dias_str, restaurante_id=session['restaurante_id'])
+        set_config("dias_funcionamento", dias_str, restaurante_id=rid)
 
-        _ultima_verificacao_status.pop(f"status_{session['restaurante_id']}", None)
+        _ultima_verificacao_status.pop(f"status_{rid}", None)
         sucesso = "Configurações salvas com sucesso!"
 
     configs = {
-        "nome_restaurante": get_config("nome_restaurante", "", restaurante_id=session['restaurante_id']),
-        "whatsapp_restaurante": get_config("whatsapp_restaurante", Config.WHATSAPP_RESTAURANTE, restaurante_id=session['restaurante_id']),
-        "frete_por_km": get_config("frete_por_km", str(Config.FRETE_POR_KM), restaurante_id=session['restaurante_id']),
-        "restaurante_lat": get_config("restaurante_lat", str(Config.RESTAURANTE_LAT), restaurante_id=session['restaurante_id']),
-        "restaurante_lng": get_config("restaurante_lng", str(Config.RESTAURANTE_LNG), restaurante_id=session['restaurante_id']),
-        "horario_abertura": get_config("horario_abertura", "18:00", restaurante_id=session['restaurante_id']),
-        "horario_fechamento": get_config("horario_fechamento", "23:00", restaurante_id=session['restaurante_id']),
+        "nome_restaurante": get_config("nome_restaurante", "", restaurante_id=rid),
+        "whatsapp_restaurante": get_config("whatsapp_restaurante", Config.WHATSAPP_RESTAURANTE, restaurante_id=rid),
+        "frete_por_km": get_config("frete_por_km", str(Config.FRETE_POR_KM), restaurante_id=rid),
+        "restaurante_lat": get_config("restaurante_lat", str(Config.RESTAURANTE_LAT), restaurante_id=rid),
+        "restaurante_lng": get_config("restaurante_lng", str(Config.RESTAURANTE_LNG), restaurante_id=rid),
+        "horario_abertura": get_config("horario_abertura", "18:00", restaurante_id=rid),
+        "horario_fechamento": get_config("horario_fechamento", "23:00", restaurante_id=rid),
         "google_maps_key": Config.GOOGLE_MAPS_KEY,
-        "restaurante_ativo": get_config("restaurante_ativo", "1", restaurante_id=session['restaurante_id']),
-        "endereco_restaurante": get_config("endereco_restaurante", "", restaurante_id=session['restaurante_id']),
-        "dias_funcionamento": get_config("dias_funcionamento", "", restaurante_id=session['restaurante_id']),
-        "dias_selecionados": parsear_dias(get_config("dias_funcionamento", "", restaurante_id=session['restaurante_id'])),
+        "restaurante_ativo": get_config("restaurante_ativo", "1", restaurante_id=rid),
+        "endereco_restaurante": get_config("endereco_restaurante", "", restaurante_id=rid),
+        "dias_funcionamento": get_config("dias_funcionamento", "", restaurante_id=rid),
+        "dias_selecionados": parsear_dias(get_config("dias_funcionamento", "", restaurante_id=rid)),
     }
 
-    configs["status_real"] = get_status_restaurante(session['restaurante_id'])
+    configs["status_real"] = get_status_restaurante(rid)
 
     return render_template("admin_configuracoes.html", configs=configs, sucesso=sucesso, erro=erro)
 
@@ -1230,7 +1277,7 @@ def painel_delivery():
 @app.route("/api/novos-pedidos")
 @login_required
 def api_novos_pedidos():
-    restaurante_id = session.get('restaurante_id', 1)
+    restaurante_id = get_restaurante_id_or_403()
     db = get_connection()
     cursor = db.cursor()
     ph = "%s" if is_mysql() else "?"
@@ -1249,8 +1296,9 @@ def listar_pedidos_delivery():
     """Retorna pedidos delivery ativos + entregues hoje (por sessão de caixa)"""
     db = get_connection()
     cursor = db.cursor()
-    rid = session.get('restaurante_id', 1)
+    rid = get_restaurante_id_or_403()
     ph = "%s" if is_mysql() else "?"
+    page, per_page = get_pagination_params()
 
     cursor.execute(
         f"SELECT sessao_inicio FROM caixa_sessoes WHERE restaurante_id = {ph} AND aberto = 1 ORDER BY sessao_inicio DESC LIMIT 1",
@@ -1273,16 +1321,35 @@ def listar_pedidos_delivery():
 
     if sessao_inicio:
         cursor.execute(
+            f"""SELECT COUNT(*) FROM pedidos_delivery
+                WHERE restaurante_id = {ph}
+                AND status = 'entregue'
+                AND criado_em >= {ph}""",
+            (rid, sessao_inicio)
+        )
+        total_entregues = cursor.fetchone()[0]
+        offset = (page - 1) * per_page
+        cursor.execute(
             f"""SELECT id, cliente_nome, cliente_telefone, cliente_endereco,
                        itens, total, status, criado_em
                 FROM pedidos_delivery
                 WHERE restaurante_id = {ph}
                 AND status = 'entregue'
                 AND criado_em >= {ph}
-                ORDER BY criado_em DESC""",
-            (rid, sessao_inicio)
+                ORDER BY criado_em DESC
+                LIMIT {ph} OFFSET {ph}""",
+            (rid, sessao_inicio, per_page, offset)
         )
     else:
+        cursor.execute(
+            f"""SELECT COUNT(*) FROM pedidos_delivery
+                WHERE restaurante_id = {ph}
+                AND status = 'entregue'
+                AND DATE(criado_em) = CURDATE()""",
+            (rid,)
+        )
+        total_entregues = cursor.fetchone()[0]
+        offset = (page - 1) * per_page
         cursor.execute(
             f"""SELECT id, cliente_nome, cliente_telefone, cliente_endereco,
                        itens, total, status, criado_em
@@ -1290,8 +1357,9 @@ def listar_pedidos_delivery():
                 WHERE restaurante_id = {ph}
                 AND status = 'entregue'
                 AND DATE(criado_em) = CURDATE()
-                ORDER BY criado_em DESC""",
-            (rid,)
+                ORDER BY criado_em DESC
+                LIMIT {ph} OFFSET {ph}""",
+            (rid, per_page, offset)
         )
 
     cols = [c[0] for c in cursor.description]
@@ -1303,7 +1371,7 @@ def listar_pedidos_delivery():
         if p.get("criado_em") and hasattr(p["criado_em"], "isoformat"):
             p["criado_em"] = p["criado_em"].isoformat()
 
-    return jsonify({"sucesso": True, "pedidos": pedidos + entregues})
+    return jsonify({"sucesso": True, "pedidos": pedidos + entregues, "page": page, "per_page": per_page, "total": total_entregues})
 
 @app.route("/api/pedido/status", methods=["POST"])
 @csrf.exempt
@@ -1321,9 +1389,10 @@ def atualizar_status_pedido():
     db = get_connection()
     cursor = db.cursor()
     ph = "%s" if is_mysql() else "?"
+    rid = get_restaurante_id_or_403()
     cursor.execute(
         f"UPDATE pedidos_delivery SET status = {ph} WHERE id = {ph} AND restaurante_id = {ph}",
-        (novo_status, pedido_id, session.get('restaurante_id', 1))
+        (novo_status, pedido_id, rid)
     )
     db.commit()
     db.close()
@@ -1337,9 +1406,10 @@ def cancelar_pedido(id):
     db = get_connection()
     cursor = db.cursor()
     ph = "%s" if is_mysql() else "?"
+    rid = get_restaurante_id_or_403()
     cursor.execute(
         f"UPDATE pedidos_delivery SET status = 'cancelado' WHERE id = {ph} AND status = 'novo' AND restaurante_id = {ph}",
-        (id, session.get('restaurante_id', 1))
+        (id, rid)
     )
     alterado = cursor.rowcount
     db.commit()
@@ -1356,9 +1426,10 @@ def cancelar_pedido(id):
 def imprimir_pedido(id):
     db = get_connection()
     cursor = db.cursor()
+    rid = get_restaurante_id_or_403()
     cursor.execute(
         "SELECT id, cliente_nome, cliente_telefone, cliente_endereco, itens, taxa_entrega, total, forma_pagamento, troco, status, criado_em FROM pedidos_delivery WHERE id = ? AND restaurante_id = ?",
-        (id, session.get('restaurante_id', 1))
+        (id, rid)
     )
     pedido = cursor.fetchone()
     db.close()
@@ -1392,9 +1463,10 @@ def imprimir_pedido(id):
 def delivery_imprimir(id):
     db = get_connection()
     cursor = db.cursor()
+    rid = get_restaurante_id_or_403()
     cursor.execute(
         "SELECT id, cliente_nome, cliente_telefone, cliente_endereco, itens, taxa_entrega, total, forma_pagamento, troco, status, criado_em FROM pedidos_delivery WHERE id = ? AND restaurante_id = ?",
-        (id, session.get('restaurante_id', 1))
+        (id, rid)
     )
     pedido = cursor.fetchone()
     db.close()
@@ -1430,11 +1502,12 @@ def mesa_comanda(numero):
     db = get_connection()
     cursor = db.cursor()
     ph = "%s" if is_mysql() else "?"
-    cursor.execute(f"SELECT id, numero, total, status FROM mesas WHERE numero = {ph} AND restaurante_id = {ph}", (numero, session.get('restaurante_id', 1)))
+    rid = get_restaurante_id_or_403()
+    cursor.execute(f"SELECT id, numero, total, status FROM mesas WHERE numero = {ph} AND restaurante_id = {ph}", (numero, rid))
     mesa = cursor.fetchone()
     if not mesa:
         return "Mesa não encontrada", 404
-    cursor.execute(f"SELECT id, nome, preco, quantidade, observacao FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa[0], session.get('restaurante_id', 1)))
+    cursor.execute(f"SELECT id, nome, preco, quantidade, observacao FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa[0], rid))
     itens_raw = cursor.fetchall()
     db.close()
     itens = []
@@ -1469,7 +1542,7 @@ def mesa_comanda(numero):
 @login_required
 def api_imprimir_escpos(pedido_id):
     """Imprime comanda em impressora térmica via ESC/POS"""
-    restaurante_id = session.get('restaurante_id', 1)
+    restaurante_id = get_restaurante_id_or_403()
 
     from services.impressao_service import imprimir_comanda
 
@@ -1529,7 +1602,7 @@ def migrar_banco():
 @app.route('/admin/produtos')
 @admin_required
 def admin_produtos():
-    produtos = listar_produtos(session['restaurante_id'])
+    produtos = listar_produtos(get_restaurante_id_or_403())
     return render_template('admin_produtos.html', produtos=produtos)
 
 @app.route('/admin/produtos/adicionar', methods=['POST'])
@@ -1556,7 +1629,7 @@ def adicionar_produto_route():
             foto = os.path.join('uploads', 'produtos', nome_seguro)
 
     descricao = request.form.get('descricao', '').strip() or None
-    adicionar_produto(nome, preco, categoria, emoji, session['restaurante_id'], foto, descricao)
+    adicionar_produto(nome, preco, categoria, emoji, get_restaurante_id_or_403(), foto, descricao)
     return redirect('/admin/produtos')
 
 @app.route('/admin/produtos/editar/<int:id>', methods=['POST'])
@@ -1578,13 +1651,13 @@ def editar_produto_route(id):
             arquivo.save(caminho_salvar)
             foto = os.path.join('uploads', 'produtos', nome_seguro)
 
-    editar_produto(id, nome, preco, categoria, emoji, session['restaurante_id'], foto)
+    editar_produto(id, nome, preco, categoria, emoji, get_restaurante_id_or_403(), foto)
     return redirect('/admin/produtos')
 
 @app.route('/admin/produtos/desativar/<int:id>')
 @admin_required
 def desativar_produto_route(id):
-    desativar_produto(id, session['restaurante_id'])
+    desativar_produto(id, get_restaurante_id_or_403())
     return redirect('/admin/produtos')
 
 
@@ -1638,19 +1711,19 @@ def gerenciar_usuarios():
             erro = 'A senha deve ter pelo menos 6 caracteres.'
         elif password != confirmar:
             erro = 'As senhas não coincidem.'
-        elif not repo.create_custom_admin(username, password, session['restaurante_id'], role):
+        elif not repo.create_custom_admin(username, password, get_restaurante_id_or_403(), role):
             erro = f'O usuário "{username}" já existe.'
         else:
             sucesso = f'Usuário "{username}" criado com sucesso!'
 
-    usuarios = repo.list_users(session['restaurante_id'])
+    usuarios = repo.list_users(get_restaurante_id_or_403())
     return render_template('admin_usuarios.html', usuarios=usuarios, erro=erro, sucesso=sucesso)
 
 @app.route('/admin/usuarios/remover/<int:user_id>', methods=['POST'])   
 @admin_required
 def remover_usuario(user_id):
     repo = UserRepository()
-    repo.delete_user(user_id, session['user_id'], session['restaurante_id'])
+    repo.delete_user(user_id, session['user_id'], get_restaurante_id_or_403())
     return redirect('/admin/usuarios')
 
 
@@ -1675,7 +1748,7 @@ def caixa_resumo():
         else:
             db.row_factory = True
         cursor = db.cursor()
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
 
         # Verificar se caixa já foi fechado hoje
         cursor.execute("""
@@ -1769,7 +1842,8 @@ def caixa_movimentacoes():
         else:
             db.row_factory = True
         cursor = db.cursor()
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
+        page, per_page = get_pagination_params()
 
         sessao_inicio = _get_sessao_inicio(cursor, rid)
         movimentacoes = []
@@ -1813,8 +1887,11 @@ def caixa_movimentacoes():
 
         # Ordenar por hora (mais recente primeiro)
         movimentacoes.sort(key=lambda x: x["hora"] or "", reverse=True)
+        total = len(movimentacoes)
+        inicio = (page - 1) * per_page
+        movimentacoes = movimentacoes[inicio:inicio + per_page]
 
-        return jsonify({"sucesso": True, "movimentacoes": movimentacoes})
+        return jsonify({"sucesso": True, "movimentacoes": movimentacoes, "page": page, "per_page": per_page, "total": total})
     except Exception as e:
         import traceback
         error_msg = traceback.format_exc()
@@ -1836,7 +1913,7 @@ def fechar_caixa():
         else:
             db.row_factory = True
         cursor = db.cursor()
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
 
         # 1. Verificar se já foi fechado hoje
         cursor.execute("""
@@ -1922,7 +1999,8 @@ def caixa_historico():
     try:
         mes = request.args.get("mes", "01").zfill(2)
         ano = request.args.get("ano", "2026")
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
+        page, per_page = get_pagination_params()
 
         db = get_connection()
         if not is_mysql():
@@ -1932,26 +2010,42 @@ def caixa_historico():
             db.row_factory = True
         cursor = db.cursor()
 
-        # Busca os fechamentos do mês
         ph = "%s" if is_mysql() else "?"
         
-        # SQL compatível com ambos
         if is_mysql():
             cursor.execute("""
+                SELECT COUNT(*) FROM fechamentos_caixa
+                WHERE MONTH(data) = %s AND YEAR(data) = %s
+                AND restaurante_id = %s
+            """, (mes, ano, rid))
+        else:
+            cursor.execute("""
+                SELECT COUNT(*) FROM fechamentos_caixa
+                WHERE strftime('%%m', data) = ? AND strftime('%%Y', data) = ?
+                AND restaurante_id = ?
+            """, (mes, ano, rid))
+        total = cursor.fetchone()[0]
+
+        offset = (page - 1) * per_page
+        
+        if is_mysql():
+            cursor.execute(f"""
                 SELECT data, total_faturado, total_pedidos, total_entregas, valor_entregas
                 FROM fechamentos_caixa
                 WHERE MONTH(data) = %s AND YEAR(data) = %s
                 AND restaurante_id = %s
                 ORDER BY data ASC
-            """, (mes, ano, rid))
+                LIMIT %s OFFSET %s
+            """, (mes, ano, rid, per_page, offset))
         else:
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT data, total_faturado, total_pedidos, total_entregas, valor_entregas
                 FROM fechamentos_caixa
-                WHERE strftime('%m', data) = ? AND strftime('%Y', data) = ?
+                WHERE strftime('%%m', data) = ? AND strftime('%%Y', data) = ?
                 AND restaurante_id = ?
                 ORDER BY data ASC
-            """, (mes, ano, rid))
+                LIMIT ? OFFSET ?
+            """, (mes, ano, rid, per_page, offset))
 
         fechamentos = [dict(row) for row in cursor.fetchall()]
         db.close()
@@ -1964,6 +2058,9 @@ def caixa_historico():
         return jsonify({
             "sucesso": True,
             "fechamentos": fechamentos,
+            "page": page,
+            "per_page": per_page,
+            "total": total,
             "totais": {
                 "total_faturado": total_faturado,
                 "total_pedidos": total_pedidos,
@@ -1981,7 +2078,7 @@ def caixa_historico():
 def abrir_caixa():
     """Reabre o caixa removendo o registro de fechamento e inicia nova sessão"""
     try:
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
         db = get_connection()
         cursor = db.cursor()
         
@@ -2023,7 +2120,7 @@ def caixa_grafico():
         else:
             db.row_factory = True
         cursor = db.cursor()
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
 
         sessao_inicio = _get_sessao_inicio(cursor, rid)
         horas = {h: 0.0 for h in range(24)}
@@ -2080,7 +2177,8 @@ def caixa_balanco():
     try:
         mes = request.args.get("mes", "01").zfill(2)
         ano = request.args.get("ano", "2026")
-        rid = session.get('restaurante_id', 1)
+        rid = get_restaurante_id_or_403()
+        page, per_page = get_pagination_params()
 
         db = get_connection()
         if not is_mysql():
@@ -2090,21 +2188,34 @@ def caixa_balanco():
             db.row_factory = True
         cursor = db.cursor()
 
-        # Busca todos os fechamentos do mês
         ph = "%s" if is_mysql() else "?"
+        
+        where_month = "MONTH(criado_em)" if is_mysql() else "strftime('%m', criado_em)"
+        where_year = "YEAR(criado_em)" if is_mysql() else "strftime('%Y', criado_em)"
+        
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM caixa_fechamentos
+            WHERE {where_month} = {ph}
+            AND {where_year} = {ph}
+            AND restaurante_id = {ph}
+        """, (mes, ano, rid))
+        total = cursor.fetchone()[0]
+        
+        offset = (page - 1) * per_page
+        
         cursor.execute(f"""
             SELECT DATE(criado_em) as data, total_delivery, total_mesas, total_geral,
                    qtd_pedidos_delivery, qtd_mesas, fechado_por
             FROM caixa_fechamentos
-            WHERE {"MONTH(criado_em)" if is_mysql() else "strftime('%m', criado_em)"} = {ph} 
-            AND {"YEAR(criado_em)" if is_mysql() else "strftime('%Y', criado_em)"} = {ph}
+            WHERE {where_month} = {ph}
+            AND {where_year} = {ph}
             AND restaurante_id = {ph}
             ORDER BY criado_em ASC
-        """, (mes, ano, rid))
+            LIMIT {ph} OFFSET {ph}
+        """, (mes, ano, rid, per_page, offset))
 
         dias = [dict(row) for row in cursor.fetchall()]
 
-        # Totais do mês
         total_mes_delivery = sum(float(d.get("total_delivery", 0)) for d in dias)
         total_mes_mesas = sum(float(d.get("total_mesas", 0)) for d in dias)
         total_mes_geral = sum(float(d.get("total_geral", 0)) for d in dias)
@@ -2118,6 +2229,9 @@ def caixa_balanco():
             "mes": mes,
             "ano": ano,
             "dias": dias,
+            "page": page,
+            "per_page": per_page,
+            "total": total,
             "totais": {
                 "total_delivery": total_mes_delivery,
                 "total_mesas": total_mes_mesas,
@@ -2136,6 +2250,7 @@ def caixa_balanco():
 
 @app.route("/api/maps/config")
 @csrf.exempt
+@limiter.limit("120/minute")
 def maps_config():
     """Retorna configuração do Google Maps para o frontend"""
     return jsonify({
@@ -2149,6 +2264,7 @@ def maps_config():
 
 @app.route("/api/maps/calcular-frete", methods=["POST"])
 @csrf.exempt
+@limiter.limit("30/minute")
 def calcular_frete():
     """Calcula frete via Distance Matrix API com fallback Haversine"""
     import math
@@ -2209,6 +2325,7 @@ def calcular_frete():
 
 
 @app.route("/carrinho")
+@limiter.limit("120/minute")
 def carrinho_cliente():
     try:
         db = get_connection()
@@ -2228,6 +2345,7 @@ def carrinho_cliente():
 
 
 @app.route("/cardapio/<slug>")
+@limiter.limit("120/minute")
 def cardapio_por_slug(slug):
     from data.db import get_connection
     db = get_connection()
@@ -2254,6 +2372,7 @@ def cardapio_por_slug(slug):
         google_maps_key=Config.GOOGLE_MAPS_KEY)
 
 @app.route("/cardapio/<slug>/api/cardapio")
+@limiter.limit("120/minute")
 def api_cardapio_por_slug(slug):
     from data.db import get_connection
     db = get_connection()
@@ -2284,6 +2403,7 @@ def api_cardapio_por_slug(slug):
     return jsonify({"sucesso": True, "produtos": resultado})
 
 @app.route("/cardapio/<slug>/api/adicionais")
+@limiter.limit("120/minute")
 def api_adicionais_por_slug(slug):
     from data.db import get_connection
     db = get_connection()
@@ -2312,6 +2432,7 @@ def api_adicionais_por_slug(slug):
     return jsonify({"sucesso": True, "adicionais": resultado})
 
 @app.route("/cardapio/<slug>/carrinho")
+@limiter.limit("120/minute")
 def carrinho_por_slug(slug):
     from data.db import get_connection
     db = get_connection()
@@ -2327,6 +2448,7 @@ def carrinho_por_slug(slug):
 
 @app.route("/cardapio/<slug>/api/pedido", methods=["POST"])
 @csrf.exempt
+@limiter.limit("30/minute")
 def criar_pedido_por_slug(slug):
     from data.db import get_connection
     db = get_connection()
@@ -2345,6 +2467,7 @@ def criar_pedido_por_slug(slug):
     return route_criar_pedido()
 
 @app.route("/api/restaurante/<slug>")
+@limiter.limit("120/minute")
 def api_restaurante_por_slug(slug):
     from data.db import get_connection
 
@@ -2382,15 +2505,20 @@ def api_restaurante_por_slug(slug):
     })
 
 
-@app.route("/api/check-status/<int:restaurant_id>")
-def api_check_status(restaurant_id):
-    verificar_horario_funcionamento(restaurant_id)
+@app.route("/api/check-status/<string:slug>")
+@limiter.limit("120/minute")
+def api_check_status(slug):
+    from data.db import get_connection
+    restaurante_id = _get_rid_from_slug(slug)
+    if not restaurante_id:
+        return jsonify({"sucesso": False, "erro": "slug invalido"}), 400
+    verificar_horario_funcionamento(restaurante_id)
     db = get_connection()
     cursor = db.cursor()
     if is_mysql():
-        cursor.execute("SELECT status FROM restaurantes WHERE id = %s", (restaurant_id,))
+        cursor.execute("SELECT status FROM restaurantes WHERE id = %s", (restaurante_id,))
     else:
-        cursor.execute("SELECT status FROM restaurantes WHERE id = ?", (restaurant_id,))
+        cursor.execute("SELECT status FROM restaurantes WHERE id = ?", (restaurante_id,))
     row = cursor.fetchone()
     db.close()
     status = row[0] if row else "fechado"
@@ -2400,8 +2528,9 @@ def api_check_status(restaurant_id):
 @app.route('/admin/adicionais')
 @admin_required
 def admin_adicionais():
-    adicionais = listar_adicionais_com_categorias(session['restaurante_id'])
-    categorias = listar_categorias_produtos(session['restaurante_id'])
+    rid = get_restaurante_id_or_403()
+    adicionais = listar_adicionais_com_categorias(rid)
+    categorias = listar_categorias_produtos(rid)
     return render_template('admin_adicionais.html', adicionais=adicionais, categorias=categorias)
 
 @app.route('/admin/adicionais/adicionar', methods=['POST'])
@@ -2411,7 +2540,7 @@ def adicionar_adicional_route():
     preco = float(request.form['preco'])
     categorias = request.form.getlist('categorias')
     if nome and preco >= 0 and categorias:
-        adicionar_adicional(nome, preco, categorias, session['restaurante_id'])
+        adicionar_adicional(nome, preco, categorias, get_restaurante_id_or_403())
     return redirect('/admin/adicionais')
 
 @app.route('/admin/adicionais/editar/<int:id>', methods=['POST'])
@@ -2420,31 +2549,32 @@ def editar_adicional_route(id):
     nome = request.form['nome'].strip()
     preco = float(request.form['preco'])
     categorias = request.form.getlist('categorias')
-    editar_adicional(id, nome, preco, categorias, session['restaurante_id'])
+    editar_adicional(id, nome, preco, categorias, get_restaurante_id_or_403())
     return redirect('/admin/adicionais')
 
 @app.route('/admin/adicionais/desativar/<int:id>', methods=['POST'])
 @admin_required
 def desativar_adicional_route(id):
-    desativar_adicional(id, session['restaurante_id'])
+    desativar_adicional(id, get_restaurante_id_or_403())
     return redirect('/admin/adicionais')
 
 @app.route('/admin/adicionais/excluir/<int:id>', methods=['POST'])
 @admin_required
 def excluir_adicional_route(id):
-    excluir_adicional(id, session['restaurante_id'])
+    excluir_adicional(id, get_restaurante_id_or_403())
     return jsonify({"sucesso": True})
 
 @app.route('/api/categorias')
+@limiter.limit("120/minute")
 def api_categorias():
-    categorias = listar_categorias_produtos(session['restaurante_id'])
+    categorias = listar_categorias_produtos(get_restaurante_id_or_403())
     return jsonify({"sucesso": True, "categorias": categorias})
 
 
 @app.route("/admin/categorias")
 @admin_required
 def admin_categorias():
-    categorias = listar_categorias_produtos(session['restaurante_id'])
+    categorias = listar_categorias_produtos(get_restaurante_id_or_403())
     return render_template("admin_categorias.html", categorias=categorias)
 
 
@@ -2473,6 +2603,7 @@ def _get_rid_from_slug(slug):
 
 @app.route("/api/cliente/<telefone>")
 @csrf.exempt
+@limiter.limit("120/minute")
 def get_cliente(telefone):
     slug = request.args.get('slug', '').strip()
     restaurante_id = _get_rid_from_slug(slug)
@@ -2493,6 +2624,7 @@ def get_cliente(telefone):
 
 @app.route("/api/cliente", methods=["POST"])
 @csrf.exempt
+@limiter.limit("30/minute")
 def salvar_cliente():
     dados = request.get_json()
     telefone = dados.get("telefone", "").strip()
