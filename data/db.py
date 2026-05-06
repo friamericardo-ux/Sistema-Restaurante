@@ -112,6 +112,8 @@ class _MySQLConnection:
 # CONEXÃO
 # ========================
 def get_connection():
+    print(f"[DEBUG] DB_URL = {os.environ.get('DATABASE_URL', 'NAO DEFINIDA')}")
+    print(f"[DEBUG] CWD = {os.getcwd()}")
     if is_mysql():
         import pymysql
         from urllib.parse import urlparse
