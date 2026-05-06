@@ -28,8 +28,8 @@
 }
 
 .card-config {
-  background: #1e1e1e;
-  border: 1px solid #2a2a2a;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 20px;
@@ -38,10 +38,10 @@
 .card-config-titulo {
   font-size: 1rem;
   font-weight: 600;
-  color: #ff8c00;
+  color: var(--text-main);
   margin-bottom: 18px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border);
 }
 
 .form-group {
