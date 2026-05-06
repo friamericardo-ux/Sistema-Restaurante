@@ -5,6 +5,64 @@ from typing import Optional
 from data.db import get_connection, is_mysql
 
 
+class TenantRepository:
+    def __init__(self, restaurante_id):
+        self.restaurante_id = restaurante_id
+
+    def _conn(self):
+        return get_connection()
+
+    def find_by_id(self, table, record_id):
+        ph = "%s" if is_mysql() else "?"
+        conn = self._conn()
+        cursor = conn.cursor()
+        cursor.execute(
+            f"SELECT * FROM {table} WHERE id = {ph} AND restaurante_id = {ph}",
+            (record_id, self.restaurante_id)
+        )
+        row = cursor.fetchone()
+        conn.close()
+        return row
+
+    def find_all(self, table, filters=None):
+        ph = "%s" if is_mysql() else "?"
+        conn = self._conn()
+        cursor = conn.cursor()
+        sql = f"SELECT * FROM {table} WHERE restaurante_id = {ph}"
+        params = [self.restaurante_id]
+        if filters:
+            for col, val in filters.items():
+                sql += f" AND {col} = {ph}"
+                params.append(val)
+        cursor.execute(sql, params)
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+
+    def delete(self, table, record_id):
+        ph = "%s" if is_mysql() else "?"
+        conn = self._conn()
+        cursor = conn.cursor()
+        cursor.execute(
+            f"DELETE FROM {table} WHERE id = {ph} AND restaurante_id = {ph}",
+            (record_id, self.restaurante_id)
+        )
+        conn.commit()
+        conn.close()
+
+
+class PedidoRepository(TenantRepository):
+    pass
+
+
+class ProdutoRepository(TenantRepository):
+    pass
+
+
+class ClienteRepository(TenantRepository):
+    pass
+
+
 class UserRepository:
     def __init__(self):
         self.db_path = Config.DB_PATH
@@ -252,11 +310,9 @@ def obter_resumo_dashboard(restaurante_id):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        # 1. Mesas abertas
         cursor.execute(f"SELECT COUNT(*) FROM mesas WHERE restaurante_id = {ph}", (restaurante_id,))
         mesas_abertas = cursor.fetchone()[0] or 0
 
-        # 2. Pedidos delivery por status (não entregues)
         cursor.execute(f"""
             SELECT status, COUNT(*) 
             FROM pedidos_delivery
@@ -265,7 +321,6 @@ def obter_resumo_dashboard(restaurante_id):
         """, (restaurante_id,))
         pedidos_por_status = {row[0]: row[1] for row in cursor.fetchall()}
 
-        # 3. Verificar se o caixa já foi fechado hoje
         if is_mysql():
             cursor.execute(f"SELECT id FROM caixa_fechamentos WHERE DATE(criado_em) = CURDATE() AND restaurante_id = {ph} LIMIT 1", (restaurante_id,))
         else:
@@ -276,14 +331,12 @@ def obter_resumo_dashboard(restaurante_id):
         faturamento_hoje = 0.0
 
         if not caixa_fechado:
-            # 4. Total de pedidos hoje
             if is_mysql():
                 cursor.execute(f"SELECT COUNT(*) FROM pedidos_delivery WHERE DATE(criado_em) = CURDATE() AND restaurante_id = {ph}", (restaurante_id,))
             else:
                 cursor.execute(f"SELECT COUNT(*) FROM pedidos_delivery WHERE DATE(criado_em, 'localtime') = DATE('now', 'localtime') AND restaurante_id = {ph}", (restaurante_id,))
             pedidos_hoje = cursor.fetchone()[0] or 0
 
-            # 5. Faturamento hoje (entregues)
             if is_mysql():
                 cursor.execute(f"SELECT SUM(total) FROM pedidos_delivery WHERE DATE(criado_em) = CURDATE() AND status = 'entregue' AND restaurante_id = {ph}", (restaurante_id,))
             else:
@@ -376,7 +429,6 @@ def adicionar_item_mesa(mesa_numero, nome, preco, quantidade, observacao, restau
             VALUES ({ph}, {ph}, {ph}, {ph}, {ph}, {ph})
         """, (mesa_id, nome, preco, quantidade, observacao, restaurante_id))
 
-        # Atualiza total da mesa
         cursor.execute(f"SELECT SUM(preco * quantidade) FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
         total = cursor.fetchone()[0] or 0
         cursor.execute(f"UPDATE mesas SET total = {ph} WHERE id = {ph} AND restaurante_id = {ph}", (total, mesa_id, restaurante_id))
@@ -403,7 +455,6 @@ def remover_item_mesa(item_id, restaurante_id):
         mesa_id = row[0]
         cursor.execute(f"DELETE FROM itens WHERE id = {ph} AND restaurante_id = {ph}", (item_id, restaurante_id))
 
-        # Atualiza total da mesa
         cursor.execute(f"SELECT SUM(preco * quantidade) FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
         total = cursor.fetchone()[0] or 0
         cursor.execute(f"UPDATE mesas SET total = {ph} WHERE id = {ph} AND restaurante_id = {ph}", (total, mesa_id, restaurante_id))
@@ -425,19 +476,16 @@ def fechar_mesa_com_historico(mesa_numero, restaurante_id):
             return False, "Mesa não encontrada!"
         
         mesa_id = mesa[0]
-        # Busca itens para o histórico
         cursor.execute(f"SELECT nome, preco, quantidade, observacao FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
         itens_db = cursor.fetchall()
         itens_list = [{"nome": i[0], "preco": float(i[1]), "quantidade": i[2], "observacao": i[3]} for i in itens_db]
         itens_json = json.dumps(itens_list, ensure_ascii=False)
 
-        # Salva no histórico
         cursor.execute(f"""
             INSERT INTO historico_mesas (mesa_numero, total, itens, restaurante_id) 
             VALUES ({ph}, {ph}, {ph}, {ph})
         """, (mesa[1], float(mesa[2]), itens_json, restaurante_id))
 
-        # Deleta mesa e itens
         cursor.execute(f"DELETE FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
         cursor.execute(f"DELETE FROM mesas WHERE id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
         
