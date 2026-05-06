@@ -103,7 +103,7 @@ Talisman(app,
 
 @app.errorhandler(429)
 def ratelimit_handler(e):
-    return jsonify({"sucesso": False, "erro": "Muitas requisicoes. Tente novamente mais tarde."}), 429
+    return jsonify({"sucesso": False, "erro": e.description or "Muitas requisicoes. Tente novamente mais tarde."}), 429
 
 @app.context_processor
 def inject_global_vars():
@@ -584,7 +584,7 @@ def licenca_ativa(username: str) -> bool:
 
 @app.route("/login", methods=['GET', 'POST'])
 @csrf.exempt
-@limiter.limit("5 per minute")
+@limiter.limit("30/minute", methods=["POST"], error_message="Muitas tentativas. Aguarde 1 minuto.")
 def login_web():
     if request.method == 'POST':
         username = request.form.get('username').strip()
