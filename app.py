@@ -1149,6 +1149,7 @@ def admin_toggle_status():
 @app.route("/admin/configuracoes", methods=["GET", "POST"])
 @admin_required
 def admin_configuracoes():
+    print(f"[DEBUG admin] method={request.method} rid={session.get('restaurante_id')} form={dict(request.form)}")
     sucesso = None
     erro = None
     if request.method == "POST":
