@@ -347,6 +347,7 @@ def get_config(chave, fallback=None, restaurante_id=1):
 
 def set_config(chave, valor, restaurante_id=1):
     """Salva ou atualiza uma configuração no banco."""
+    print(f"[DEBUG set_config] chave={chave} valor={repr(valor)} rid={restaurante_id}")
     db = get_connection()
     cursor = db.cursor()
     if is_mysql():
@@ -360,7 +361,9 @@ def set_config(chave, valor, restaurante_id=1):
             INSERT INTO configuracoes (chave, valor, restaurante_id) VALUES (?, ?, ?)
             ON CONFLICT(chave, restaurante_id) DO UPDATE SET valor = excluded.valor
         """, (chave, valor, restaurante_id))
+    print(f"[DEBUG set_config] rowcount={cursor.rowcount}")
     db.commit()
+    print(f"[DEBUG set_config] commit ok")
     db.close()
 
 
