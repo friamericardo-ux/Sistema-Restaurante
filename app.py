@@ -364,6 +364,12 @@ def set_config(chave, valor, restaurante_id=1):
     print(f"[DEBUG set_config] rowcount={cursor.rowcount}")
     db.commit()
     print(f"[DEBUG set_config] commit ok")
+    try:
+        cursor.execute("SELECT @@hostname, DATABASE()")
+        row = cursor.fetchone()
+        print(f"[DEBUG banco] hostname={row[0]} database={row[1]}")
+    except Exception as e:
+        print(f"[DEBUG banco] nao e MySQL ({e})")
     db.close()
 
 
