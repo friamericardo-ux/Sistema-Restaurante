@@ -261,6 +261,7 @@
 | 06/05/2026 | 2.1 — Paginação nas listagens | ✅ concluido | app.py: helper get_pagination_params + 5 rotas modificadas |
 | 06/05/2026 | 2.3 — Talisman connect-src (pós-deploy) | ✅ concluido | app.py: adicionado domínio de produção ao CSP connect-src |
 | 06/05/2026 | Bug extra — IDOR check-status | ✅ corrigido | app.py: <int:id> → <string:slug> + _get_rid_from_slug |
+| 06/05/2026 | Sessão — ProxyFix + cookie Secure | ✅ concluido | app.py: x_proto=2, SESSION_COOKIE_SECURE=True, timedelta(hours=8), rota /debug/proxy |
 
 ---
 

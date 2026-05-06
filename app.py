@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import logging
 import sqlite3
@@ -72,7 +72,7 @@ logging.basicConfig(level=logging.WARNING,
 
 app = Flask(__name__)
 from werkzeug.middleware.proxy_fix import ProxyFix
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=2, x_host=1)
 
 CORS(app, origins=[
     "https://pantanaldev.com.br",
@@ -142,10 +142,10 @@ def extensao_valida(filename):
 SUPERADMIN_PIN = os.getenv('SUPERADMIN_PIN', '2026super')
 
 app.config.update(
+    SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
-    SESSION_COOKIE_SECURE=False,
-    PERMANENT_SESSION_LIFETIME=28800
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=8)
 )
 # Inicia o banco usando o db.py
 init_db()
@@ -2659,6 +2659,23 @@ def salvar_cliente():
     return jsonify({"sucesso": True})
 
 
+
+@app.route("/debug/proxy")
+@admin_required
+def debug_proxy():
+    if not app.debug and not os.environ.get("DEBUG_PROXY"):
+        return jsonify({"erro": "rota apenas em debug"}), 403
+    return jsonify({
+        "is_secure": request.is_secure,
+        "scheme": request.scheme,
+        "x_forwarded_proto": request.headers.get("X-Forwarded-Proto"),
+        "x_forwarded_for": request.headers.get("X-Forwarded-For"),
+        "host": request.headers.get("Host"),
+        "cookie_secure_config": {
+            "SESSION_COOKIE_SECURE": app.config.get("SESSION_COOKIE_SECURE"),
+            "session_cookie_secure_talisman": False,
+        }
+    })
 
 if __name__ == "__main__":
     repo = UserRepository()
