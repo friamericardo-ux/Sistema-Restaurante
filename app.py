@@ -347,7 +347,6 @@ def get_config(chave, fallback=None, restaurante_id=1):
 
 def set_config(chave, valor, restaurante_id=1):
     """Salva ou atualiza uma configuração no banco."""
-    print(f"[DEBUG set_config] chave={chave} valor={repr(valor)} rid={restaurante_id}")
     db = get_connection()
     cursor = db.cursor()
     if is_mysql():
@@ -361,15 +360,7 @@ def set_config(chave, valor, restaurante_id=1):
             INSERT INTO configuracoes (chave, valor, restaurante_id) VALUES (?, ?, ?)
             ON CONFLICT(chave, restaurante_id) DO UPDATE SET valor = excluded.valor
         """, (chave, valor, restaurante_id))
-    print(f"[DEBUG set_config] rowcount={cursor.rowcount}")
     db.commit()
-    print(f"[DEBUG set_config] commit ok")
-    try:
-        cursor.execute("SELECT @@hostname, DATABASE()")
-        row = cursor.fetchone()
-        print(f"[DEBUG banco] hostname={row[0]} database={row[1]}")
-    except Exception as e:
-        print(f"[DEBUG banco] nao e MySQL ({e})")
     db.close()
 
 
@@ -1158,7 +1149,6 @@ def admin_toggle_status():
 @app.route("/admin/configuracoes", methods=["GET", "POST"])
 @admin_required
 def admin_configuracoes():
-    print(f"[DEBUG admin] method={request.method} rid={session.get('restaurante_id')} form={dict(request.form)}")
     sucesso = None
     erro = None
     if request.method == "POST":
