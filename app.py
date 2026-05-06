@@ -98,7 +98,7 @@ Talisman(app,
         'font-src': "'self' data: fonts.gstatic.com",
         'connect-src': "'self' maps.googleapis.com *.googleapis.com https://pantanaldev.com.br https://*.pantanaldev.com.br",
     },
-    session_cookie_secure=True, 
+    session_cookie_secure=False, 
 )
 
 @app.errorhandler(429)
@@ -144,7 +144,7 @@ SUPERADMIN_PIN = os.getenv('SUPERADMIN_PIN', '2026super')
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
-    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SECURE=False,
     PERMANENT_SESSION_LIFETIME=28800
 )
 # Inicia o banco usando o db.py
