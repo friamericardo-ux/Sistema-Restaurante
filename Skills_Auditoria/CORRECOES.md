@@ -192,6 +192,64 @@
 
 ---
 
+---
+
+## FASE 4 — HUMANIZAÇÃO DO CÓDIGO (executar após Fase 3 completa)
+
+### Tarefa 4.1 — Remover comentários desnecessários
+**Arquivo:** `app.py`, `repository.py`
+**Status:** `[ ] pendente`
+
+**O que fazer:**
+- Remover comentários que explicam o óbvio (ex: `# abre conexão`, `# retorna resultado`)
+- Manter apenas comentários que explicam o **porquê** de uma decisão não óbvia
+- Preservar comentários de segurança (ex: `# slug inválido retorna 400 — não expõe ID`)
+
+---
+
+### Tarefa 4.2 — Padronizar idioma dos identificadores
+**Arquivo:** `app.py`, `repository.py`, `security.py`
+**Status:** `[ ] pendente`
+
+**O que fazer:**
+- Padronizar variáveis, funções e comentários em português
+- Eliminar mistura inglês/português no mesmo bloco
+- Manter nomes de bibliotecas e padrões Flask como estão (são convenções)
+
+---
+
+### Tarefa 4.3 — Revisar nomes genéricos
+**Arquivo:** `app.py`, `repository.py`
+**Status:** `[ ] pendente`
+
+**O que fazer:**
+- Renomear variáveis genéricas: `dados`, `resultado`, `resposta`, `row`, `r`
+- Usar nomes expressivos que revelam a intenção: `pedido_novo`, `config_restaurante`, `linha_caixa`
+- Não renomear parâmetros de rotas Flask ou colunas do banco
+
+---
+
+### Tarefa 4.4 — Quebrar funções longas
+**Arquivo:** `app.py`
+**Status:** `[ ] pendente`
+
+**O que fazer:**
+- Identificar funções com mais de 40 linhas
+- Extrair blocos com responsabilidade própria em funções auxiliares com nomes expressivos
+- Não alterar lógica — apenas reorganizar
+- Mostrar diff antes de qualquer extração
+
+---
+
+### Tarefa 4.5 — Revisão final de estilo
+**Arquivo:** todos
+**Status:** `[ ] pendente`
+
+**O que fazer:**
+- Verificar consistência geral após 4.1 a 4.4
+- Garantir que nenhuma função faz mais de uma coisa
+- Confirmar que o código lido em voz alta faz sentido em português
+
 ## HISTÓRICO DE SESSÕES
 
 | Data | Tarefa | Status | Observações |

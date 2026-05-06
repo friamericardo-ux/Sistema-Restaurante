@@ -33,15 +33,17 @@ import io
 def get_restaurante_id_or_403():
     """
     Retorna restaurante_id da sessão.
-    Superadmin (role=superadmin) com restaurante_id NULL é barrado aqui —
-    ele acessa painéis próprios, não rotas de tenant.
+    Superadmin (role=superadmin) com restaurante_id NULL passa livre
+    (ele acessa painéis próprios e rotas de tenant sem filtro de tenant).
     Usuário comum com restaurante_id None recebe 403.
     """
     role = session.get('role')
     restaurante_id = session.get('restaurante_id')
     if restaurante_id is None:
-        from flask import abort
-        abort(403)
+        if role not in ('superadmin', 'super_admin'):
+            from flask import abort
+            abort(403)
+        return None
     return int(restaurante_id)
 
 
