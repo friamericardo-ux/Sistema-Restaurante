@@ -665,6 +665,8 @@ def index():
         return redirect(url_for('mesas'))
     elif role == 'caixa':
         return render_template('caixa.html')
+    elif role in ('superadmin', 'super_admin'):
+        return render_template('dashboard.html', restaurante_slug=restaurante_slug)
     else:
         return redirect(url_for('login_web'))
 
