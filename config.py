@@ -27,4 +27,9 @@ class Config:
     RESTAURANTE_LNG = float(os.getenv('RESTAURANTE_LNG', '-54.6201'))
     FRETE_POR_KM = float(os.getenv('FRETE_POR_KM', '2.00'))
 
+    # Evolution API (WhatsApp Robot)
+    EVOLUTION_API_URL = os.getenv('EVOLUTION_API_URL', 'https://evolution.pantanaldev.com.br')
+    EVOLUTION_API_KEY = os.getenv('EVOLUTION_API_KEY', '')
+    N8N_WEBHOOK_URL = os.getenv('N8N_WEBHOOK_URL', 'https://n8n.pantanaldev.com.br/webhook/comanda-digital')
+
 

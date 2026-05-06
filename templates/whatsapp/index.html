@@ -1,0 +1,151 @@
+{% extends "admin_layout.html" %}
+
+{% block title %}Robô WhatsApp — Comanda Digital{% endblock %}
+
+{% block page_title %}Robô WhatsApp{% endblock %}
+{% block page_subtitle %}Gerencie a conexão e ativação do atendente automático.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_configuracoes.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card-config">
+    <div class="card-config-titulo">Status da Conexão</div>
+    <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+      <div id="status-indicator" style="width: 14px; height: 14px; border-radius: 50%; background: #6B7280;"></div>
+      <span id="status-text" style="font-weight: 600;">Verificando...</span>
+    </div>
+  </div>
+
+  <div class="card-config" id="qrcode-card" style="display: none;">
+    <div class="card-config-titulo">QR Code</div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 12px;">
+      Escaneie com o WhatsApp no celular para conectar.
+    </p>
+    <div style="display: flex; justify-content: center;">
+      <img id="qrcode-img" src="" alt="QR Code"
+        style="width: 220px; height: 220px; border-radius: 8px; background: #fff; padding: 8px;">
+    </div>
+  </div>
+
+  <div class="card-config">
+    <div class="card-config-titulo">Robô Automático</div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 12px;">
+      Quando ativado, o robô responde automaticamente às mensagens dos clientes via WhatsApp.
+    </p>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <button id="btn-toggle" type="button"
+        class="btn-toggle-status"
+        style="min-width: 160px;">
+        Ativando...
+      </button>
+      <span id="toggle-status" style="font-size: 0.85rem; color: var(--text-muted);"></span>
+    </div>
+  </div>
+
+  <div class="card-config">
+    <div class="card-config-titulo">Acesso Rápido</div>
+    <a href="https://web.whatsapp.com" target="_blank" rel="noopener noreferrer"
+      class="btn-salvar" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
+      Abrir WhatsApp Web
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let pollingInterval = null;
+
+async function fetchStatus() {
+  try {
+    const resp = await fetch('/whatsapp/status');
+    const data = await resp.json();
+    const indicator = document.getElementById('status-indicator');
+    const text = document.getElementById('status-text');
+    const qrCard = document.getElementById('qrcode-card');
+
+    if (data.sucesso && data.connected) {
+      indicator.style.background = '#10B981';
+      text.textContent = 'Conectado';
+      text.style.color = '#10B981';
+      qrCard.style.display = 'none';
+    } else {
+      indicator.style.background = '#EF4444';
+      text.textContent = 'Desconectado';
+      text.style.color = '#EF4444';
+      qrCard.style.display = 'block';
+      fetchQRCode();
+    }
+    if (typeof data.enabled !== 'undefined') {
+      updateToggleUI(data.enabled);
+    }
+  } catch (err) {
+    document.getElementById('status-indicator').style.background = '#6B7280';
+    document.getElementById('status-text').textContent = 'Erro ao verificar';
+    document.getElementById('status-text').style.color = '#6B7280';
+  }
+}
+
+async function fetchQRCode() {
+  try {
+    const resp = await fetch('/whatsapp/qrcode');
+    const data = await resp.json();
+    const img = document.getElementById('qrcode-img');
+    if (data.sucesso && data.qrcode) {
+      img.src = 'data:image/png;base64,' + data.qrcode;
+    } else {
+      img.src = '';
+    }
+  } catch (err) {
+    console.error('Erro ao buscar QR Code:', err);
+  }
+}
+
+async function toggleRobot() {
+  const btn = document.getElementById('btn-toggle');
+  const statusEl = document.getElementById('toggle-status');
+  btn.disabled = true;
+  btn.textContent = 'Alterando...';
+
+  try {
+    const resp = await fetch('/whatsapp/toggle', { method: 'POST' });
+    const data = await resp.json();
+    if (data.sucesso) {
+      updateToggleUI(data.enabled);
+    }
+  } catch (err) {
+    statusEl.textContent = 'Erro ao alterar';
+  }
+
+  btn.disabled = false;
+}
+
+function updateToggleUI(enabled) {
+  const btn = document.getElementById('btn-toggle');
+  const statusEl = document.getElementById('toggle-status');
+  if (enabled) {
+    btn.textContent = 'Desativar Robô';
+    btn.className = 'btn-toggle-status btn-fechar';
+    statusEl.textContent = 'Robô ativo — respondendo clientes';
+    statusEl.style.color = '#10B981';
+  } else {
+    btn.textContent = 'Ativar Robô';
+    btn.className = 'btn-toggle-status btn-abrir';
+    statusEl.textContent = 'Robô inativo — apenas atendimento manual';
+    statusEl.style.color = '#EF4444';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+  await fetchStatus();
+
+  const btn = document.getElementById('btn-toggle');
+  btn.addEventListener('click', toggleRobot);
+
+  pollingInterval = setInterval(fetchStatus, 10000);
+});
+</script>
+{% endblock %}

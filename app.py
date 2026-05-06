@@ -33,6 +33,7 @@ from routes.pedidos import pedidos_bp, route_criar_pedido
 from routes.mesas import mesas_bp
 from routes.delivery import delivery_bp
 from routes.caixa import caixa_bp
+from routes.whatsapp import whatsapp_bp
 
 from helpers import get_restaurante_id_or_403, get_pagination_params, get_config, set_config, get_status_restaurante, verificar_horario_funcionamento, _get_rid_from_slug, formatar_dias, parsear_dias
 
@@ -71,6 +72,7 @@ app.register_blueprint(pedidos_bp)
 app.register_blueprint(mesas_bp)
 app.register_blueprint(delivery_bp)
 app.register_blueprint(caixa_bp)
+app.register_blueprint(whatsapp_bp)
 
 # Headers de segurança
 Talisman(app,
@@ -533,16 +535,11 @@ def route_fechar_mesa_id(mesa_id):
         return jsonify({"sucesso": False, "erro": "Erro ao fechar mesa"}), 500
 
 
-# ========================
-# REMOVA OU COMENTE O LOGIN DO TERMINAL
-# ========================
-# def fazer_login(): ... (pode remover essa função)
-#Rotas para cliente no app.py
 
 
-# ========================
+
 # ROTAS PARA CLIENTES (DELIVERY)
-# ========================
+
 
 @app.route("/api/pedido/whatsapp")
 @login_required
