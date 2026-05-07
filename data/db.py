@@ -57,6 +57,10 @@ class _MySQLCursor:
     def lastrowid(self):
         return self._cursor.lastrowid
 
+    @property
+    def description(self):
+        return self._cursor.description
+
 
 class _MySQLConnection:
     """Faz pymysql se comportar como sqlite3.Connection"""
