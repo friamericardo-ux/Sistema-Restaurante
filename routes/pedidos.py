@@ -2,7 +2,7 @@ import json
 from flask import Blueprint, render_template, jsonify, request, session, redirect, url_for, current_app
 from data.db import get_connection, is_mysql
 from repository import criar_pedido_delivery
-from helpers import get_restaurante_id_or_403, get_pagination_params, _get_rid_from_slug, get_status_restaurante, registrar_auditoria, login_required
+from helpers import get_restaurante_id_or_403, get_pagination_params, _get_rid_from_slug, get_status_restaurante, registrar_auditoria, login_required, _get_sessao_inicio
 from extensions import csrf, limiter
 
 pedidos_bp = Blueprint('pedidos', __name__)
@@ -79,12 +79,7 @@ def listar_pedidos_delivery():
     ph = "%s" if is_mysql() else "?"
     page, per_page = get_pagination_params()
 
-    cursor.execute(
-        f"SELECT sessao_inicio FROM caixa_sessoes WHERE restaurante_id = {ph} AND aberto = 1 ORDER BY sessao_inicio DESC LIMIT 1",
-        (rid,)
-    )
-    row_sessao = cursor.fetchone()
-    sessao_inicio = row_sessao[0] if row_sessao else None
+    sessao_inicio = _get_sessao_inicio(cursor, rid)
 
     cursor.execute(
         f"""SELECT id, cliente_nome, cliente_telefone, cliente_endereco,
