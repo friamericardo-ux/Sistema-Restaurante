@@ -424,7 +424,7 @@ def index():
     if role == 'admin':
         return render_template('dashboard.html', restaurante_slug=restaurante_slug)
     elif role in ('atendente', 'garcom'):
-        return redirect(url_for('mesas'))
+        return redirect(url_for('mesas.mesas'))
     elif role == 'caixa':
         return render_template('caixa.html')
     elif role in ('superadmin', 'super_admin'):
@@ -916,7 +916,7 @@ def api_imprimir_escpos(pedido_id):
 def migrar_banco():
     """Adiciona colunas faltantes ao banco sem perder dados existentes."""
     if session.get('role') not in ('admin', 'superadmin', 'super_admin'):
-        return redirect(url_for('mesas'))
+        return redirect(url_for('mesas.mesas'))
     db = get_connection()
     cursor = db.cursor()
     resultados = []
