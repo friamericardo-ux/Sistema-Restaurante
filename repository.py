@@ -63,6 +63,63 @@ class ClienteRepository(TenantRepository):
     pass
 
 
+class WhatsappRepository(TenantRepository):
+    def get_config(self):
+        conn = self._conn()
+        cursor = conn.cursor()
+        ph = "%s" if is_mysql() else "?"
+        cursor.execute(
+            f"SELECT * FROM whatsapp_config WHERE restaurante_id = {ph}",
+            (self.restaurante_id,)
+        )
+        row = cursor.fetchone()
+        conn.close()
+        return row
+
+    def upsert_config(self, instance_name=None, webhook_url=None, enabled=None):
+        conn = self._conn()
+        cursor = conn.cursor()
+        ph = "%s" if is_mysql() else "?"
+        cursor.execute(
+            f"SELECT id FROM whatsapp_config WHERE restaurante_id = {ph}",
+            (self.restaurante_id,)
+        )
+        existing = cursor.fetchone()
+
+        if existing:
+            sets = []
+            params = []
+            if instance_name is not None:
+                sets.append(f"instance_name = {ph}")
+                params.append(instance_name)
+            if webhook_url is not None:
+                sets.append(f"webhook_url = {ph}")
+                params.append(webhook_url)
+            if enabled is not None:
+                sets.append(f"enabled = {ph}")
+                params.append(1 if enabled else 0)
+            if not sets:
+                conn.close()
+                return
+            params.append(self.restaurante_id)
+            cursor.execute(
+                f"UPDATE whatsapp_config SET {', '.join(sets)} WHERE restaurante_id = {ph}",
+                params
+            )
+        else:
+            cursor.execute(
+                f"""INSERT INTO whatsapp_config
+                    (restaurante_id, instance_name, webhook_url, enabled)
+                    VALUES ({ph}, {ph}, {ph}, {ph})""",
+                (self.restaurante_id,
+                 instance_name or 'pantanal-burger',
+                 webhook_url or '',
+                 1 if enabled else 0)
+            )
+        conn.commit()
+        conn.close()
+
+
 class UserRepository:
     def __init__(self):
         self.db_path = Config.DB_PATH
