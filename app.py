@@ -1078,6 +1078,82 @@ def remover_usuario(user_id):
 
 
 
+@app.route("/api/caixa/resumo")
+@caixa_or_admin_required
+def caixa_resumo():
+    try:
+        rid = get_restaurante_id_or_403()
+        conn = get_connection()
+        cursor = conn.cursor()
+        ph = "%s" if is_mysql() else "?"
+
+        sessao_inicio = _get_sessao_inicio(cursor, rid)
+
+        cursor.execute(f"""
+            SELECT COALESCE(SUM(total), 0), COUNT(*)
+            FROM pedidos_delivery
+            WHERE status = 'entregue'
+            AND criado_em >= {ph}
+            AND restaurante_id = {ph}
+        """, (sessao_inicio, rid))
+        row = cursor.fetchone()
+        total_delivery = float(row[0])
+        qtd_delivery = int(row[1])
+
+        cursor.execute(f"""
+            SELECT COALESCE(SUM(taxa_entrega), 0), COUNT(*)
+            FROM pedidos_delivery
+            WHERE status = 'entregue'
+            AND criado_em >= {ph}
+            AND restaurante_id = {ph}
+        """, (sessao_inicio, rid))
+        row = cursor.fetchone()
+        taxa_entrega_total = float(row[0])
+        qtd_entregas_taxa = int(row[1])
+
+        cursor.execute(f"""
+            SELECT COALESCE(SUM(total), 0), COUNT(*)
+            FROM historico_mesas
+            WHERE fechado_em >= {ph}
+            AND restaurante_id = {ph}
+        """, (sessao_inicio, rid))
+        row = cursor.fetchone()
+        total_mesas = float(row[0])
+        qtd_mesas = int(row[1])
+
+        total_geral = total_delivery + total_mesas
+
+        cursor.execute(f"""
+            SELECT id, fechado_em FROM caixa_sessoes
+            WHERE restaurante_id = {ph}
+            ORDER BY id DESC LIMIT 1
+        """, (rid,))
+        sessao = cursor.fetchone()
+        caixa_fechado = False
+        fechamento = None
+        if sessao and sessao[1] is not None:
+            caixa_fechado = True
+            fechamento = {"fechado_por": "sistema"}
+
+        conn.close()
+
+        return jsonify({
+            "sucesso": True,
+            "total_delivery": total_delivery,
+            "qtd_delivery": qtd_delivery,
+            "total_mesas": total_mesas,
+            "qtd_mesas": qtd_mesas,
+            "total_geral": total_geral,
+            "taxa_entrega_total": taxa_entrega_total,
+            "qtd_entregas_taxa": qtd_entregas_taxa,
+            "caixa_fechado": caixa_fechado,
+            "fechamento": fechamento
+        })
+    except Exception as e:
+        app.logger.error(f"Erro em /api/caixa/resumo: {e}")
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
+
+
 @app.route("/api/caixa/grafico")
 @caixa_or_admin_required
 def caixa_grafico():
