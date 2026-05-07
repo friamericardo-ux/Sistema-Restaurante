@@ -94,47 +94,32 @@ def listar_pedidos_delivery():
     pedidos = [dict(zip(cols, row)) for row in cursor.fetchall()]
 
     if sessao_inicio:
-        cursor.execute(
-            f"""SELECT COUNT(*) FROM pedidos_delivery
-                WHERE restaurante_id = {ph}
-                AND status = 'entregue'
-                AND criado_em >= {ph}""",
-            (rid, sessao_inicio)
-        )
-        total_entregues = cursor.fetchone()[0]
-        offset = (page - 1) * per_page
-        cursor.execute(
-            f"""SELECT id, cliente_nome, cliente_telefone, cliente_endereco,
-                       itens, total, status, criado_em
-                FROM pedidos_delivery
-                WHERE restaurante_id = {ph}
-                AND status = 'entregue'
-                AND criado_em >= {ph}
-                ORDER BY criado_em DESC
-                LIMIT {ph} OFFSET {ph}""",
-            (rid, sessao_inicio, per_page, offset)
-        )
+        filtro_data = f"AND criado_em >= {ph}"
+        params_data = (rid, sessao_inicio)
     else:
-        cursor.execute(
-            f"""SELECT COUNT(*) FROM pedidos_delivery
-                WHERE restaurante_id = {ph}
-                AND status = 'entregue'
-                AND DATE(criado_em) = CURDATE()""",
-            (rid,)
-        )
-        total_entregues = cursor.fetchone()[0]
-        offset = (page - 1) * per_page
-        cursor.execute(
-            f"""SELECT id, cliente_nome, cliente_telefone, cliente_endereco,
-                       itens, total, status, criado_em
-                FROM pedidos_delivery
-                WHERE restaurante_id = {ph}
-                AND status = 'entregue'
-                AND DATE(criado_em) = CURDATE()
-                ORDER BY criado_em DESC
-                LIMIT {ph} OFFSET {ph}""",
-            (rid, per_page, offset)
-        )
+        filtro_data = "AND DATE(criado_em) = CURDATE()"
+        params_data = (rid,)
+
+    cursor.execute(
+        f"""SELECT COUNT(*) FROM pedidos_delivery
+            WHERE restaurante_id = {ph}
+            AND status = 'entregue'
+            {filtro_data}""",
+        params_data
+    )
+    total_entregues = cursor.fetchone()[0]
+    offset = (page - 1) * per_page
+    cursor.execute(
+        f"""SELECT id, cliente_nome, cliente_telefone, cliente_endereco,
+                   itens, total, status, criado_em
+            FROM pedidos_delivery
+            WHERE restaurante_id = {ph}
+            AND status = 'entregue'
+            {filtro_data}
+            ORDER BY criado_em DESC
+            LIMIT {ph} OFFSET {ph}""",
+        params_data + (per_page, offset)
+    )
 
     cols = [c[0] for c in cursor.description]
     entregues = [dict(zip(cols, row)) for row in cursor.fetchall()]
