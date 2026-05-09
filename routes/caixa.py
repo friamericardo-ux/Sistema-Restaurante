@@ -173,75 +173,65 @@ def caixa_movimentacoes():
 
 @caixa_bp.route("/api/caixa/fechar", methods=["POST"])
 @caixa_or_admin_required
+@caixa_bp.route("/api/caixa/fechar", methods=["POST"])
+@caixa_or_admin_required
 def fechar_caixa():
-    """Fecha o caixa do dia e salva resumo"""
     try:
         db = get_connection()
-        if not is_mysql():
-            import sqlite3
-            db.row_factory = sqlite3.Row
-        else:
-            db.row_factory = True
         cursor = db.cursor()
         rid = get_restaurante_id_or_403()
+        ph = "%s" if is_mysql() else "?"
+        hoje = "CURDATE()" if is_mysql() else "DATE('now', 'localtime')"
 
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT id FROM caixa_fechamentos
-            WHERE data = DATE('now', 'localtime')
-            AND restaurante_id = ?
+            WHERE data = {hoje}
+            AND restaurante_id = {ph}
         """, (rid,))
         if cursor.fetchone():
             db.close()
-            return jsonify({"sucesso": False, "erro": "Caixa j\u00e1 foi fechado hoje!"})
+            return jsonify({"sucesso": False, "erro": "Caixa já foi fechado hoje!"}), 400
 
         sessao_inicio = _get_sessao_inicio(cursor, rid)
 
-        cursor.execute("""
-            SELECT COUNT(*) as qtd, COALESCE(SUM(total), 0) as total
+        cursor.execute(f"""
+            SELECT COUNT(*), COALESCE(SUM(total), 0)
             FROM pedidos_delivery
-            WHERE criado_em >= ?
-            AND status = 'entregue'
-            AND restaurante_id = ?
+            WHERE criado_em >= {ph} AND status = 'entregue' AND restaurante_id = {ph}
         """, (sessao_inicio, rid))
         delivery = cursor.fetchone()
 
-        cursor.execute("""
-            SELECT COUNT(*) as qtd, COALESCE(SUM(total), 0) as total
+        cursor.execute(f"""
+            SELECT COUNT(*), COALESCE(SUM(total), 0)
             FROM historico_mesas
-            WHERE fechado_em >= ?
-            AND restaurante_id = ?
+            WHERE fechado_em >= {ph} AND restaurante_id = {ph}
         """, (sessao_inicio, rid))
         mesas = cursor.fetchone()
 
-        def get_val(row, key, idx):
-            if isinstance(row, dict): return row[key]
-            return row[idx] if row else 0
-
-        d_total = float(get_val(delivery, 'total', 1))
-        d_qtd = int(get_val(delivery, 'qtd', 0))
-        m_total = float(get_val(mesas, 'total', 1))
-        m_qtd = int(get_val(mesas, 'qtd', 0))
+        d_qtd = int(delivery[0] or 0)
+        d_total = float(delivery[1] or 0)
+        m_qtd = int(mesas[0] or 0)
+        m_total = float(mesas[1] or 0)
         total_geral = d_total + m_total
         usuario = session.get("username", "admin")
 
-        cursor.execute("""
+        now_fn = "NOW()" if is_mysql() else "CURRENT_TIMESTAMP"
+
+        cursor.execute(f"""
             INSERT INTO caixa_fechamentos
-            (data, total_delivery, total_mesas, total_geral, qtd_pedidos_delivery, qtd_mesas, fechado_por, restaurante_id)
-            VALUES (DATE('now', 'localtime'), ?, ?, ?, ?, ?, ?, ?)
+            (data, total_delivery, total_mesas, total_geral, qtd_pedidos_delivery, qtd_mesas, fechado_por, fechado_em, restaurante_id)
+            VALUES ({hoje}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {now_fn}, {ph})
         """, (d_total, m_total, total_geral, d_qtd, m_qtd, usuario, rid))
 
-        cursor.execute("""
+        cursor.execute(f"""
             INSERT INTO fechamentos_caixa
             (data, total_faturado, total_pedidos, total_entregas, valor_entregas, restaurante_id)
-            VALUES (DATE('now', 'localtime'), ?, ?, ?, ?, ?)
+            VALUES ({hoje}, {ph}, {ph}, {ph}, {ph}, {ph})
         """, (total_geral, d_qtd + m_qtd, d_qtd, d_total, rid))
 
-        cursor.execute("""
-            UPDATE pedidos_delivery
-            SET status = 'fechado'
-            WHERE criado_em >= ?
-            AND status = 'entregue'
-            AND restaurante_id = ?
+        cursor.execute(f"""
+            UPDATE pedidos_delivery SET status = 'fechado'
+            WHERE criado_em >= {ph} AND status = 'entregue' AND restaurante_id = {ph}
         """, (sessao_inicio, rid))
 
         db.commit()
@@ -251,16 +241,11 @@ def fechar_caixa():
             'total_geral': total_geral, 'total_delivery': d_total, 'total_mesas': m_total
         })
 
-        return jsonify({
-            "sucesso": True,
-            "total_delivery": d_total,
-            "total_mesas": m_total,
-            "total_geral": total_geral
-        })
+        return jsonify({"sucesso": True, "total_delivery": d_total, "total_mesas": m_total, "total_geral": total_geral})
     except Exception as e:
-        print(f"Erro em fechar_caixa: {e}")
+        import traceback
+        print(traceback.format_exc())
         return jsonify({"sucesso": False, "erro": str(e)}), 500
-
 
 @caixa_bp.route("/api/caixa/historico")
 @caixa_or_admin_required
