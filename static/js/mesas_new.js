@@ -10,6 +10,7 @@
      GET  /api/cardapio
      GET  /api/adicionais?categoria=X
 ============================================================ */
+let _cardapioCache = null;
 
 'use strict';
 
@@ -319,7 +320,6 @@ function fecharModal() {
     _selecaoCardapio = {};
     const barra = document.getElementById('selecao-bottom-bar');
     if (barra) barra.style.display = 'none';
-    renderizarMesas();
 }
 
 /* ── Cardápio no modal — multi-select com +/- inline ──── */
@@ -381,60 +381,66 @@ function adicionarSelecao() {
 async function montarCardapioModal() {
     const grid = document.getElementById('modal-cardapio-grid');
     if (!grid) return;
-    grid.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Carregando...</span>';
-    try {
-        const res = await fetch('/api/cardapio');
-        const data = await res.json();
-        grid.innerHTML = '';
-        if (!data.sucesso || !data.produtos.length) {
-            grid.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Nenhum produto cadastrado.</span>';
+
+    if (!_cardapioCache) {
+        grid.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Carregando...</span>';
+        try {
+            const res = await fetch('/api/cardapio');
+            const data = await res.json();
+            _cardapioCache = (data.sucesso && data.produtos.length) ? data.produtos : [];
+        } catch (e) {
+            grid.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Erro ao carregar produtos.</span>';
             return;
         }
-        data.produtos.forEach(p => {
-            const chave = p.nome + '|' + p.preco;
-            const selecionado = _selecaoCardapio[chave];
-            const qtd = selecionado ? selecionado.quantidade : 0;
-
-            const card = document.createElement('div');
-            card.className = 'modal-produto-card' + (qtd > 0 ? ' selecionado' : '');
-            card.dataset.chave = chave;
-
-            const nomeHtml = escapeHtml((p.emoji ? p.emoji + ' ' : '') + p.nome);
-            const nomeJs = p.nome.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-
-            if (qtd > 0) {
-                card.innerHTML = `
-                    <div class="produto-info">
-                        <span class="modal-produto-nome">${nomeHtml}</span>
-                        <span class="modal-produto-preco">${fmtBRL(p.preco)}</span>
-                    </div>
-                    <div class="produto-qtd-inline">
-                        <button class="qtd-inline-btn" onclick="event.stopPropagation(); alterarQtdSelecao('${nomeJs}', ${p.preco}, -1)">−</button>
-                        <span class="qtd-inline-valor">${qtd}</span>
-                        <button class="qtd-inline-btn" onclick="event.stopPropagation(); alterarQtdSelecao('${nomeJs}', ${p.preco}, 1)">+</button>
-                    </div>`;
-            } else {
-                card.innerHTML = `
-                    <div class="produto-info">
-                        <span class="modal-produto-nome">${nomeHtml}</span>
-                        <span class="modal-produto-preco">${fmtBRL(p.preco)}</span>
-                    </div>
-                    <div class="produto-qtd-inline">
-                        <button class="qtd-inline-btn add-btn" onclick="event.stopPropagation(); alterarQtdSelecao('${nomeJs}', ${p.preco}, 1)">+</button>
-                    </div>`;
-            }
-
-            card.addEventListener('click', () => {
-                alterarQtdSelecao(p.nome, parseFloat(p.preco), qtd > 0 ? -qtd : 1);
-            });
-
-            grid.appendChild(card);
-        });
-    } catch (e) {
-        grid.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Erro ao carregar produtos.</span>';
     }
-}
 
+    grid.innerHTML = '';
+    if (!_cardapioCache.length) {
+        grid.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Nenhum produto cadastrado.</span>';
+        return;
+    }
+
+    _cardapioCache.forEach(p => {
+        const chave = p.nome + '|' + p.preco;
+        const selecionado = _selecaoCardapio[chave];
+        const qtd = selecionado ? selecionado.quantidade : 0;
+
+        const card = document.createElement('div');
+        card.className = 'modal-produto-card' + (qtd > 0 ? ' selecionado' : '');
+        card.dataset.chave = chave;
+
+        const nomeHtml = escapeHtml((p.emoji ? p.emoji + ' ' : '') + p.nome);
+        const nomeJs = p.nome.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+        if (qtd > 0) {
+            card.innerHTML = `
+                <div class="produto-info">
+                    <span class="modal-produto-nome">${nomeHtml}</span>
+                    <span class="modal-produto-preco">${fmtBRL(p.preco)}</span>
+                </div>
+                <div class="produto-qtd-inline">
+                    <button class="qtd-inline-btn" onclick="event.stopPropagation(); alterarQtdSelecao('${nomeJs}', ${p.preco}, -1)">−</button>
+                    <span class="qtd-inline-valor">${qtd}</span>
+                    <button class="qtd-inline-btn" onclick="event.stopPropagation(); alterarQtdSelecao('${nomeJs}', ${p.preco}, 1)">+</button>
+                </div>`;
+        } else {
+            card.innerHTML = `
+                <div class="produto-info">
+                    <span class="modal-produto-nome">${nomeHtml}</span>
+                    <span class="modal-produto-preco">${fmtBRL(p.preco)}</span>
+                </div>
+                <div class="produto-qtd-inline">
+                    <button class="qtd-inline-btn add-btn" onclick="event.stopPropagation(); alterarQtdSelecao('${nomeJs}', ${p.preco}, 1)">+</button>
+                </div>`;
+        }
+
+        card.addEventListener('click', () => {
+            alterarQtdSelecao(p.nome, parseFloat(p.preco), qtd > 0 ? -qtd : 1);
+        });
+
+        grid.appendChild(card);
+    });
+}
 /* ── Cancela seleção ── */
 function cancelarAdicionais() {
     limparSelecao();
@@ -491,6 +497,15 @@ async function atualizarConsumoModal(numMesa) {
         }).join('');
 
         if (total) total.textContent = fmtBRL(mesa.total);
+
+        // Atualiza o card no grid sem re-renderizar tudo
+        const card = document.getElementById(`mesa-card-${numMesa}`);
+        if (card) {
+            const totalEl = card.querySelector('.mesa-total');
+            const countEl = card.querySelector('.mesa-itens-count');
+            if (totalEl) totalEl.textContent = fmtBRL(mesa.total);
+            if (countEl) countEl.textContent = `${mesa.itens.length} item${mesa.itens.length !== 1 ? 's' : ''}`;
+        }
     } catch (err) {
         console.error('[mesas_new] Erro ao atualizar consumo:', err);
     }
