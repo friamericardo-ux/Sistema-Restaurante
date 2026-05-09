@@ -361,21 +361,34 @@ function limparSelecao() {
     atualizarBarraSelecao();
 }
 
-function adicionarSelecao() {
+async function adicionarSelecao() {
     const nomes = Object.keys(_selecaoCardapio);
     if (nomes.length === 0) return;
     const observacao = (document.getElementById('modal-observacao')?.value || '').trim();
-    let pendentes = nomes.length;
-    nomes.forEach(chave => {
+
+    for (const chave of nomes) {
         const item = _selecaoCardapio[chave];
-        enviarItem(item.nome, item.preco, item.quantidade, () => {
-            pendentes--;
-            if (pendentes === 0) {
-                limparSelecao();
-                document.getElementById('modal-observacao').value = '';
-            }
-        }, observacao);
-    });
+        const res = await fetch('/api/mesa/item', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                numero: _mesaAtual,
+                nome: item.nome,
+                preco: item.preco,
+                quantidade: item.quantidade,
+                observacao: observacao || ''
+            })
+        });
+        const data = await res.json();
+        if (!data.sucesso) {
+            alert('Erro ao adicionar ' + item.nome + ': ' + (data.erro || 'Erro desconhecido'));
+            break;
+        }
+    }
+
+    limparSelecao();
+    document.getElementById('modal-observacao').value = '';
+    atualizarConsumoModal(_mesaAtual);
 }
 
 async function montarCardapioModal() {
