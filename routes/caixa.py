@@ -1,3 +1,4 @@
+from extensions import csrf
 from datetime import datetime
 from flask import Blueprint, render_template, jsonify, request, session
 from data.db import get_connection, is_mysql
@@ -175,6 +176,7 @@ def caixa_movimentacoes():
 
 
 @caixa_bp.route("/api/caixa/fechar", methods=["POST"])
+@csrf.exempt
 @caixa_or_admin_required
 def fechar_caixa():
     try:
@@ -330,6 +332,7 @@ def caixa_historico():
 
 
 @caixa_bp.route("/api/caixa/abrir", methods=["POST"])
+@csrf.exempt
 @caixa_or_admin_required
 def abrir_caixa():
     """Reabre o caixa removendo o registro de fechamento e inicia nova sessão"""
