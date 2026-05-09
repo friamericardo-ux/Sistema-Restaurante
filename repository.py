@@ -479,21 +479,29 @@ def adicionar_item_mesa(mesa_numero, nome, preco, quantidade, observacao, restau
         mesa = cursor.fetchone()
         if not mesa:
             return False, "Mesa não encontrada!"
-        
+
         mesa_id = mesa[0]
         cursor.execute(f"""
             INSERT INTO itens (mesa_id, nome, preco, quantidade, observacao, restaurante_id)
             VALUES ({ph}, {ph}, {ph}, {ph}, {ph}, {ph})
         """, (mesa_id, nome, preco, quantidade, observacao, restaurante_id))
 
-        cursor.execute(f"SELECT SUM(preco * quantidade) FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
-        total = cursor.fetchone()[0] or 0
-        cursor.execute(f"UPDATE mesas SET total = {ph} WHERE id = {ph} AND restaurante_id = {ph}", (total, mesa_id, restaurante_id))
-        
-        # Atualiza status para 'ocupada' se tem consumo e não está com conta pedida
-        if total and float(total) > 0:
-            cursor.execute(f"UPDATE mesas SET status = 'ocupada' WHERE id = {ph} AND restaurante_id = {ph} AND status != 'conta_pedida'", (mesa_id, restaurante_id))
-        
+        cursor.execute(f"""
+            UPDATE mesas SET total = (
+                SELECT COALESCE(SUM(preco * quantidade), 0) FROM itens WHERE mesa_id = {ph}
+            ) WHERE id = {ph} AND restaurante_id = {ph}
+        """, (mesa_id, mesa_id, restaurante_id))
+
+        cursor.execute(f"SELECT total FROM mesas WHERE id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
+        row = cursor.fetchone()
+        novo_total = float(row[0]) if row else 0.0
+
+        if novo_total > 0:
+            cursor.execute(f"""
+                UPDATE mesas SET status = 'ocupada'
+                WHERE id = {ph} AND restaurante_id = {ph} AND status != 'conta_pedida'
+            """, (mesa_id, restaurante_id))
+
         conn.commit()
         return True, None
     finally:
@@ -512,9 +520,10 @@ def remover_item_mesa(item_id, restaurante_id):
         mesa_id = row[0]
         cursor.execute(f"DELETE FROM itens WHERE id = {ph} AND restaurante_id = {ph}", (item_id, restaurante_id))
 
-        cursor.execute(f"SELECT SUM(preco * quantidade) FROM itens WHERE mesa_id = {ph} AND restaurante_id = {ph}", (mesa_id, restaurante_id))
-        total = cursor.fetchone()[0] or 0
-        cursor.execute(f"UPDATE mesas SET total = {ph} WHERE id = {ph} AND restaurante_id = {ph}", (total, mesa_id, restaurante_id))
+        cursor.execute(
+            f"UPDATE mesas SET total = (SELECT COALESCE(SUM(preco * quantidade), 0) FROM itens WHERE mesa_id = {ph}) WHERE id = {ph} AND restaurante_id = {ph}",
+            (mesa_id, mesa_id, restaurante_id)
+        )
         
         conn.commit()
         return True, None
