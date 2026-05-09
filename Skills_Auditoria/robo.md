@@ -103,7 +103,7 @@ Webhook → Code JS (filtro) → AI Agent (Groq) → HTTP GET cardápio → HTTP
 
 ### Tarefa 2.1 — Salvar configurações do robô por restaurante
 **Arquivo:** `routes/whatsapp.py`, `repository.py`, migration nova
-**Status:** `[ ] pendente` — iniciar só após Fase 1 completa
+**Status:** `[x] concluido`
 
 **O que fazer:**
 - Migration `004_whatsapp_config.sql`: tabela `whatsapp_config` com `restaurante_id`, `instance_name`, `webhook_url`, `enabled`, `created_at`
@@ -120,7 +120,7 @@ Webhook → Code JS (filtro) → AI Agent (Groq) → HTTP GET cardápio → HTTP
 
 ### Tarefa 2.2 — Criar nova instância pela interface
 **Arquivo:** `routes/whatsapp.py`
-**Status:** `[ ] pendente` — iniciar só após 2.1 aprovada
+**Status:** `[x] concluido`
 
 **O que fazer:**
 - Rota `POST /whatsapp/instance/create` — cria instância na Evolution API com nome gerado pelo slug do restaurante
@@ -183,3 +183,5 @@ Ao concluir, marque a tarefa como [x] e aguarde minha aprovação.
 | Data | Tarefa | Status | Observações |
 |------|--------|--------|-------------|
 | 06/05/2026 | Diagnóstico filtro Code JS | ✅ concluido | Bug: `json.data.key` → `json.body.data.key`; robô voltou a responder |
+| 07/05/2026 | Tarefa 2.1 — whatsapp_config table + per-tenant config | ✅ concluido | Migration 014, WhatsappRepository, GET/POST /config, fallback compat |
+| 07/05/2026 | Tarefa 2.2 — Criar instância Evolution pela interface | ✅ concluido | POST /whatsapp/instance/create, {slug}-bot, salva em whatsapp_config, retorna QR code | 

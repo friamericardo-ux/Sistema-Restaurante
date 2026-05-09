@@ -250,6 +250,7 @@ def fechar_caixa():
         print(traceback.format_exc())
         return jsonify({"sucesso": False, "erro": str(e)}), 500
 
+
 @caixa_bp.route("/api/caixa/historico")
 @caixa_or_admin_required
 def caixa_historico():
@@ -261,13 +262,7 @@ def caixa_historico():
         page, per_page = get_pagination_params()
 
         db = get_connection()
-        if not is_mysql():
-            import sqlite3
-            db.row_factory = sqlite3.Row
-        else:
-            db.row_factory = True
-        cursor = db.cursor()
-
+        cursor = db.cursor()  # SEM row_factory — COUNT precisa de índice numérico
         ph = "%s" if is_mysql() else "?"
 
         if is_mysql():
@@ -286,8 +281,16 @@ def caixa_historico():
 
         offset = (page - 1) * per_page
 
+        # Ativa row_factory para o SELECT principal
         if is_mysql():
-            cursor.execute(f"""
+            db.row_factory = True
+        else:
+            import sqlite3
+            db.row_factory = sqlite3.Row
+        cursor = db.cursor()
+
+        if is_mysql():
+            cursor.execute("""
                 SELECT data, total_faturado, total_pedidos, total_entregas, valor_entregas
                 FROM fechamentos_caixa
                 WHERE MONTH(data) = %s AND YEAR(data) = %s
@@ -296,7 +299,7 @@ def caixa_historico():
                 LIMIT %s OFFSET %s
             """, (mes, ano, rid, per_page, offset))
         else:
-            cursor.execute(f"""
+            cursor.execute("""
                 SELECT data, total_faturado, total_pedidos, total_entregas, valor_entregas
                 FROM fechamentos_caixa
                 WHERE strftime('%%m', data) = ? AND strftime('%%Y', data) = ?
@@ -327,7 +330,8 @@ def caixa_historico():
             }
         })
     except Exception as e:
-        print(f"Erro em /api/caixa/historico: {e}")
+        import traceback
+        print(traceback.format_exc())
         return jsonify({"sucesso": False, "erro": str(e)}), 500
 
 
@@ -347,14 +351,20 @@ def abrir_caixa():
                 WHERE DATE(fechado_em) = CURDATE()
                 AND restaurante_id = %s
             """, (rid,))
-            cursor.execute("INSERT INTO caixa_sessoes (aberto_em, restaurante_id) VALUES (NOW(), %s)", (rid,))
+            cursor.execute(
+                "INSERT INTO caixa_sessoes (aberto_em, restaurante_id) VALUES (NOW(), %s)",
+                (rid,)
+            )
         else:
             cursor.execute("""
                 DELETE FROM caixa_fechamentos
                 WHERE DATE(fechado_em, 'localtime') = DATE('now', 'localtime')
                 AND restaurante_id = ?
             """, (rid,))
-            cursor.execute("INSERT INTO caixa_sessoes (aberto_em, restaurante_id) VALUES (CURRENT_TIMESTAMP, ?)", (rid,))
+            cursor.execute(
+                "INSERT INTO caixa_sessoes (aberto_em, restaurante_id) VALUES (CURRENT_TIMESTAMP, ?)",
+                (rid,)
+            )
 
         db.commit()
         db.close()
@@ -375,48 +385,65 @@ def caixa_balanco():
         page, per_page = get_pagination_params()
 
         db = get_connection()
-        if not is_mysql():
-            import sqlite3
-            db.row_factory = sqlite3.Row
-        else:
-            db.row_factory = True
-        cursor = db.cursor()
-
+        cursor = db.cursor()  # SEM row_factory — COUNT precisa de índice numérico
         ph = "%s" if is_mysql() else "?"
 
-        where_month = "MONTH(criado_em)" if is_mysql() else "strftime('%m', criado_em)"
-        where_year = "YEAR(criado_em)" if is_mysql() else "strftime('%Y', criado_em)"
+        where_month = "MONTH(fechado_em)" if is_mysql() else "strftime('%m', fechado_em)"
+        where_year = "YEAR(fechado_em)" if is_mysql() else "strftime('%Y', fechado_em)"
 
-        cursor.execute(f"""
-            SELECT COUNT(*) FROM caixa_fechamentos
-            WHERE {where_month} = {ph}
-            AND {where_year} = {ph}
-            AND restaurante_id = {ph}
-        """, (mes, ano, rid))
+        if is_mysql():
+            cursor.execute(f"""
+                SELECT COUNT(*) FROM caixa_fechamentos
+                WHERE MONTH(fechado_em) = %s AND YEAR(fechado_em) = %s
+                AND restaurante_id = %s
+            """, (mes, ano, rid))
+        else:
+            cursor.execute(f"""
+                SELECT COUNT(*) FROM caixa_fechamentos
+                WHERE strftime('%%m', fechado_em) = ? AND strftime('%%Y', fechado_em) = ?
+                AND restaurante_id = ?
+            """, (mes, ano, rid))
         total = cursor.fetchone()[0]
 
         offset = (page - 1) * per_page
 
-        cursor.execute(f"""
-            SELECT DATE(criado_em) as data, total_delivery, total_mesas, total_geral,
-                   qtd_pedidos_delivery, qtd_mesas, fechado_por
-            FROM caixa_fechamentos
-            WHERE {where_month} = {ph}
-            AND {where_year} = {ph}
-            AND restaurante_id = {ph}
-            ORDER BY criado_em ASC
-            LIMIT {ph} OFFSET {ph}
-        """, (mes, ano, rid, per_page, offset))
+        # Ativa row_factory para o SELECT principal
+        if is_mysql():
+            db.row_factory = True
+        else:
+            import sqlite3
+            db.row_factory = sqlite3.Row
+        cursor = db.cursor()
+
+        if is_mysql():
+            cursor.execute(f"""
+                SELECT DATE(fechado_em) as data, total_delivery, total_mesas, total_geral,
+                       qtd_pedidos_delivery, qtd_mesas, fechado_por
+                FROM caixa_fechamentos
+                WHERE MONTH(fechado_em) = %s AND YEAR(fechado_em) = %s
+                AND restaurante_id = %s
+                ORDER BY fechado_em ASC
+                LIMIT %s OFFSET %s
+            """, (mes, ano, rid, per_page, offset))
+        else:
+            cursor.execute(f"""
+                SELECT DATE(fechado_em) as data, total_delivery, total_mesas, total_geral,
+                       qtd_pedidos_delivery, qtd_mesas, fechado_por
+                FROM caixa_fechamentos
+                WHERE strftime('%%m', fechado_em) = ? AND strftime('%%Y', fechado_em) = ?
+                AND restaurante_id = ?
+                ORDER BY fechado_em ASC
+                LIMIT ? OFFSET ?
+            """, (mes, ano, rid, per_page, offset))
 
         dias = [dict(row) for row in cursor.fetchall()]
+        db.close()
 
         total_mes_delivery = sum(float(d.get("total_delivery", 0)) for d in dias)
         total_mes_mesas = sum(float(d.get("total_mesas", 0)) for d in dias)
         total_mes_geral = sum(float(d.get("total_geral", 0)) for d in dias)
         qtd_mes_delivery = sum(int(d.get("qtd_pedidos_delivery", 0)) for d in dias)
         qtd_mes_mesas = sum(int(d.get("qtd_mesas", 0)) for d in dias)
-
-        db.close()
 
         return jsonify({
             "sucesso": True,
@@ -436,5 +463,6 @@ def caixa_balanco():
             }
         })
     except Exception as e:
-        print(f"Erro em /api/caixa/balanco: {e}")
+        import traceback
+        print(traceback.format_exc())
         return jsonify({"sucesso": False, "erro": str(e)}), 500
