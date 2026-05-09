@@ -352,7 +352,7 @@ def abrir_caixa():
                 AND restaurante_id = %s
             """, (rid,))
             cursor.execute(
-                "INSERT INTO caixa_sessoes (aberto_em, restaurante_id) VALUES (NOW(), %s)",
+                "INSERT INTO caixa_sessoes (aberto_em, restaurante_id) VALUES (CURDATE(), %s)",
                 (rid,)
             )
         else:
@@ -362,7 +362,7 @@ def abrir_caixa():
                 AND restaurante_id = ?
             """, (rid,))
             cursor.execute(
-                "INSERT INTO caixa_sessoes (aberto_em, restaurante_id) VALUES (CURRENT_TIMESTAMP, ?)",
+                "INSERT INTO caixa_sessoes (aberto_em, restaurante_id) VALUES (DATE('now', 'localtime'), ?)",
                 (rid,)
             )
 

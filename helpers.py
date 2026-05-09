@@ -162,28 +162,8 @@ def _get_rid_from_slug(slug):
 
 
 def _get_sessao_inicio(cursor, restaurante_id=1):
-    """Retorna o datetime de início da sessão atual do caixa como string."""
-    from data.db import is_mysql
+    """Retorna meia-noite de hoje como string, para incluir todos os pedidos do dia."""
     from datetime import datetime, date
-    if is_mysql():
-        cursor.execute(
-            "SELECT aberto_em FROM caixa_sessoes WHERE DATE(aberto_em) = CURDATE() AND restaurante_id = %s ORDER BY aberto_em DESC LIMIT 1",
-            (restaurante_id,)
-        )
-    else:
-        cursor.execute(
-            "SELECT aberto_em FROM caixa_sessoes WHERE DATE(aberto_em, 'localtime') = DATE('now', 'localtime') AND restaurante_id = ? ORDER BY aberto_em DESC LIMIT 1",
-            (restaurante_id,)
-        )
-    row = cursor.fetchone()
-    if row:
-        try:
-            aberto_em = row['aberto_em']
-        except (TypeError, KeyError):
-            aberto_em = row[0]
-        if hasattr(aberto_em, 'strftime'):
-            return aberto_em.strftime('%Y-%m-%d %H:%M:%S')
-        return aberto_em
     hoje = date.today()
     return datetime(hoje.year, hoje.month, hoje.day, 0, 0, 0).strftime('%Y-%m-%d %H:%M:%S')
 
