@@ -37,6 +37,8 @@ from routes.whatsapp import whatsapp_bp
 
 from helpers import get_restaurante_id_or_403, get_pagination_params, get_config, set_config, get_status_restaurante, verificar_horario_funcionamento, _get_rid_from_slug, formatar_dias, parsear_dias
 
+_ultima_verificacao_status = {}
+
 def inicializar_admin():
     from repository import UserRepository
     from security import SecurityService
@@ -1157,75 +1159,43 @@ def caixa_resumo():
 @app.route("/api/caixa/grafico")
 @caixa_or_admin_required
 def caixa_grafico():
-    """Retorna faturamento agrupado por hora para gráfico"""
     try:
         db = get_connection()
-        if not is_mysql():
-            import sqlite3
-            db.row_factory = sqlite3.Row
-        else:
-            db.row_factory = True
         cursor = db.cursor()
         rid = get_restaurante_id_or_403()
-
         sessao_inicio = _get_sessao_inicio(cursor, rid)
         horas = {h: 0.0 for h in range(24)}
 
-        def obter_valor(row, key, idx):
-            if isinstance(row, dict): return row.get(key)
-            return row[idx] if row and len(row) > idx else None
-
         cursor.execute("""
-            SELECT CAST(strftime('%H', criado_em, 'localtime') AS INTEGER) as hora,
-                   COALESCE(SUM(total), 0) as total
+            SELECT HOUR(criado_em) as hora, COALESCE(SUM(total), 0) as total
             FROM pedidos_delivery
-            WHERE criado_em >= ?
+            WHERE criado_em >= %s
             AND status = 'entregue'
-            AND restaurante_id = ?
-            GROUP BY hora
+            AND restaurante_id = %s
+            GROUP BY HOUR(criado_em)
         """, (sessao_inicio, rid))
         for row in cursor.fetchall():
-            h = obter_valor(row, 'hora', 0)
-            if h is not None:
-                horas[int(h)] += float(obter_valor(row, 'total', 1))
+            horas[int(row[0])] += float(row[1])
 
         cursor.execute("""
-            SELECT CAST(strftime('%H', fechado_em, 'localtime') AS INTEGER) as hora,
-                   COALESCE(SUM(total), 0) as total
+            SELECT HOUR(fechado_em) as hora, COALESCE(SUM(total), 0) as total
             FROM historico_mesas
-            WHERE fechado_em >= ?
-            AND restaurante_id = ?
-            GROUP BY hora
+            WHERE fechado_em >= %s
+            AND restaurante_id = %s
+            GROUP BY HOUR(fechado_em)
         """, (sessao_inicio, rid))
         for row in cursor.fetchall():
-            h = obter_valor(row, 'hora', 0)
-            if h is not None:
-                horas[int(h)] += float(obter_valor(row, 'total', 1))
+            horas[int(row[0])] += float(row[1])
 
-        cursor.execute("""
-            SELECT CAST(strftime('%H', fechado_em, 'localtime') AS INTEGER) as hora,
-                   COALESCE(SUM(total), 0) as total
-            FROM historico_mesas
-            WHERE fechado_em >= ?
-            AND restaurante_id = ?
-            GROUP BY hora
-        """, (sessao_inicio, rid))
-        for row in cursor.fetchall():
-            h = get_val(row, 'hora', 0)
-            if h is not None:
-                horas[int(h)] += float(get_val(row, 'total', 1))
-
+        db.close()
         return jsonify({
             "sucesso": True,
             "horas": [{"hora": h, "total": horas[h]} for h in sorted(horas.keys())]
         })
     except Exception as e:
         import traceback
-        msg_erro = traceback.format_exc()
-        with open("caixa_error.log", "a", encoding="utf-8") as f:
-            f.write(f"\n--- [GRAFICO] {datetime.now()} ---\n{msg_erro}\n")
-        print(f"Erro em /api/caixa/grafico:\n{msg_erro}")
-        return jsonify({"sucesso": False, "erro": str(e)}), 200
+        app.logger.error(traceback.format_exc())
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
 
 # ========== GOOGLE MAPS / FRETE ==========
 
