@@ -173,8 +173,6 @@ def caixa_movimentacoes():
 
 @caixa_bp.route("/api/caixa/fechar", methods=["POST"])
 @caixa_or_admin_required
-@caixa_bp.route("/api/caixa/fechar", methods=["POST"])
-@caixa_or_admin_required
 def fechar_caixa():
     try:
         db = get_connection()
