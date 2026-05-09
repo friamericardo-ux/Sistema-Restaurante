@@ -398,7 +398,7 @@ def _init_mysql():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS caixa_fechamentos (
         id INT PRIMARY KEY AUTO_INCREMENT,
-        data VARCHAR(10),
+        data DATE,
         total_delivery DOUBLE DEFAULT 0,
         total_mesas DOUBLE DEFAULT 0,
         total_geral DOUBLE DEFAULT 0,
@@ -412,7 +412,7 @@ def _init_mysql():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS fechamentos_caixa (
         id INT PRIMARY KEY AUTO_INCREMENT,
-        data VARCHAR(10),
+        data DATE,
         total_faturado DOUBLE DEFAULT 0,
         total_pedidos INT DEFAULT 0,
         total_entregas INT DEFAULT 0,

@@ -26,12 +26,14 @@ def caixa_resumo():
             db.row_factory = True
         cursor = db.cursor()
         rid = get_restaurante_id_or_403()
+        ph = "%s" if is_mysql() else "?"
+        hoje = "CURDATE()" if is_mysql() else "DATE('now', 'localtime')"
 
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT id, fechado_em, fechado_por
             FROM caixa_fechamentos
-            WHERE data = DATE('now', 'localtime')
-            AND restaurante_id = ?
+            WHERE DATE(data) = {hoje}
+            AND restaurante_id = {ph}
             ORDER BY fechado_em DESC LIMIT 1
         """, (rid,))
         fechamento = cursor.fetchone()
@@ -56,21 +58,21 @@ def caixa_resumo():
 
         sessao_inicio = _get_sessao_inicio(cursor, rid)
 
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT COUNT(*) as qtd, COALESCE(SUM(total), 0) as total,
                    COALESCE(SUM(taxa_entrega), 0) as taxa_total
             FROM pedidos_delivery
-            WHERE criado_em >= ?
+            WHERE criado_em >= {ph}
             AND status = 'entregue'
-            AND restaurante_id = ?
+            AND restaurante_id = {ph}
         """, (sessao_inicio, rid))
         delivery = cursor.fetchone()
 
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT COUNT(*) as qtd, COALESCE(SUM(total), 0) as total
             FROM historico_mesas
-            WHERE fechado_em >= ?
-            AND restaurante_id = ?
+            WHERE fechado_em >= {ph}
+            AND restaurante_id = {ph}
         """, (sessao_inicio, rid))
         mesas = cursor.fetchone()
 
@@ -117,6 +119,7 @@ def caixa_movimentacoes():
         cursor = db.cursor()
         rid = get_restaurante_id_or_403()
         page, per_page = get_pagination_params()
+        ph = "%s" if is_mysql() else "?"
 
         sessao_inicio = _get_sessao_inicio(cursor, rid)
         movimentacoes = []
@@ -125,12 +128,12 @@ def caixa_movimentacoes():
             if isinstance(row, dict): return row.get(key)
             return row[idx] if row and len(row) > idx else None
 
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT id, cliente_nome, total, criado_em
             FROM pedidos_delivery
-            WHERE criado_em >= ?
+            WHERE criado_em >= {ph}
             AND status = 'entregue'
-            AND restaurante_id = ?
+            AND restaurante_id = {ph}
             ORDER BY criado_em DESC
         """, (sessao_inicio, rid))
         for row in cursor.fetchall():
@@ -141,11 +144,11 @@ def caixa_movimentacoes():
                 "hora": get_val(row, 'criado_em', 3)
             })
 
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT id, mesa_numero, total, fechado_em
             FROM historico_mesas
-            WHERE fechado_em >= ?
-            AND restaurante_id = ?
+            WHERE fechado_em >= {ph}
+            AND restaurante_id = {ph}
             ORDER BY fechado_em DESC
         """, (sessao_inicio, rid))
         for row in cursor.fetchall():
@@ -183,7 +186,7 @@ def fechar_caixa():
 
         cursor.execute(f"""
             SELECT id FROM caixa_fechamentos
-            WHERE data = {hoje}
+            WHERE DATE(data) = {hoje}
             AND restaurante_id = {ph}
         """, (rid,))
         if cursor.fetchone():
@@ -248,7 +251,7 @@ def fechar_caixa():
 @caixa_bp.route("/api/caixa/historico")
 @caixa_or_admin_required
 def caixa_historico():
-    """Retorna fechamentos da tabela fechamentos_caixa filtrados por m\u00eas/ano"""
+    """Retorna fechamentos da tabela fechamentos_caixa filtrados por mês/ano"""
     try:
         mes = request.args.get("mes", "01").zfill(2)
         ano = request.args.get("ano", "2026")
@@ -329,7 +332,7 @@ def caixa_historico():
 @caixa_bp.route("/api/caixa/abrir", methods=["POST"])
 @caixa_or_admin_required
 def abrir_caixa():
-    """Reabre o caixa removendo o registro de fechamento e inicia nova sess\u00e3o"""
+    """Reabre o caixa removendo o registro de fechamento e inicia nova sessão"""
     try:
         rid = get_restaurante_id_or_403()
         db = get_connection()
@@ -361,7 +364,7 @@ def abrir_caixa():
 @caixa_bp.route("/api/caixa/balanco")
 @caixa_or_admin_required
 def caixa_balanco():
-    """Retorna balan\u00e7o mensal agrupado por dia"""
+    """Retorna balanço mensal agrupado por dia"""
     try:
         mes = request.args.get("mes", "01").zfill(2)
         ano = request.args.get("ano", "2026")
